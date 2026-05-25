@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>AI Future</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html,body{
+    width:100%;
+    overflow-x:hidden;
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:#030712;
+    color:white;
+    overflow-x:hidden;
+}
+
+/* background */
+
+body::before{
+    content:'';
+    position:fixed;
+    inset:0;
+
+    background:
+    radial-gradient(circle at top left,#7c3aed22,transparent 25%),
+    radial-gradient(circle at bottom right,#00d5ff11,transparent 35%),
+    #030712;
+
+    z-index:-3;
+}
+
+/* particles */
+
+.particles{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    z-index:-2;
+}
+
+.particle{
+    position:absolute;
+    width:2px;
+    height:2px;
+    border-radius:50%;
+    background:white;
+    opacity:.4;
+    animation:floatParticle linear infinite;
+}
+
+@keyframes floatParticle{
+
+    from{
+        transform:translateY(0);
+        opacity:.1;
+    }
+
+    50%{
+        opacity:1;
+    }
+
+    to{
+        transform:translateY(-120px);
+        opacity:0;
+    }
+
+}
+
+/* container */
+
+.container{
+    width:100%;
+    max-width:430px;
+    margin:auto;
+    padding:24px 18px 120px;
+    overflow-x:hidden;
+}
+
+/* top */
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:30px;
+}
+
+.logo{
+    font-size:32px;
+    font-weight:800;
+}
+
+.logo span{
+    color:#8b5cf6;
+}
+
+/* premium status */
+
+.status-pill{
+
+    height:42px;
+
+    padding:0 14px;
+
+    border-radius:20px;
+
+    background:
+    linear-gradient(
+        180deg,
+        rgba(255,255,255,.06),
+        rgba(255,255,255,.03)
+    );
+
+    border:1px solid rgba(139,92,246,.14);
+
+    backdrop-filter:blur(20px);
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    box-shadow:
+    0 0 20px rgba(139,92,246,.08);
+
+}
+
+.live-dot{
+
+    width:8px;
+    height:8px;
+
+    border-radius:50%;
+
+    background:#00ff9d;
+
+    box-shadow:
+    0 0 10px #00ff9d;
+
+}
+
+.status-pill span{
+
+    font-size:12px;
+
+    font-weight:600;
+
+    color:#d1d5db;
+
+    letter-spacing:1px;
+
+}
+
+.divider{
+
+    width:1px;
+    height:14px;
+
+    background:rgba(255,255,255,.08);
+
+}
+
+.notify-ring{
+
+    width:16px;
+    height:16px;
+
+    border-radius:50%;
+
+    border:2px solid #8b5cf6;
+
+    position:relative;
+
+}
+
+.notify-ring::after{
+
+    content:'';
+
+    position:absolute;
+
+    width:4px;
+    height:4px;
+
+    border-radius:50%;
+
+    background:#00d5ff;
+
+    top:4px;
+    left:4px;
+
+    box-shadow:
+    0 0 8px #00d5ff;
+
+}
+
+/* hero */
+
+.hero{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+
+    margin-bottom:24px;
+}
+
+.hero-left{
+    flex:1;
+}
+
+.hero-title{
+    font-size:58px;
+    line-height:.92;
+    font-weight:800;
+    letter-spacing:-3px;
+    margin-bottom:18px;
+}
+
+.gradient{
+    background:linear-gradient(90deg,#8b5cf6,#00d5ff);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+.hero-desc{
+    color:#a1a1aa;
+    line-height:1.8;
+    font-size:16px;
+    margin-bottom:22px;
+}
+
+/* hero image */
+
+.hero-right{
+    width:180px;
+    height:220px;
+    position:relative;
+}
+
+.ai-platform{
+    position:absolute;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+
+    width:160px;
+    height:42px;
+
+    border-radius:50%;
+
+    background:
+    radial-gradient(circle,#8b5cf6 0%,#4f46e5 45%,transparent 75%);
+
+    filter:blur(4px);
+
+    box-shadow:
+    0 0 30px #8b5cf6,
+    0 0 60px #8b5cf6;
+}
+
+.ai-glow{
+    position:absolute;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+
+    width:120px;
+    height:120px;
+
+    border-radius:50%;
+
+    background:
+    radial-gradient(circle,#8b5cf6 0%,#00d5ff 35%,transparent 75%);
+
+    filter:blur(14px);
+
+    animation:pulse 4s infinite;
+}
+
+.ai-ring{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    border-radius:50%;
+    border:1px solid rgba(139,92,246,.25);
+}
+
+.r1{
+    width:140px;
+    height:140px;
+    top:12px;
+}
+
+.r2{
+    width:190px;
+    height:190px;
+    top:-10px;
+    border-color:rgba(0,213,255,.15);
+}
+
+.ai-text{
+    position:absolute;
+    top:34px;
+    left:50%;
+    transform:translateX(-50%);
+
+    font-size:92px;
+    font-weight:800;
+
+    background:linear-gradient(180deg,#ffffff,#8b5cf6,#00d5ff);
+
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+
+    text-shadow:
+    0 0 30px rgba(139,92,246,.8),
+    0 0 60px rgba(139,92,246,.5);
+}
+
+.light-lines{
+    position:absolute;
+    inset:0;
+}
+
+.line{
+    position:absolute;
+    width:2px;
+    background:linear-gradient(180deg,#8b5cf6,transparent);
+    opacity:.6;
+    animation:lineFloat 4s infinite ease-in-out;
+}
+
+@keyframes lineFloat{
+
+    0%{
+        transform:translateY(0);
+        opacity:.2;
+    }
+
+    50%{
+        opacity:1;
+    }
+
+    100%{
+        transform:translateY(20px);
+        opacity:.2;
+    }
+
+}
+
+@keyframes pulse{
+
+    0%{transform:translateX(-50%) scale(1)}
+
+    50%{transform:translateX(-50%) scale(1.08)}
+
+    100%{transform:translateX(-50%) scale(1)}
+
+}
+
+/* buttons */
+
+.buttons{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+
+    margin-bottom:24px;
+}
+
+.main-btn,
+.secondary-btn{
+    width:100%;
+    height:56px;
+    border:none;
+    border-radius:20px;
+
+    font-size:17px;
+    font-weight:700;
+}
+
+.main-btn{
+    background:linear-gradient(90deg,#7c3aed,#8b5cf6);
+
+    color:white;
+
+    box-shadow:
+    0 10px 30px rgba(124,58,237,.35);
+}
+
+.secondary-btn{
+    background:rgba(255,255,255,.04);
+
+    border:1px solid rgba(255,255,255,.06);
+
+    color:white;
+}
+
+/* portfolio */
+
+.portfolio{
+    background:
+    linear-gradient(135deg,
+    rgba(124,58,237,.12),
+    rgba(0,213,255,.04));
+
+    border:1px solid rgba(255,255,255,.06);
+
+    border-radius:34px;
+
+    padding:24px;
+
+    margin-bottom:24px;
+
+    backdrop-filter:blur(20px);
+
+    position:relative;
+
+    overflow:hidden;
+
+    min-height:180px;
+}
+
+.portfolio::before{
+    content:'';
+    position:absolute;
+
+    width:260px;
+    height:260px;
+
+    background:
+    radial-gradient(circle,#8b5cf622,transparent 70%);
+
+    right:-100px;
+    top:-100px;
+}
+
+.portfolio-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    margin-bottom:22px;
+}
+
+.portfolio-title{
+    font-size:18px;
+    color:#d1d5db;
+}
+
+.eye{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    background:rgba(139,92,246,.12);
+    border:1px solid rgba(139,92,246,.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0 18px rgba(139,92,246,.18);
+}
+
+.eye span{
+    width:16px;
+    height:16px;
+    border:2px solid #8b5cf6;
+    border-radius:50%;
+    position:relative;
+}
+
+.eye span::after{
+    content:'';
+    position:absolute;
+    width:6px;
+    height:6px;
+    background:#00d5ff;
+    border-radius:50%;
+    top:3px;
+    left:3px;
+    box-shadow:0 0 10px #00d5ff;
+}
+
+.total{
+    font-size:36px;
+    font-weight:800;
+    letter-spacing:-2px;
+    line-height:1;
+    margin-bottom:12px;
+}
+
+.green{
+    color:#00ff9d;
+}
+
+.chart{
+    margin-top:22px;
+}
+
+.chart svg{
+    width:100%;
+    height:90px;
+}
+
+/* return circle */
+
+.return-circle{
+    position:absolute;
+    right:24px;
+    top:90px;
+
+    width:90px;
+    height:90px;
+
+    border-radius:50%;
+
+    border:8px solid rgba(139,92,246,.15);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.return-circle::before{
+    content:'';
+
+    position:absolute;
+
+    inset:-8px;
+
+    border-radius:50%;
+
+    border-top:8px solid #8b5cf6;
+    border-right:8px solid #00d5ff;
+
+    transform:rotate(40deg);
+}
+
+.return-text{
+    text-align:center;
+}
+
+.return-text strong{
+    display:block;
+    font-size:16px;
+    color:#d1d5db;
+}
+
+.return-text span{
+    font-size:38px;
+    color:#00ff9d;
+    font-weight:800;
+}
+
+/* cards */
+
+.cards{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:20px;
+}
+
+.card{
+
+    background:
+    linear-gradient(
+        180deg,
+        rgba(255,255,255,.04),
+        rgba(255,255,255,.02)
+    );
+
+    border:1px solid rgba(139,92,246,.14);
+
+    border-radius:20px;
+
+    padding:14px 8px;
+
+    text-align:center;
+
+    min-height:110px;
+
+    backdrop-filter:blur(20px);
+
+    position:relative;
+    overflow:hidden;
+
+    box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.06),
+    0 0 25px rgba(139,92,246,.08);
+
+}
+
+.card::before{
+
+    content:'';
+
+    position:absolute;
+
+    inset:0;
+
+    background:
+    linear-gradient(
+        180deg,
+        rgba(255,255,255,.08),
+        transparent 30%
+    );
+
+    opacity:.5;
+
+    pointer-events:none;
+
+}
+
+.card-icon{
+
+    font-size:28px;
+
+    margin-bottom:8px;
+
+    filter:
+    drop-shadow(0 0 10px rgba(139,92,246,.5));
+
+}
+
+.card-title{
+
+    font-size:14px;
+
+    font-weight:700;
+
+    margin-bottom:4px;
+
+    letter-spacing:.3px;
+
+}
+
+.card-desc{
+
+    color:#8b93a7;
+
+    line-height:1.3;
+
+    font-size:10px;
+
+}
+
+/* vision */
+
+.vision{
+
+    max-width:100%;
+overflow:hidden;
+
+    background:
+    linear-gradient(135deg,#120924,#071224);
+
+    border-radius:34px;
+
+    padding:22px;
+
+    overflow:hidden;
+
+    position:relative;
+}
+
+.vision::before{
+    content:'';
+
+    position:absolute;
+
+    width:180px;
+    height:180px;
+
+    background:
+    radial-gradient(circle,#8b5cf633,transparent 70%);
+
+    right:-60px;
+    top:-60px;
+}
+
+.tag{
+    color:#8b5cf6;
+
+    margin-bottom:12px;
+
+    font-size:16px;
+}
+
+.vision-title{
+    font-size:38px;
+    line-height:1.05;
+    font-weight:800;
+    letter-spacing:-2px;
+
+    margin-bottom:20px;
+}
+
+.vision-desc{
+    color:#b3bcc9;
+
+    line-height:1.8;
+
+    margin-bottom:24px;
+}
+
+.vision-btn{
+    width:100%;
+    height:54px;
+
+    border:none;
+
+    border-radius:20px;
+
+    background:#7c3aed;
+
+    color:white;
+
+    font-size:16px;
+    font-weight:700;
+}
+
+/* AI face */
+
+.ai-face{
+
+    width:100%;
+
+    margin-top:20px;
+
+    display:flex;
+
+    justify-content:center;
+
+}
+
+.ai-face img{
+
+    width:220px;
+
+    opacity:.95;
+
+    filter:
+    drop-shadow(0 0 30px rgba(139,92,246,.35));
+
+}
+
+/* nav */
+
+.bottom-nav{
+
+    position:fixed;
+
+    bottom:0;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    width:100%;
+    max-width:430px;
+
+    height:82px;
+
+    background:rgba(5,8,22,.96);
+
+    backdrop-filter:blur(22px);
+
+    border-top:1px solid rgba(168,85,247,.22);
+
+    display:flex;
+
+    justify-content:space-around;
+
+    align-items:center;
+
+    z-index:999;
+}
+
+.nav-item{
+
+    width:20%;
+
+    text-decoration:none;
+
+    color:#64748b;
+
+    font-size:12px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:5px;
+}
+
+.nav-item i{
+
+    font-size:20px;
+}
+
+.nav-item.active{
+
+    color:#c084fc;
+
+    text-shadow:0 0 16px rgba(168,85,247,.9);
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="container">
+
+    <!-- top -->
+
+    <div class="topbar">
+
+        <div class="logo">
+            <span>AI</span> Trade
+        </div>
+
+        <div class="status-pill">
+
+            <div class="live-dot"></div>
+
+            <span>LIVE</span>
+
+            <div class="divider"></div>
+
+            <div class="notify-ring"></div>
+
+        </div>
+
+    </div>
+
+    <!-- hero -->
+
+    <div class="hero">
+
+        <div class="hero-left">
+
+            <div class="hero-title">
+
+                AI FUTURE<br>
+
+                <span class="gradient">
+                    REIMAGINED
+                </span>
+
+            </div>
+
+            <div class="hero-desc">
+
+                Intelligent. Autonomous. Limitless.<br>
+                Your future, amplified by AI.
+
+            </div>
+
+        </div>
+
+        <div class="hero-right">
+
+            <div class="light-lines">
+
+                <div class="line" style="left:30px;height:120px;top:40px;"></div>
+                <div class="line" style="left:70px;height:150px;top:20px;"></div>
+                <div class="line" style="left:110px;height:130px;top:30px;"></div>
+                <div class="line" style="left:150px;height:160px;top:10px;"></div>
+
+            </div>
+
+            <div class="ai-glow"></div>
+
+            <div class="ai-ring r1"></div>
+            <div class="ai-ring r2"></div>
+
+            <div class="ai-text">
+                AI
+            </div>
+
+            <div class="ai-platform"></div>
+
+        </div>
+
+    </div>
+
+    <!-- buttons -->
+
+    <div class="buttons">
+
+        <button class="main-btn"
+         onclick="location.href='register.html'">
+
+            Explore AI Universe →
+
+        </button>
+
+        <button class="secondary-btn"
+        onclick="location.href='trade.html'">
+
+            AI Strategy Lab →
+
+        </button>
+
+    </div>
+
+    <!-- portfolio -->
+
+    <div class="portfolio">
+
+        <div class="portfolio-top">
+
+            <div class="portfolio-title">
+                My AI Portfolio
+            </div>
+
+            <div class="eye">
+                <span></span>
+            </div>
+
+        </div>
+
+    <div class="total" id="totalAssets">
+        $0.00
+     </div>
+
+        <div class="green">
+            <div class="profit" id="homeProfit">+$0.00 (+0.00%)</div>
+        </div>
+    
+
+        <div class="return-circle">
+
+            <div class="return-text">
+
+                <strong>Total Return</strong>
+
+            <span id="totalReturn">+0%</span>
+                
+
+            </div>
+
+        </div>
+
+        <div class="chart">
+
+            <svg viewBox="0 0 500 120">
+
+                <path
+                d="M0 90
+                Q60 50 120 62
+                T240 58
+                T360 36
+                T500 10"
+
+                stroke="#8b5cf6"
+                stroke-width="5"
+                fill="none"
+                stroke-linecap="round"/>
+
+            </svg>
+
+        </div>
+
+    </div>
+
+    <!-- cards -->
+
+    <div class="cards">
+
+        <div class="card">
+
+            <div class="card-icon">◉</div>
+
+            <div class="card-title">
+                AI Insights
+            </div>
+
+            <div class="card-desc">
+                Smart future prediction systems.
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <div class="card-icon">⬢</div>
+
+            <div class="card-title">
+                AI Strategies
+            </div>
+
+            <div class="card-desc">
+                Autonomous optimized intelligence.
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <div class="card-icon">◎</div>
+
+            <div class="card-title">
+                AI Assistant
+            </div>
+
+            <div class="card-desc">
+                24/7 intelligent support systems.
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <div class="card-icon">✦</div>
+
+            <div class="card-title">
+                Future Trends
+            </div>
+
+            <div class="card-desc">
+                Explore tomorrow's AI evolution.
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- vision -->
+
+    <div class="vision">
+
+        <div class="tag">
+            AI VISION
+        </div>
+
+        <div class="vision-title">
+
+            Building Wealth<br>
+
+            In The
+
+            <span class="gradient">
+                AI Era
+            </span>
+
+        </div>
+
+        <div class="vision-desc">
+
+            AI is not just the future —
+            it is the present.
+            Intelligent systems guiding the next generation of financial freedom.
+
+        </div>
+
+        <button class="vision-btn">
+
+            Discover AI Vision →
+
+        </button>
+
+        <div class="ai-face">
+
+            <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1200&auto=format&fit=crop"
+            alt="AI"/>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- nav -->
+
+<div class="bottom-nav">
+
+    <a href="index.html" class="nav-item active">
+
+        <i class="fa-solid fa-house"></i>
+
+        <span>Home</span>
+
+    </a>
+
+    <a href="market.html" class="nav-item">
+
+        <i class="fa-solid fa-chart-column"></i>
+
+        <span>Markets</span>
+
+    </a>
+
+    <a href="trade.html" class="nav-item">
+
+        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+
+        <span>Trade</span>
+
+    </a>
+
+    <a href="portfolio.html" class="nav-item">
+
+        <i class="fa-regular fa-folder"></i>
+
+        <span>Portfolio</span>
+
+    </a>
+
+    <a href="profile.html" class="nav-item">
+
+        <i class="fa-regular fa-user"></i>
+
+        <span>Profile</span>
+
+    </a>
+
+</div>
+
+<script>
+
+/* particles */
+
+const particles = document.getElementById('particles');
+
+for(let i=0;i<45;i++){
+
+    const p = document.createElement('div');
+
+    p.className = 'particle';
+
+    p.style.left = Math.random()*100 + '%';
+
+    p.style.top = Math.random()*100 + '%';
+
+    p.style.animationDuration =
+        (6 + Math.random()*10) + 's';
+
+    p.style.animationDelay =
+        Math.random()*5 + 's';
+
+    particles.appendChild(p);
+
+}
+
+/* assets */
+
+const localUser = JSON.parse(localStorage.getItem("user"));
+
+async function loadHomeBalance(){
+
+  if(!localUser || !localUser.id) return;
+
+  const response = await fetch(
+    "http://192.168.66.160:3000/api/users/" + localUser.id
+  );
+
+  const result = await response.json();
+
+  if(result.success){
+
+    const balance = Number(result.user.balance || 0);
+
+    const totalProfit =
+    Number(result.user.totalProfit || 0);
+
+    const lockedAsset =
+    Number(result.user.lockedAsset || 0);
+
+    const roiBase =
+balance - totalProfit;
+
+const roi =
+roiBase > 0
+? ((totalProfit / roiBase) * 100).toFixed(2)
+: "0.00";
+
+    document.getElementById("totalAssets").innerText =
+      "$" + balance.toLocaleString(undefined,{
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+      });
+
+    document.getElementById("homeProfit").innerText =
+    "+$" +
+    totalProfit.toLocaleString(undefined,{
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    })
+    +
+    " (+" + roi + "%)";
+
+    document.getElementById("totalReturn").innerText =
+    "+" + roi + "%";
+  }
+}
+
+loadHomeBalance();
+setInterval(loadHomeBalance, 3000);
+
+</script>
+
+</body>
+</html>

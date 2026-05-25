@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>AI Register</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#050816;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+}
+
+/* 背景光效 */
+body::before{
+    content:"";
+    position:absolute;
+    width:500px;
+    height:500px;
+    background:#00f0ff33;
+    filter:blur(120px);
+    top:-100px;
+    left:-100px;
+}
+
+body::after{
+    content:"";
+    position:absolute;
+    width:500px;
+    height:500px;
+    background:#7b00ff33;
+    filter:blur(120px);
+    bottom:-100px;
+    right:-100px;
+}
+
+.register-container{
+    position:relative;
+    width:400px;
+    padding:40px;
+    border-radius:25px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(20px);
+    box-shadow:
+        0 0 30px rgba(0,255,255,0.2),
+        0 0 60px rgba(123,0,255,0.2);
+    z-index:10;
+}
+
+.logo{
+    text-align:center;
+    color:white;
+    font-size:34px;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+.logo span{
+    color:#00f0ff;
+}
+
+.subtitle{
+    text-align:center;
+    color:#aaa;
+    margin-bottom:35px;
+    font-size:14px;
+}
+
+.input-box{
+    margin-bottom:20px;
+}
+
+.input-box input{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:14px;
+    background:rgba(255,255,255,0.08);
+    color:white;
+    font-size:15px;
+    outline:none;
+    transition:0.3s;
+}
+
+.input-box input:focus{
+    border:1px solid #00f0ff;
+    box-shadow:0 0 15px #00f0ff66;
+}
+
+.input-box input::placeholder{
+    color:#999;
+}
+
+.register-btn{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:14px;
+    background:linear-gradient(90deg,#00f0ff,#7b00ff);
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.register-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 0 25px #00f0ff88;
+}
+
+.login-link{
+    margin-top:20px;
+    text-align:center;
+    color:#aaa;
+    font-size:14px;
+}
+
+.login-link a{
+    color:#00f0ff;
+    text-decoration:none;
+}
+
+.ai-circle{
+    position:absolute;
+    width:120px;
+    height:120px;
+    border:2px solid #00f0ff55;
+    border-radius:50%;
+    top:-60px;
+    right:-60px;
+    animation:rotate 10s linear infinite;
+}
+
+.ai-circle::before{
+    content:"";
+    position:absolute;
+    inset:15px;
+    border:2px solid #7b00ff55;
+    border-radius:50%;
+}
+
+@keyframes rotate{
+    from{
+        transform:rotate(0deg);
+    }
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+.success-box{
+    margin-top:20px;
+    background:#00ff9933;
+    color:#00ff99;
+    padding:12px;
+    border-radius:12px;
+    display:none;
+    text-align:center;
+}
+
+.error-box{
+    margin-top:20px;
+    background:#ff003333;
+    color:#ff4d4d;
+    padding:12px;
+    border-radius:12px;
+    display:none;
+    text-align:center;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="register-container">
+
+    <div class="ai-circle"></div>
+
+    <div class="logo">
+        AI <span>TRADING</span>
+    </div>
+
+    <div class="subtitle">
+        Create Your Future AI Investment Account
+    </div>
+
+    <div class="input-box">
+        <input type="text" id="username" placeholder="Username">
+    </div>
+
+    <div class="input-box">
+        <input type="email" id="email" placeholder="Email">
+    </div>
+
+    <div class="input-box">
+        <input type="password" id="password" placeholder="Password">
+    </div>
+
+    <button class="register-btn" onclick="register()">
+        CREATE ACCOUNT
+    </button>
+
+    <div class="success-box" id="successBox">
+        Registration Successful
+    </div>
+
+    <div class="error-box" id="errorBox">
+        Registration Failed
+    </div>
+
+    <div class="login-link">
+        Already have account?
+        <a href="login.html">Login</a>
+    </div>
+
+</div>
+
+<script>
+
+async function register(){
+
+    const username = document.getElementById("username").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const successBox = document.getElementById("successBox");
+    const errorBox = document.getElementById("errorBox");
+
+    successBox.style.display = "none";
+    errorBox.style.display = "none";
+
+    if(!username || !email || !password){
+        errorBox.innerText = "Please fill all fields";
+        errorBox.style.display = "block";
+        return;
+    }
+
+    try{
+
+        const response = await fetch("http://192.168.66.160:3000/api/register",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                username,
+                email,
+                password
+            })
+        });
+
+        const data = await response.json();
+
+        if(response.ok){
+
+            successBox.innerText = "Registration Successful";
+            successBox.style.display = "block";
+
+            localStorage.setItem("username", username);
+
+            setTimeout(()=>{
+                window.location.href = "login.html";
+            },1500);
+
+        }else{
+
+            errorBox.innerText = data.message || "Register Failed";
+            errorBox.style.display = "block";
+
+        }
+
+    }catch(error){
+
+        errorBox.innerText = "Server Error";
+        errorBox.style.display = "block";
+
+    }
+
+}
+
+</script>
+
+</body>
+</html>

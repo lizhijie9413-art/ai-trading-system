@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Market</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+html, body{
+    height:auto !important;
+    min-height:100% !important;
+    overflow-x:hidden !important;
+}
+
+.container{
+    padding-bottom:140px !important;
+}
+
+.bottom-nav{
+    position:fixed !important;
+    left:0 !important;
+    right:0 !important;
+    bottom:0 !important;
+    z-index:999999 !important;
+
+    width:100% !important;
+    height:76px !important;
+
+    background:rgba(5,11,24,.96) !important;
+    backdrop-filter:blur(18px) !important;
+    border-top:1px solid rgba(255,255,255,.08) !important;
+
+    display:flex !important;
+    justify-content:space-around !important;
+    align-items:center !important;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+:root{
+    --bg:#020714;
+    --card:#081121;
+    --card2:#0b1428;
+    --line:rgba(255,255,255,.08);
+    --text:#ffffff;
+    --muted:#9aa7bd;
+    --purple:#8b5cf6;
+    --purple2:#6d28d9;
+    --green:#00ff9d;
+    --red:#ff4d6d;
+    --blue:#00d5ff;
+}
+
+html{
+    background:#020714;
+}
+
+body{
+    font-family:'Poppins',sans-serif;
+    background:
+    radial-gradient(circle at 20% 0%,rgba(139,92,246,.28),transparent 26%),
+    radial-gradient(circle at 90% 20%,rgba(0,213,255,.13),transparent 25%),
+    radial-gradient(circle at 50% 100%,rgba(0,255,157,.08),transparent 30%),
+    #020714;
+    color:white;
+    overflow-x:hidden;
+    min-height:100vh;
+
+}
+
+@keyframes pageIn{
+    from{opacity:0;transform:translateY(16px)}
+    to{opacity:1;transform:translateY(0)}
+}
+
+.bg-orb{
+    position:fixed;
+    width:260px;
+    height:260px;
+    border-radius:50%;
+    filter:blur(45px);
+    opacity:.32;
+    z-index:-3;
+    animation:orbMove 9s ease-in-out infinite alternate;
+}
+
+.bg-orb.one{
+    top:-80px;
+    left:-90px;
+    background:#7c3aed;
+}
+
+.bg-orb.two{
+    right:-90px;
+    bottom:80px;
+    background:#00d5ff;
+    animation-delay:-3s;
+}
+
+@keyframes orbMove{
+    from{transform:translate(0,0) scale(1)}
+    to{transform:translate(38px,55px) scale(1.15)}
+}
+
+.ai-grid{
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    opacity:.16;
+    background-image:
+    linear-gradient(rgba(139,92,246,.22) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,213,255,.18) 1px,transparent 1px);
+    background-size:42px 42px;
+    mask-image:linear-gradient(to bottom,black,transparent 80%);
+    animation:gridMove 16s linear infinite;
+}
+
+@keyframes gridMove{
+    from{background-position:0 0}
+    to{background-position:42px 42px}
+}
+
+.container{
+    width:100%;
+    max-width:520px;
+    margin:auto;
+    padding:24px 14px 120px;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:22px;
+}
+
+.logo{
+    font-size:34px;
+    font-weight:800;
+    letter-spacing:-1px;
+    line-height:1;
+}
+
+.logo span{
+    background:linear-gradient(135deg,#8b5cf6,#c084fc,#00d5ff);
+    -webkit-background-clip:text;
+    color:transparent;
+}
+
+.status{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:13px;
+    font-weight:600;
+    color:#00ff9d;
+}
+
+.live-wrap{
+    display:flex;
+    align-items:center;
+    gap:5px;
+}
+
+.live-dot{
+    width:10px;
+    height:10px;
+    background:#00ff9d;
+    border-radius:50%;
+    box-shadow:0 0 12px #00ff9d;
+    animation:pulse 1.2s infinite;
+}
+
+@keyframes pulse{
+    0%{transform:scale(1);opacity:1}
+    50%{transform:scale(1.65);opacity:.38}
+    100%{transform:scale(1);opacity:1}
+}
+
+.search-wrap{
+    position:relative;
+    margin-bottom:20px;
+}
+
+.search-wrap::before{
+    content:"⌕";
+    position:absolute;
+    left:18px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#7b879b;
+    font-size:18px;
+}
+
+.search{
+    width:100%;
+    height:58px;
+    border:none;
+    outline:none;
+    border-radius:19px;
+    padding:0 18px 0 44px;
+    color:white;
+    background:rgba(255,255,255,.065);
+    border:1px solid rgba(255,255,255,.06);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    font-size:14px;
+    transition:.25s ease;
+}
+
+.search:focus{
+    border-color:rgba(139,92,246,.58);
+    box-shadow:0 0 0 4px rgba(139,92,246,.12);
+}
+
+.tabs{
+    display:flex;
+    gap:14px;
+    overflow-x:auto;
+    margin-bottom:22px;
+    padding-bottom:2px;
+}
+
+.tabs::-webkit-scrollbar{display:none}
+
+.tab{
+    min-width:90px;
+    padding:14px 16px;
+    border-radius:17px;
+    text-align:center;
+    color:#b6bdca;
+    background:rgba(255,255,255,.055);
+    border:1px solid rgba(255,255,255,.045);
+    font-weight:600;
+    cursor:pointer;
+    transition:.25s ease;
+}
+
+.tab:active{
+    transform:scale(.94);
+}
+
+.tab.active{
+    background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+    color:white;
+    box-shadow:0 12px 30px rgba(124,58,237,.28);
+}
+
+.index-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-bottom:18px;
+}
+
+.card,
+.section,
+.mover{
+    position:relative;
+    overflow:hidden;
+}
+
+.card{
+    background:linear-gradient(180deg,rgba(12,24,45,.96),rgba(7,16,31,.96));
+    border:1px solid rgba(255,255,255,.075);
+    border-radius:22px;
+    padding:17px;
+    min-height:172px;
+    box-shadow:0 16px 40px rgba(0,0,0,.22);
+    animation:cardFloat 5s ease-in-out infinite;
+}
+
+.card:nth-child(2),
+.card:nth-child(3){
+    animation-delay:-1.5s;
+}
+
+@keyframes cardFloat{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-4px)}
+}
+
+.card::before,
+.section::before,
+.mover::before{
+    content:"";
+    position:absolute;
+    inset:-80% auto auto -60%;
+    width:70%;
+    height:260%;
+    background:linear-gradient(to bottom,transparent,rgba(0,255,200,.18),transparent);
+    transform:rotate(25deg);
+    animation:scanLight 5.5s linear infinite;
+    pointer-events:none;
+}
+
+.section::before{
+    animation-duration:7s;
+    opacity:.6;
+}
+
+@keyframes scanLight{
+    0%{transform:translateX(-240%) rotate(25deg)}
+    100%{transform:translateX(520%) rotate(25deg)}
+}
+
+.card:active,
+.mover:active,
+.section:active{
+    transform:scale(.985);
+}
+
+.index-name{
+    color:#dbe2ee;
+    font-size:15px;
+    font-weight:500;
+}
+
+.index-price{
+    font-size:28px;
+    font-weight:800;
+    margin:8px 0 4px;
+    letter-spacing:-.5px;
+}
+
+.green{color:#00ff9d}
+.red{color:#ff4d6d}
+
+.change-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:15px;
+    font-weight:600;
+}
+
+canvas{
+    width:100%;
+    height:48px;
+    margin-top:9px;
+}
+
+.section{
+    background:linear-gradient(180deg,rgba(12,24,45,.94),rgba(7,16,31,.94));
+    border:1px solid rgba(255,255,255,.075);
+    border-radius:24px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:0 18px 45px rgba(0,0,0,.22);
+}
+
+.section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:16px;
+    position:relative;
+    z-index:1;
+}
+
+.section-title{
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:-.5px;
+}
+
+.view{
+    color:#9b6cff;
+    font-size:13px;
+    font-weight:600;
+}
+
+.movers{
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    position:relative;
+    z-index:1;
+}
+
+.movers::-webkit-scrollbar{display:none}
+
+.mover{
+    min-width:142px;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.055);
+    border-radius:20px;
+    padding:15px;
+    text-align:center;
+    transition:.25s ease;
+}
+
+.icon,
+.stock-icon{
+    width:43px;
+    height:43px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    color:white;
+    background:
+    radial-gradient(circle at 35% 25%,rgba(255,255,255,.28),transparent 32%),
+    linear-gradient(135deg,#7c3aed,#0ea5e9);
+    box-shadow:0 10px 22px rgba(124,58,237,.22);
+}
+
+.icon{
+    margin:auto;
+    margin-bottom:10px;
+}
+
+.symbol{
+    font-size:20px;
+    font-weight:800;
+}
+
+.price{
+    font-size:20px;
+    margin:8px 0 2px;
+    font-weight:700;
+}
+
+.stock-head{
+    display:grid;
+    grid-template-columns:1.8fr 1fr 1fr 1.3fr 26px;
+    color:#8e9aaf;
+    font-size:12px;
+    margin-bottom:8px;
+    position:relative;
+    z-index:1;
+}
+
+.stock{
+    display:grid;
+    grid-template-columns:1.8fr 1fr 1fr 1.3fr 26px;
+    align-items:center;
+    gap:8px;
+    padding:14px 0;
+    border-bottom:1px solid rgba(255,255,255,.055);
+    font-size:13px;
+    position:relative;
+    z-index:1;
+    transition:.25s ease;
+}
+
+.stock:active{
+    transform:scale(.98);
+}
+
+.stock:last-child{border-bottom:none}
+
+.stock-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+}
+
+.name{
+    min-width:0;
+}
+
+.name strong{
+    display:block;
+    font-size:14px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.name small{
+    color:#8e9aaf;
+}
+
+.mini-chart{
+    height:34px;
+    margin:0;
+}
+
+.star{
+    color:#6f7b91;
+    font-size:21px;
+}
+
+.news-item{
+    display:flex;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px solid rgba(255,255,255,.05);
+    position:relative;
+    z-index:1;
+}
+
+.news-item:last-child{border-bottom:none}
+
+.news-text strong{
+    display:block;
+    margin-bottom:4px;
+    font-size:13px;
+    line-height:1.35;
+}
+
+.news-text small{
+    color:#8e9aaf;
+}
+
+.grid-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+}
+
+.circle{
+    width:122px;
+    height:122px;
+    border-radius:50%;
+    margin:auto;
+    background:conic-gradient(#00ff9d 0deg 260deg,#4f46e5 260deg 320deg,#ff4d6d 320deg 360deg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0 35px rgba(0,255,157,.16);
+    animation:ringGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes ringGlow{
+    0%,100%{filter:drop-shadow(0 0 8px rgba(0,255,157,.18))}
+    50%{filter:drop-shadow(0 0 18px rgba(0,255,157,.45))}
+}
+
+.circle span{
+    width:80px;
+    height:80px;
+    background:#081121;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    font-weight:800;
+}
+
+.ai-box{
+    background:
+    radial-gradient(circle at 20% 20%,rgba(139,92,246,.32),transparent 35%),
+    linear-gradient(135deg,#241042,#071225);
+    padding:20px;
+}
+
+.ai-box::after{
+    content:"AI";
+    position:absolute;
+    right:15px;
+    bottom:-15px;
+    font-size:105px;
+    color:rgba(139,92,246,.12);
+    font-weight:800;
+    line-height:1;
+}
+
+.ai-box p{
+    color:#bac4d6;
+    line-height:1.7;
+    margin-top:10px;
+    font-size:14px;
+    position:relative;
+    z-index:1;
+}
+
+.ai-btn{
+    width:100%;
+    height:48px;
+    border:none;
+    border-radius:16px;
+    background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+    color:white;
+    font-weight:700;
+    margin-top:15px;
+    box-shadow:0 15px 30px rgba(124,58,237,.28);
+    position:relative;
+    z-index:1;
+    cursor:pointer;
+    transition:.25s ease;
+}
+
+.ai-btn:active{
+    transform:scale(.96);
+}
+
+.bottom-nav{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:9999;
+
+    height:76px;
+    background:rgba(5,11,24,.96);
+    backdrop-filter:blur(18px);
+    border-top:1px solid rgba(255,255,255,.08);
+
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+
+    padding-bottom:env(safe-area-inset-bottom);
+}
+
+.nav-item{
+    text-decoration:none;
+    color:#7f8aa0;
+    text-align:center;
+    font-size:12px;
+    min-width:58px;
+    transition:.25s ease;
+}
+
+.nav-item div:first-child{
+    font-size:23px;
+    margin-bottom:5px;
+}
+
+.nav-item.active{
+    color:#a56bff;
+    text-shadow:0 0 12px rgba(139,92,246,.65);
+}
+
+.nav-item:active{
+    transform:scale(.84);
+    opacity:.75;
+}
+
+@media(max-width:420px){
+    .container{
+        padding-left:12px;
+        padding-right:12px;
+    }
+
+    .logo{
+        font-size:30px;
+    }
+
+    .status{
+        font-size:12px;
+        gap:6px;
+    }
+
+    .index-grid{
+        gap:12px;
+    }
+
+    .card{
+        padding:15px;
+        min-height:160px;
+    }
+
+    .index-price{
+        font-size:25px;
+    }
+
+    .grid-2{
+        grid-template-columns:1fr;
+    }
+
+    .stock,
+    .stock-head{
+        grid-template-columns:1.8fr 1fr 1fr 26px;
+    }
+
+    .stock canvas,
+    .stock-head div:nth-child(4){
+        display:none;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="bg-orb one"></div>
+<div class="bg-orb two"></div>
+<div class="ai-grid"></div>
+
+<div class="container">
+
+    <div class="topbar">
+        <div class="logo"><span>AI</span> Trade</div>
+        <div class="status">
+            <div class="live-wrap"><i class="live-dot"></i>Market Open</div>
+            <div class="live-wrap"><i class="live-dot"></i>LIVE</div>
+        </div>
+    </div>
+
+    <div class="search-wrap">
+        <input class="search" id="searchInput" placeholder="Search stocks, ETFs, crypto..." />
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="Stocks">Stocks</div>
+        <div class="tab" data-tab="ETFs">ETFs</div>
+        <div class="tab" data-tab="Crypto">Crypto</div>
+        <div class="tab" data-tab="Indices">Indices</div>
+        <div class="tab" data-tab="Commodities">Commodities</div>
+    </div>
+
+    <div class="index-grid" id="indexGrid"></div>
+
+    <div class="section">
+        <div class="section-head">
+            <div class="section-title">Market Movers</div>
+            <div class="view">View All ›</div>
+        </div>
+        <div class="movers" id="movers"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-head">
+            <div class="section-title">Top Stocks</div>
+            <div class="view">View All ›</div>
+        </div>
+
+        <div class="stock-head">
+            <div>Name</div><div>Price</div><div>Change</div><div>Chart</div><div></div>
+        </div>
+
+        <div id="stocks"></div>
+    </div>
+
+    <div class="grid-2">
+        <div class="section">
+            <div class="section-head">
+                <div class="section-title" style="font-size:18px;">Market News</div>
+                <div class="view">View All</div>
+            </div>
+            <div id="news"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title" style="font-size:18px;margin-bottom:15px;position:relative;z-index:1;">Market Sentiment</div>
+            <div class="circle"><span id="sentiment">72%</span></div>
+            <div style="margin-top:14px;font-size:13px;line-height:1.9;position:relative;z-index:1;">
+                <div class="green">● Bullish 72%</div>
+                <div style="color:#9ca3ff">● Neutral 18%</div>
+                <div class="red">● Bearish 10%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section ai-box">
+        <div class="section-title" style="position:relative;z-index:1;">AI Market Insight</div>
+        <p>
+            Tech stocks show strong momentum. AI model predicts continued upside potential over the next 30 days.
+        </p>
+        <button class="ai-btn">View AI Analysis</button>
+    </div>
+
+</div>
+
+<div class="bottom-nav">
+    <a href="index.html" class="nav-item"><div>⌂</div><span>Home</span></a>
+    <a href="market.html" class="nav-item active"><div>▥</div><span>Markets</span></a>
+    <a href="trade.html" class="nav-item"><div>↻</div><span>Trade</span></a>
+    <a href="portfolio.html" class="nav-item"><div>◔</div><span>Portfolio</span></a>
+    <a href="profile.html" class="nav-item"><div>○</div><span>Profile</span></a>
+</div>
+
+<script>
+
+const TWELVE_API_KEY = "ac927c37acc4412db76bd5b951a961b5";
+
+const marketData = {
+    Stocks: [
+        {name:'Apple Inc.', symbol:'AAPL', price:193.42, change:2.35, icon:'A'},
+        {name:'NVIDIA Corp.', symbol:'NVDA', price:1242.11, change:3.21, icon:'N'},
+        {name:'Microsoft Corp.', symbol:'MSFT', price:416.78, change:1.42, icon:'M'},
+        {name:'Tesla Inc.', symbol:'TSLA', price:178.35, change:-0.84, icon:'T'},
+        {name:'Alphabet Inc.', symbol:'GOOGL', price:162.18, change:1.18, icon:'G'}
+    ],
+    ETFs: [
+        {name:'SPDR S&P 500 ETF', symbol:'SPY', price:528.64, change:.82, icon:'S'},
+        {name:'Invesco QQQ Trust', symbol:'QQQ', price:458.21, change:1.15, icon:'Q'},
+        {name:'Vanguard Total Stock', symbol:'VTI', price:267.84, change:.61, icon:'V'},
+        {name:'iShares Semiconductor', symbol:'SOXX', price:234.92, change:1.94, icon:'X'}
+    ],
+    Crypto: [
+        {name:'Bitcoin', symbol:'BTC', price:68342.20, change:1.92, icon:'B'},
+        {name:'Ethereum', symbol:'ETH', price:3812.44, change:2.35, icon:'E'},
+        {name:'Solana', symbol:'SOL', price:167.83, change:-.42, icon:'S'},
+        {name:'BNB', symbol:'BNB', price:612.20, change:.76, icon:'B'}
+    ],
+    Indices: [
+        {name:'S&P 500', symbol:'SPX', price:5284.65, change:.82, icon:'S'},
+        {name:'NASDAQ', symbol:'NDX', price:16745.30, change:1.25, icon:'N'},
+        {name:'DOW JONES', symbol:'DJI', price:38886.27, change:.51, icon:'D'},
+        {name:'FTSE 100', symbol:'UKX', price:8232.54, change:-.23, icon:'F'}
+    ],
+    Commodities: [
+        {name:'Gold Futures', symbol:'XAU', price:2368.20, change:.48, icon:'G'},
+        {name:'Silver Futures', symbol:'XAG', price:30.82, change:.66, icon:'S'},
+        {name:'Crude Oil', symbol:'OIL', price:78.41, change:-.31, icon:'O'},
+        {name:'Natural Gas', symbol:'NG', price:2.91, change:1.22, icon:'N'}
+    ]
+};
+
+let activeTab = 'Stocks';
+
+async function loadRealMarketData(){
+
+    try{
+
+        const symbols =
+        "AAPL,NVDA,MSFT,TSLA,GOOGL,BTC/USD,ETH/USD,SOL/USD,BNB/USD";
+
+        const res = await fetch(
+        `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${TWELVE_API_KEY}`
+        );
+
+        const data = await res.json();
+
+        console.log(data);
+
+        // ===== STOCKS =====
+
+        if(data.AAPL){
+
+            marketData.Stocks[0].price =
+            Number(data.AAPL.close);
+
+            marketData.Stocks[0].change =
+            Number(data.AAPL.percent_change);
+
+        }
+
+        if(data.NVDA){
+
+            marketData.Stocks[1].price =
+            Number(data.NVDA.close);
+
+            marketData.Stocks[1].change =
+            Number(data.NVDA.percent_change);
+
+        }
+
+        if(data.MSFT){
+
+            marketData.Stocks[2].price =
+            Number(data.MSFT.close);
+
+            marketData.Stocks[2].change =
+            Number(data.MSFT.percent_change);
+
+        }
+
+        // ===== CRYPTO =====
+
+        if(data["BTC/USD"]){
+
+            marketData.Crypto[0].price =
+            Number(data["BTC/USD"].close);
+
+            marketData.Crypto[0].change =
+            Number(data["BTC/USD"].percent_change);
+
+        }
+
+        if(data["ETH/USD"]){
+
+            marketData.Crypto[1].price =
+            Number(data["ETH/USD"].close);
+
+            marketData.Crypto[1].change =
+            Number(data["ETH/USD"].percent_change);
+
+        }
+
+        if(data["SOL/USD"]){
+
+            marketData.Crypto[2].price =
+            Number(data["SOL/USD"].close);
+
+            marketData.Crypto[2].change =
+            Number(data["SOL/USD"].percent_change);
+
+        }
+
+        if(data["BNB/USD"]){
+
+            marketData.Crypto[3].price =
+            Number(data["BNB/USD"].close);
+
+            marketData.Crypto[3].change =
+            Number(data["BNB/USD"].percent_change);
+
+        }
+
+        render();
+
+    }catch(err){
+
+        console.log("API Error", err);
+
+    }
+
+}
+
+loadRealMarketData();
+
+const indexes = [
+    {name:'S&P 500', price:5284.65, change:0.82},
+    {name:'NASDAQ', price:16745.30, change:1.25},
+    {name:'DOW JONES', price:38886.27, change:0.51},
+    {name:'FTSE 100', price:8232.54, change:-0.23}
+];
+
+const newsList = [
+    'NVIDIA hits new all-time high as AI demand accelerates',
+    'Apple announces new AI features for next generation devices',
+    'Microsoft expands AI cloud services across global markets'
+];
+
+function randomData(up=true){
+    let arr = [];
+    let v = 20 + Math.random() * 10;
+    for(let i=0;i<26;i++){
+        v += (Math.random() - 0.45) * 5 + (up ? .7 : -.25);
+        arr.push(v);
+    }
+    return arr;
+}
+
+function drawLine(canvas, data, positive=true){
+    if(!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const ratio = window.devicePixelRatio || 2;
+    const w = canvas.width = canvas.offsetWidth * ratio;
+    const h = canvas.height = canvas.offsetHeight * ratio;
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+
+    ctx.clearRect(0,0,w,h);
+    ctx.lineWidth = 2.8 * ratio;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = positive ? '#00ff9d' : '#ff3333';
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 9 * ratio;
+
+    const gradient = ctx.createLinearGradient(0,0,w,0);
+    gradient.addColorStop(0, positive ? 'rgba(0,255,157,.45)' : 'rgba(255,77,109,.45)');
+    gradient.addColorStop(1, positive ? '#00ff9d' : '#ff3333');
+    ctx.strokeStyle = gradient;
+
+    ctx.beginPath();
+    data.forEach((v,i)=>{
+        const x = i * (w / (data.length-1));
+        const y = h - ((v - min) / range) * (h * .78) - h * .11;
+        i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+}
+
+function money(value){
+    return Number(value).toLocaleString(undefined,{
+        minimumFractionDigits: value > 1000 ? 2 : 2,
+        maximumFractionDigits: 2
+    });
+}
+
+
+function render(){
+
+    document.querySelector('.index-grid').style.opacity = 0;
+
+    document.querySelectorAll('.section').forEach(el=>{
+        el.style.opacity = 0;
+    });
+
+    setTimeout(()=>{
+
+        document.querySelector('.index-grid').style.opacity = 1;
+
+        document.querySelectorAll('.section').forEach(el=>{
+            el.style.opacity = 1;
+        });
+
+    },120);
+
+    const stocks = marketData[activeTab];
+
+    const keyword =
+    document.getElementById('searchInput')
+    .value
+    .toLowerCase()
+    .trim();
+
+    const filtered = stocks.filter(s =>
+        s.name.toLowerCase().includes(keyword) ||
+        s.symbol.toLowerCase().includes(keyword)
+    );
+
+    document.getElementById('indexGrid').innerHTML = stocks.slice(0,4).map((i,idx)=>`
+        <div class="card">
+            <div class="index-name">${i.name}</div>
+            <div class="index-price">${money(i.price)}</div>
+            <div class="change-badge ${i.change>=0?'green':'red'}">${i.change>=0?'▲':'▼'} ${i.change>=0?'+':''}${i.change.toFixed(2)}%</div>
+            <canvas id="indexChart${idx}"></canvas>
+        </div>
+    `).join('');
+
+    document.getElementById('movers').innerHTML = filtered.map(s=>`
+        <div class="mover">
+            <div class="icon">${s.icon}</div>
+            <div class="symbol">${s.symbol}</div>
+            <div class="price">$${money(s.price)}</div>
+            <div class="${s.change>=0?'green':'red'}">${s.change>=0?'▲ +':'▼ '}${s.change.toFixed(2)}%</div>
+        </div>
+    `).join('');
+
+    document.getElementById('stocks').innerHTML = filtered.map((s,idx)=>`
+        <div class="stock">
+            <div class="stock-left">
+                <div class="stock-icon">${s.icon}</div>
+                <div class="name"><strong>${s.name}</strong><small>${s.symbol}</small></div>
+            </div>
+            <div>$${money(s.price)}</div>
+            <div class="${s.change>=0?'green':'red'}">${s.change>=0?'+':''}${s.change.toFixed(2)}%</div>
+            <canvas class="mini-chart" id="stockChart${idx}"></canvas>
+            <div class="star">☆</div>
+        </div>
+    `).join('');
+
+    document.getElementById('news').innerHTML = newsList.map(n=>`
+        <div class="news-item">
+            <div class="stock-icon">AI</div>
+            <div class="news-text">
+                <strong>${n}</strong>
+                <small>${Math.floor(Math.random()*50+2)} min ago</small>
+            </div>
+        </div>
+    `).join('');
+
+    stocks.slice(0,4).forEach((i,idx)=>{
+    drawLine(document.getElementById('indexChart'+idx), randomData(i.change>=0), i.change>=0);
+   });
+
+    filtered.forEach((s,idx)=>{
+        drawLine(document.getElementById('stockChart'+idx), randomData(s.change>=0), s.change>=0);
+    });
+}
+
+function updateData(){
+    indexes.forEach(i=>{
+        i.price += (Math.random() - .5) * 12;
+        i.change += (Math.random() - .5) * .08;
+    });
+
+    Object.values(marketData).flat().forEach(s=>{
+        s.price += (Math.random() - .5) * (s.price > 1000 ? 18 : 3);
+        s.change += (Math.random() - .5) * .15;
+    });
+
+    const sentiment = 68 + Math.floor(Math.random()*10);
+    document.getElementById('sentiment').innerText = sentiment + '%';
+
+    render();
+}
+
+document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        activeTab = tab.dataset.tab;
+        render();
+    });
+});
+
+document.getElementById('searchInput').addEventListener('input',render);
+
+render();
+setInterval(loadRealMarketData,60000);
+</script>
+
+</body>
+</html>

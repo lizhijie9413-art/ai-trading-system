@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Strategy</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+
+body{
+  background:
+    radial-gradient(circle at top left,rgba(168,85,247,.25),transparent 30%),
+    radial-gradient(circle at top right,rgba(56,189,248,.15),transparent 28%),
+    linear-gradient(180deg,#040612,#050816,#02030a);
+  color:white;
+  max-width:430px;
+  margin:0 auto;
+  padding:18px 16px 105px;
+  overflow-x:hidden;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px);
+  background-size:38px 38px;
+  opacity:.14;
+  pointer-events:none;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;
+}
+
+.back-btn,.add-btn{
+  width:44px;
+  height:44px;
+  border-radius:16px;
+  background:rgba(168,85,247,.14);
+  border:1px solid rgba(168,85,247,.28);
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:26px;
+  cursor:pointer;
+  box-shadow:0 0 18px rgba(168,85,247,.25);
+}
+
+.title{
+  text-align:center;
+}
+
+.title h1{
+  font-size:28px;
+  font-weight:900;
+}
+
+.title p{
+  color:#94a3b8;
+  font-size:14px;
+  margin-top:4px;
+}
+
+.card{
+  background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));
+  border:1px solid rgba(168,85,247,.25);
+  border-radius:26px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 0 28px rgba(168,85,247,.14);
+  position:relative;
+  overflow:hidden;
+}
+
+.card::before{
+  content:"";
+  position:absolute;
+  width:180px;
+  height:180px;
+  right:-70px;
+  top:-70px;
+  background:radial-gradient(circle,rgba(56,189,248,.18),transparent 70%);
+}
+
+.hero{
+  display:flex;
+  align-items:center;
+  min-height:220px;
+}
+
+.hero-stats{
+  flex:1;
+  position:relative;
+  z-index:2;
+}
+
+.hero-row{
+  margin-bottom:18px;
+}
+
+.hero-label{
+  color:#94a3b8;
+  font-size:14px;
+}
+
+.hero-value{
+  font-size:28px;
+  font-weight:900;
+  margin-top:6px;
+}
+
+.green{
+  color:#00f5a0;
+}
+
+.ai-core{
+  width:178px;
+  height:178px;
+  border-radius:50%;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:52px;
+  font-weight:900;
+  color:#dffaff;
+  text-shadow:0 0 20px #38bdf8;
+  background:radial-gradient(circle,#38bdf8 0%,#7c3aed 42%,rgba(124,58,237,.15) 70%);
+  box-shadow:
+    0 0 38px rgba(56,189,248,.5),
+    0 0 70px rgba(168,85,247,.45);
+  animation:pulseCore 2.4s infinite ease-in-out;
+}
+
+.ai-core::before{
+  content:"";
+  position:absolute;
+  inset:-14px;
+  border-radius:50%;
+  border:2px solid rgba(168,85,247,.45);
+  border-top-color:#38bdf8;
+  animation:spin 5s linear infinite;
+}
+
+.ai-core::after{
+  content:"";
+  position:absolute;
+  inset:-28px;
+  border-radius:50%;
+  border:1px solid rgba(56,189,248,.25);
+  border-left-color:#c084fc;
+  animation:spinReverse 8s linear infinite;
+}
+
+@keyframes spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+@keyframes spinReverse{
+  from{transform:rotate(360deg);}
+  to{transform:rotate(0deg);}
+}
+
+@keyframes pulseCore{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.04);}
+}
+
+.section-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:22px 0 12px;
+}
+
+.section-head h2{
+  font-size:23px;
+}
+
+.section-head span{
+  color:#c084fc;
+  font-weight:700;
+}
+
+.strategy-card{
+  background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));
+  border:1px solid rgba(168,85,247,.25);
+  border-radius:24px;
+  padding:16px;
+  margin-bottom:14px;
+  position:relative;
+  overflow:hidden;
+  animation:cardIn .65s ease both;
+}
+
+.strategy-card:nth-of-type(2){animation-delay:.08s;}
+.strategy-card:nth-of-type(3){animation-delay:.16s;}
+.strategy-card:nth-of-type(4){animation-delay:.24s;}
+
+@keyframes cardIn{
+  from{
+    opacity:0;
+    transform:translateY(18px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+.strategy-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(120deg,transparent,rgba(56,189,248,.08),transparent);
+  transform:translateX(-100%);
+  animation:shine 4s infinite;
+}
+
+@keyframes shine{
+  0%{transform:translateX(-100%);}
+  45%,100%{transform:translateX(120%);}
+}
+
+.strategy-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  position:relative;
+  z-index:2;
+}
+
+.strategy-left{
+  display:flex;
+  gap:14px;
+}
+
+.strategy-icon{
+  width:58px;
+  height:58px;
+  border-radius:18px;
+  background:linear-gradient(135deg,#7c3aed,#38bdf8);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  font-weight:900;
+  box-shadow:0 0 22px rgba(168,85,247,.38);
+}
+
+.strategy-name{
+  font-size:19px;
+  font-weight:850;
+}
+
+.strategy-sub{
+  color:#94a3b8;
+  margin-top:5px;
+  font-size:13px;
+}
+
+.active{
+  margin-top:8px;
+  color:#00f5a0;
+  font-size:14px;
+}
+
+.active-dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#00f5a0;
+  margin-right:6px;
+  box-shadow:0 0 10px #00f5a0;
+  animation:blink 1.4s infinite ease-in-out;
+}
+
+@keyframes blink{
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:.35;transform:scale(.7);}
+}
+
+.roi{
+  text-align:right;
+}
+
+.roi span{
+  color:#94a3b8;
+  font-size:13px;
+}
+
+.roi strong{
+  display:block;
+  color:#00f5a0;
+  font-size:24px;
+  margin-top:6px;
+  text-shadow:0 0 12px rgba(0,245,160,.28);
+  animation:numberPulse 2s infinite ease-in-out;
+}
+
+@keyframes numberPulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.04);}
+}
+
+.mini-chart{
+  width:88px;
+  height:28px;
+  margin-top:10px;
+}
+
+.mini-chart path{
+  stroke:#00f5a0;
+  stroke-width:3;
+  fill:none;
+  stroke-linecap:round;
+  stroke-dasharray:120;
+  stroke-dashoffset:120;
+  animation:drawLine 2.8s infinite ease-in-out;
+}
+
+@keyframes drawLine{
+  0%{stroke-dashoffset:120;}
+  55%,100%{stroke-dashoffset:0;}
+}
+
+.strategy-info{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  border-top:1px solid rgba(255,255,255,.07);
+  margin-top:16px;
+  padding-top:14px;
+  position:relative;
+  z-index:2;
+}
+
+.info-label{
+  color:#94a3b8;
+  font-size:12px;
+}
+
+.info-value{
+  margin-top:6px;
+  font-size:16px;
+  font-weight:700;
+}
+
+.market-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.market-card{
+  background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));
+  border:1px solid rgba(168,85,247,.25);
+  border-radius:22px;
+  padding:14px;
+  position:relative;
+  overflow:hidden;
+}
+
+.market-icon{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  background:linear-gradient(135deg,#7c3aed,#38bdf8);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  margin-bottom:10px;
+}
+
+.market-title{
+  font-size:14px;
+  font-weight:800;
+}
+
+.market-sub{
+  color:#94a3b8;
+  font-size:11px;
+  margin-top:4px;
+}
+
+.market-roi{
+  color:#00f5a0;
+  font-size:20px;
+  font-weight:900;
+  margin-top:14px;
+}
+
+.use-btn{
+  width:100%;
+  height:36px;
+  border:none;
+  border-radius:14px;
+  margin-top:12px;
+  color:white;
+  font-weight:800;
+  background:linear-gradient(90deg,#7c3aed,#9333ea);
+  cursor:pointer;
+  box-shadow:0 0 16px rgba(168,85,247,.35);
+}
+
+.use-btn.running{
+  background:linear-gradient(90deg,#00c48c,#00f5a0);
+  color:#06121a;
+}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:92px;
+  transform:translateX(-50%) translateY(20px);
+  background:rgba(10,18,38,.96);
+  border:1px solid rgba(0,245,160,.35);
+  color:#00f5a0;
+  padding:12px 18px;
+  border-radius:16px;
+  opacity:0;
+  pointer-events:none;
+  transition:.35s;
+  z-index:1000;
+  box-shadow:0 0 22px rgba(0,245,160,.18);
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:430px;
+  height:78px;
+  background:rgba(5,8,22,.96);
+  backdrop-filter:blur(22px);
+  border-top:1px solid rgba(168,85,247,.22);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+
+.nav-item{
+  width:20%;
+  text-decoration:none;
+  color:#64748b;
+  font-size:12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+}
+
+.nav-item b{
+  font-size:22px;
+  font-weight:400;
+}
+
+.nav-item.active{
+  color:#c084fc;
+  text-shadow:0 0 16px rgba(168,85,247,.9);
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="back-btn" onclick="window.history.back()">‹</div>
+
+  <div class="title">
+    <h1>AI Strategy</h1>
+    <p>Manage your AI trading strategies</p>
+  </div>
+
+  <div class="add-btn">+</div>
+</div>
+
+<div class="card hero">
+
+  <div class="hero-stats">
+
+    <div class="hero-row">
+      <div class="hero-label">Total Strategies</div>
+      <div class="hero-value">12</div>
+    </div>
+
+    <div class="hero-row">
+      <div class="hero-label">Active Strategies</div>
+      <div class="hero-value green">6</div>
+    </div>
+
+    <div class="hero-row">
+      <div class="hero-label">Total Profit</div>
+      <div class="hero-value green" id="profitCounter">+$4,281.62</div>
+      <div class="green">+18.73% (7D)</div>
+    </div>
+
+  </div>
+
+  <div class="ai-core">AI</div>
+
+</div>
+
+<div class="section-head">
+  <h2>Active Strategies</h2>
+  <span>View All ›</span>
+</div>
+
+<div class="strategy-card">
+
+  <div class="strategy-top">
+
+    <div class="strategy-left">
+      <div class="strategy-icon">QS</div>
+
+      <div>
+        <div class="strategy-name">Quantum Scalper</div>
+        <div class="strategy-sub">Scalping Strategy</div>
+        <div class="active"><span class="active-dot"></span>Active</div>
+      </div>
+    </div>
+
+    <div class="roi">
+      <span>ROI (7D)</span>
+      <strong>+24.5%</strong>
+      <svg class="mini-chart" viewBox="0 0 100 30">
+        <path d="M2 22 L15 19 L28 24 L40 15 L52 20 L64 11 L76 18 L88 9 L98 13"/>
+      </svg>
+    </div>
+
+  </div>
+
+  <div class="strategy-info">
+    <div>
+      <div class="info-label">Invested</div>
+      <div class="info-value">$2,500.00</div>
+    </div>
+    <div>
+      <div class="info-label">Profit</div>
+      <div class="info-value green">+$612.45</div>
+    </div>
+    <div>
+      <div class="info-label">Win Rate</div>
+      <div class="info-value">78%</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="strategy-card">
+
+  <div class="strategy-top">
+
+    <div class="strategy-left">
+      <div class="strategy-icon">TM</div>
+
+      <div>
+        <div class="strategy-name">AI Trend Master</div>
+        <div class="strategy-sub">Trend Following</div>
+        <div class="active"><span class="active-dot"></span>Active</div>
+      </div>
+    </div>
+
+    <div class="roi">
+      <span>ROI (7D)</span>
+      <strong>+15.8%</strong>
+      <svg class="mini-chart" viewBox="0 0 100 30">
+        <path d="M2 24 L14 20 L26 22 L38 13 L50 18 L62 14 L74 20 L86 12 L98 15"/>
+      </svg>
+    </div>
+
+  </div>
+
+  <div class="strategy-info">
+    <div>
+      <div class="info-label">Invested</div>
+      <div class="info-value">$3,200.00</div>
+    </div>
+    <div>
+      <div class="info-label">Profit</div>
+      <div class="info-value green">+$505.60</div>
+    </div>
+    <div>
+      <div class="info-label">Win Rate</div>
+      <div class="info-value">72%</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="strategy-card">
+
+  <div class="strategy-top">
+
+    <div class="strategy-left">
+      <div class="strategy-icon">SH</div>
+
+      <div>
+        <div class="strategy-name">Smart Hedger</div>
+        <div class="strategy-sub">Hedging Strategy</div>
+        <div class="active"><span class="active-dot"></span>Active</div>
+      </div>
+    </div>
+
+    <div class="roi">
+      <span>ROI (7D)</span>
+      <strong>+9.3%</strong>
+      <svg class="mini-chart" viewBox="0 0 100 30">
+        <path d="M2 20 L14 23 L26 18 L38 22 L50 14 L62 18 L74 12 L86 17 L98 11"/>
+      </svg>
+    </div>
+
+  </div>
+
+  <div class="strategy-info">
+    <div>
+      <div class="info-label">Invested</div>
+      <div class="info-value">$1,800.00</div>
+    </div>
+    <div>
+      <div class="info-label">Profit</div>
+      <div class="info-value green">+$167.40</div>
+    </div>
+    <div>
+      <div class="info-label">Win Rate</div>
+      <div class="info-value">65%</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section-head">
+  <h2>Strategy Marketplace</h2>
+  <span>Explore More ›</span>
+</div>
+
+<div class="market-grid">
+
+  <div class="market-card">
+    <div class="market-icon">AB</div>
+    <div class="market-title">AI Breakout</div>
+    <div class="market-sub">Breakout Strategy</div>
+    <div class="market-roi">+22.1%</div>
+    <button class="use-btn" onclick="useStrategy(this)">Use</button>
+  </div>
+
+  <div class="market-card">
+    <div class="market-icon">GT</div>
+    <div class="market-title">Grid Trader</div>
+    <div class="market-sub">Grid Trading</div>
+    <div class="market-roi">+17.4%</div>
+    <button class="use-btn" onclick="useStrategy(this)">Use</button>
+  </div>
+
+  <div class="market-card">
+    <div class="market-icon">AR</div>
+    <div class="market-title">AI Arbitrage</div>
+    <div class="market-sub">Arbitrage</div>
+    <div class="market-roi">+13.2%</div>
+    <button class="use-btn" onclick="useStrategy(this)">Use</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">
+  Strategy activated
+</div>
+
+<div class="bottom-nav">
+
+  <a class="nav-item" href="index.html">
+    <b>⌂</b>
+    Home
+  </a>
+
+  <a class="nav-item" href="market.html">
+    <b>▥</b>
+    Markets
+  </a>
+
+  <a class="nav-item" href="trade.html">
+    <b>↻</b>
+    Trade
+  </a>
+
+  <a class="nav-item" href="portfolio.html">
+    <b>◔</b>
+    Portfolio
+  </a>
+
+  <a class="nav-item active" href="profile.html">
+    <b>●</b>
+    Profile
+  </a>
+
+</div>
+
+<script>
+let profit = 4281.62;
+
+setInterval(function(){
+  const change = Math.random() * 1.6;
+  profit += change;
+
+  document.getElementById("profitCounter").innerText =
+    "+$" + profit.toLocaleString(undefined,{
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    });
+}, 1600);
+
+function useStrategy(btn){
+  btn.innerText = "Running";
+  btn.classList.add("running");
+
+  const toast = document.getElementById("toast");
+  toast.classList.add("show");
+
+  setTimeout(function(){
+    toast.classList.remove("show");
+  }, 1800);
+}
+</script>
+
+</body>
+</html>

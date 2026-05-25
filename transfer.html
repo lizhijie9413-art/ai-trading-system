@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Asset Convert</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#050816;
+    color:white;
+    padding:16px;
+    max-width:430px;
+    margin:0 auto;
+    overflow-x:hidden;
+}
+
+/* HEADER */
+
+.header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:24px;
+}
+
+.back-icon{
+    width:36px;
+    height:36px;
+    border-radius:12px;
+    background:rgba(140,100,255,0.16);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    cursor:pointer;
+}
+
+.title{
+    font-size:22px;
+    font-weight:800;
+}
+
+/* CARD */
+
+.transfer-card{
+    background:linear-gradient(180deg,#11183c,#090d22);
+    border:1px solid rgba(140,100,255,0.25);
+    border-radius:24px;
+    padding:18px;
+    box-shadow:0 0 18px rgba(140,100,255,0.12);
+}
+
+/* LABEL */
+
+.label{
+    font-size:13px;
+    color:#aeb6d8;
+    margin-bottom:10px;
+    margin-top:16px;
+}
+
+/* INPUT */
+
+.input-box{
+    width:100%;
+    height:52px;
+    border:none;
+    outline:none;
+    border-radius:16px;
+    padding:0 16px;
+    background:#151d45;
+    color:white;
+    font-size:15px;
+}
+
+/* REMOVE NUMBER ARROWS */
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+}
+
+input[type=number]{
+    -moz-appearance:textfield;
+}
+
+/* SWAP */
+
+.swap{
+    width:58px;
+    height:58px;
+    border-radius:18px;
+    background:linear-gradient(180deg,#7b4dff,#a855f7);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:20px auto;
+    font-size:28px;
+    box-shadow:0 0 20px rgba(140,100,255,0.35);
+}
+
+/* INFO */
+
+.info-box{
+    margin-top:18px;
+    background:rgba(140,100,255,0.08);
+    border-radius:18px;
+    padding:14px;
+}
+
+.info-row{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:12px;
+    font-size:13px;
+    color:#c5c9e0;
+}
+
+/* BUTTON */
+
+.transfer-btn{
+    width:100%;
+    height:54px;
+    border:none;
+    border-radius:18px;
+    margin-top:24px;
+    font-size:16px;
+    font-weight:bold;
+    color:white;
+    cursor:pointer;
+    background:linear-gradient(90deg,#7b4dff,#a855f7);
+    box-shadow:0 0 18px rgba(140,100,255,0.35);
+}
+
+.transfer-btn:active{
+    transform:scale(0.98);
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+
+    <div class="back-icon" onclick="window.history.back()">
+        ←
+    </div>
+
+    <div class="title">
+        Asset Convert
+    </div>
+
+</div>
+
+<!-- CARD -->
+
+<div class="transfer-card">
+
+    <!-- FROM -->
+
+    <div class="label">
+        From Asset
+    </div>
+
+    <select class="input-box">
+
+        <option>USDT Wallet</option>
+        <option>BTC</option>
+        <option>ETH</option>
+        <option>NVDA Stock</option>
+        <option>AAPL Stock</option>
+        <option>AI Tech Fund</option>
+        <option>S&P 500 Fund</option>
+
+    </select>
+
+    <!-- SWAP -->
+
+    <div class="swap">
+        ⇅
+    </div>
+
+    <!-- TO -->
+
+    <div class="label">
+        To Asset
+    </div>
+
+    <select class="input-box">
+
+        <option>BTC</option>
+        <option>ETH</option>
+        <option>USDT Wallet</option>
+        <option>AI Strategy Wallet</option>
+        <option>NVDA Stock</option>
+        <option>AAPL Stock</option>
+
+    </select>
+
+    <!-- AMOUNT -->
+
+    <div class="label">
+        Convert Amount
+    </div>
+
+    <input
+    type="number"
+    class="input-box"
+    placeholder="Enter amount"
+    />
+
+    <!-- INFO -->
+
+    <div class="info-box">
+
+        <div class="info-row">
+            <span>Available Balance</span>
+            <span>12,580 USDT</span>
+        </div>
+
+        <div class="info-row">
+            <span>Convert Fee</span>
+            <span>0.1%</span>
+        </div>
+
+        <div class="info-row">
+            <span>Estimated Rate</span>
+            <span>1 BTC ≈ 104,220 USDT</span>
+        </div>
+
+        <div class="info-row" style="margin-bottom:0;">
+            <span>Status</span>
+            <span style="color:#00ff9d;">Instant</span>
+        </div>
+
+    </div>
+
+    <!-- BUTTON -->
+
+    <button class="transfer-btn">
+        Confirm Convert
+    </button>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit Profile</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+body{
+  background:
+    radial-gradient(circle at top left,rgba(168,85,247,.24),transparent 30%),
+    radial-gradient(circle at bottom right,rgba(56,189,248,.14),transparent 30%),
+    linear-gradient(180deg,#040612,#050816,#02030a);
+
+  color:white;
+  max-width:430px;
+  margin:0 auto;
+  min-height:100vh;
+  overflow-x:hidden;
+  padding:18px 16px 160px;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px);
+
+  background-size:38px 38px;
+
+  opacity:.12;
+
+  pointer-events:none;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  margin-bottom:22px;
+}
+
+.back-btn{
+  width:44px;
+  height:44px;
+
+  border-radius:16px;
+
+  background:rgba(168,85,247,.14);
+
+  border:1px solid rgba(168,85,247,.28);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:26px;
+
+  color:#c084fc;
+
+  cursor:pointer;
+}
+
+.header h1{
+  font-size:30px;
+  font-weight:900;
+
+  background:
+    linear-gradient(90deg,#fff,#c084fc,#38bdf8);
+
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.card{
+  position:relative;
+
+  background:
+    linear-gradient(145deg,
+      rgba(15,23,55,.96),
+      rgba(5,10,28,.96));
+
+  border:1px solid rgba(168,85,247,.22);
+
+  border-radius:28px;
+
+  padding:22px;
+
+  margin-bottom:18px;
+
+  overflow:hidden;
+
+  box-shadow:
+    0 0 30px rgba(168,85,247,.12);
+}
+
+.card::before{
+  content:"";
+
+  position:absolute;
+
+  width:180px;
+  height:180px;
+
+  right:-90px;
+  top:-90px;
+
+  background:
+    radial-gradient(circle,
+      rgba(56,189,248,.16),
+      transparent 70%);
+}
+
+.avatar-section{
+  text-align:center;
+  position:relative;
+  z-index:2;
+}
+
+.avatar{
+  width:120px;
+  height:120px;
+
+  border-radius:50%;
+
+  background:
+    radial-gradient(circle at top,
+      #38bdf8,
+      #7c3aed 60%,
+      #312e81);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:42px;
+  font-weight:900;
+
+  margin:0 auto 18px;
+
+  box-shadow:
+    0 0 38px rgba(168,85,247,.5);
+}
+
+.change-btn{
+  display:inline-flex;
+
+  align-items:center;
+  justify-content:center;
+
+  padding:10px 20px;
+
+  border-radius:16px;
+
+  background:
+    linear-gradient(90deg,#7c3aed,#38bdf8);
+
+  color:white;
+
+  font-weight:800;
+
+  cursor:pointer;
+
+  box-shadow:
+    0 0 22px rgba(168,85,247,.32);
+}
+
+.form-group{
+  margin-bottom:20px;
+  position:relative;
+  z-index:2;
+}
+
+.form-group label{
+  display:block;
+  margin-bottom:10px;
+  color:#cbd5e1;
+  font-size:14px;
+}
+
+.input{
+  width:100%;
+  height:56px;
+
+  border:none;
+  outline:none;
+
+  border-radius:18px;
+
+  background:
+    rgba(255,255,255,.05);
+
+  border:1px solid rgba(168,85,247,.18);
+
+  color:white;
+
+  padding:0 18px;
+
+  font-size:16px;
+}
+
+.textarea{
+  width:100%;
+  height:120px;
+
+  border:none;
+  outline:none;
+
+  border-radius:18px;
+
+  background:
+    rgba(255,255,255,.05);
+
+  border:1px solid rgba(168,85,247,.18);
+
+  color:white;
+
+  padding:18px;
+
+  resize:none;
+
+  font-size:15px;
+}
+
+.save-btn{
+  width:100%;
+  height:60px;
+
+  border:none;
+
+  border-radius:22px;
+
+  background:
+    linear-gradient(90deg,#7c3aed,#38bdf8);
+
+  color:white;
+
+  font-size:18px;
+  font-weight:900;
+
+  cursor:pointer;
+
+  box-shadow:
+    0 0 28px rgba(168,85,247,.35);
+}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+
+  width:100%;
+  max-width:430px;
+
+  height:82px;
+
+  background:rgba(5,8,22,.96);
+
+  backdrop-filter:blur(22px);
+
+  border-top:
+    1px solid rgba(168,85,247,.22);
+
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+
+.nav-item{
+  width:20%;
+
+  text-decoration:none;
+
+  color:#64748b;
+
+  font-size:12px;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+}
+
+.nav-item b{
+  font-size:22px;
+  font-weight:400;
+}
+
+.nav-item.active{
+  color:#c084fc;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+  <div class="back-btn"
+       onclick="history.back()">
+    ‹
+  </div>
+
+  <h1>Edit Profile</h1>
+
+  <div style="width:44px;"></div>
+
+</div>
+
+<div class="card">
+
+  <div class="avatar-section">
+
+    <div class="avatar"
+         id="avatarPreview">
+      AI
+    </div>
+
+    <label class="change-btn">
+
+      <input type="file"
+             hidden
+             onchange="changeAvatar(this)">
+
+      Change Avatar
+
+    </label>
+
+  </div>
+
+</div>
+
+<div class="card">
+
+  <div class="form-group">
+    <label>Full Name</label>
+
+    <input class="input"
+           id="nameInput"
+           value="Marjorie AI">
+  </div>
+
+  <div class="form-group">
+    <label>Email</label>
+
+    <input class="input"
+           id="emailInput"
+           value="marjorie@aiquantum.com">
+  </div>
+
+  <div class="form-group">
+    <label>Phone Number</label>
+
+    <input class="input"
+           id="phoneInput"
+           value="+1 202 888 2048">
+  </div>
+
+  <div class="form-group">
+    <label>Bio</label>
+
+    <textarea class="textarea"
+              id="bioInput">AI investor focused on the future of intelligent finance and next generation technology.</textarea>
+  </div>
+
+  <button class="save-btn"
+          onclick="saveProfile()">
+    Save Changes
+  </button>
+
+</div>
+
+<div class="bottom-nav">
+
+  <a class="nav-item" href="index.html">
+    <b>⌂</b>
+    Home
+  </a>
+
+  <a class="nav-item" href="market.html">
+    <b>▥</b>
+    Markets
+  </a>
+
+  <a class="nav-item" href="trade.html">
+    <b>↻</b>
+    Trade
+  </a>
+
+  <a class="nav-item" href="portfolio.html">
+    <b>◔</b>
+    Portfolio
+  </a>
+
+  <a class="nav-item active" href="profile.html">
+    <b>●</b>
+    Profile
+  </a>
+
+</div>
+
+<script>
+
+  if(localUser){
+  document.getElementById("nameInput").value =
+  localUser.name || "";
+
+  document.getElementById("emailInput").value =
+  localUser.email || "";
+
+  document.getElementById("phoneInput").value =
+  localUser.phone || "";
+}
+
+  const localUser =
+JSON.parse(localStorage.getItem("user"));
+
+const avatarKey =
+"profile_avatar_" +
+(localUser?.uid || localUser?.id || "guest")
+
+const savedAvatar =
+localStorage.getItem(avatarKey);
+
+if(savedAvatar){
+
+  document.getElementById(
+    "avatarPreview"
+  ).innerHTML = `
+    <img src="${savedAvatar}"
+    style="
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:50%;
+    ">
+  `;
+}
+
+async function saveProfile(){
+
+  const user =
+    JSON.parse(localStorage.getItem("user"));
+
+  if(!user || !user.id){
+    alert("Please login again");
+    return;
+  }
+
+  const name =
+    document.getElementById("nameInput").value.trim();
+
+  const email =
+    document.getElementById("emailInput").value.trim();
+
+  const phone =
+    document.getElementById("phoneInput").value.trim();
+
+  const res = await fetch(
+    "http://localhost:3000/api/users/" + user.id + "/profile",
+    {
+      method:"PUT",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        name,
+        email,
+        phone
+      })
+    }
+  );
+
+  const result = await res.json();
+
+  if(result.success){
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(result.user)
+    );
+
+    alert("Profile updated successfully");
+
+    location.href = "profile.html";
+
+  }else{
+    alert(result.message || "Update failed");
+  }
+}
+
+function changeAvatar(input){
+
+  if(input.files.length === 0) return;
+
+  const file = input.files[0];
+
+  const reader = new FileReader();
+
+  reader.onload = function(e){
+
+    const avatarData = e.target.result;
+
+    const localUser =
+JSON.parse(localStorage.getItem("user"));
+
+const avatarKey =
+"profile_avatar_" +
+(localUser.uid || localUser.id);
+
+localStorage.setItem(
+  avatarKey,
+  avatarData
+);
+
+    document.getElementById(
+      "avatarPreview"
+    ).innerHTML = `
+      <img src="${avatarData}"
+      style="
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:50%;
+      ">
+    `;
+
+    alert("Avatar saved");
+  };
+
+  reader.readAsDataURL(file);
+}
+
+</script>
+
+</body>
+</html>

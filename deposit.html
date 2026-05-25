@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Trade - Deposit</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top left, rgba(168,85,247,.25), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(56,189,248,.16), transparent 28%),
+    linear-gradient(180deg,#040612 0%,#050816 50%,#02030a 100%);
+  color:white;
+  overflow-x:hidden;
+}
+
+.app{
+  max-width:430px;
+  min-height:100vh;
+  margin:0 auto;
+  padding:18px 16px 90px;
+  position:relative;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px);
+  background-size:42px 42px;
+  opacity:.12;
+  pointer-events:none;
+}
+
+/* top */
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:20px;
+}
+
+.back{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:1px solid rgba(168,85,247,.35);
+  background:rgba(15,23,42,.76);
+  color:white;
+  font-size:24px;
+  display:grid;
+  place-items:center;
+  text-decoration:none;
+  box-shadow:0 0 22px rgba(168,85,247,.25);
+}
+
+.page-title{
+  text-align:center;
+}
+
+.page-title h1{
+  font-size:28px;
+  background:linear-gradient(90deg,#c084fc,#38bdf8);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+.page-title p{
+  color:#94a3b8;
+  font-size:12px;
+  margin-top:3px;
+}
+
+.icon-btn{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:1px solid rgba(168,85,247,.35);
+  background:rgba(15,23,42,.76);
+  color:#c084fc;
+  display:grid;
+  place-items:center;
+  font-size:20px;
+}
+
+/* card */
+
+.card{
+  border-radius:26px;
+  margin-bottom:16px;
+  border:1px solid rgba(168,85,247,.18);
+  background:
+    linear-gradient(145deg,
+      rgba(12,18,40,.96),
+      rgba(5,10,25,.94));
+
+  box-shadow:
+    0 10px 45px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.06);
+
+  overflow:hidden;
+  position:relative;
+}
+
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(120deg,
+      rgba(168,85,247,.08),
+      transparent 45%,
+      rgba(56,189,248,.05));
+
+  pointer-events:none;
+}
+
+/* balance */
+
+.balance-card{
+  padding:20px;
+}
+
+.balance-card span{
+  color:#94a3b8;
+  font-size:13px;
+}
+
+.balance-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  margin-top:8px;
+}
+
+.balance-row h2{
+  font-size:34px;
+  letter-spacing:-1px;
+}
+
+.balance-row small{
+  color:#00f5a0;
+  font-weight:700;
+}
+
+/* tabs */
+
+.tabs{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:4px 2px 16px;
+  scrollbar-width:none;
+}
+
+.tabs::-webkit-scrollbar{
+  display:none;
+}
+
+.tab{
+  min-width:78px;
+  height:44px;
+  border:none;
+  border-radius:16px;
+  color:#94a3b8;
+  background:rgba(15,23,42,.76);
+  border:1px solid rgba(148,163,184,.12);
+  font-weight:800;
+}
+
+.tab.active{
+  color:white;
+  background:linear-gradient(135deg,#7c3aed,#38bdf8);
+  box-shadow:0 0 24px rgba(168,85,247,.45);
+}
+
+/* deposit */
+
+.deposit-card{
+  padding:22px;
+}
+
+.asset-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px;
+}
+
+.coin{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.coin-icon{
+  width:52px;
+  height:52px;
+  border-radius:18px;
+  display:grid;
+  place-items:center;
+  font-size:24px;
+
+  background:
+    linear-gradient(135deg,
+      rgba(168,85,247,.95),
+      rgba(56,189,248,.45));
+
+  box-shadow:
+    0 0 24px rgba(168,85,247,.45),
+    inset 0 1px 0 rgba(255,255,255,.2);
+}
+
+.coin h2{
+  font-size:22px;
+}
+
+.coin p{
+  color:#94a3b8;
+  font-size:12px;
+  margin-top:3px;
+}
+
+.status{
+  padding:7px 10px;
+  border-radius:999px;
+  background:rgba(0,245,160,.12);
+  color:#00f5a0;
+  font-size:12px;
+  font-weight:800;
+}
+
+/* qr */
+
+.qr-box{
+  width:190px;
+  height:190px;
+  margin:20px auto;
+  padding:14px;
+  border-radius:26px;
+  background:white;
+  box-shadow:0 0 35px rgba(168,85,247,.38);
+}
+
+.qr-img{
+
+  width:220px;
+
+  height:220px;
+
+  object-fit:cover;
+
+  background:white;
+
+  padding:12px;
+
+  border-radius:28px;
+
+  display:block;
+
+  margin:26px auto;
+
+  box-shadow:
+  0 0 35px rgba(168,85,247,.35);
+
+}
+
+.qr{
+  width:100%;
+  height:100%;
+  border-radius:14px;
+  background:
+    linear-gradient(90deg,#000 10px,transparent 10px) 0 0/28px 28px,
+    linear-gradient(#000 10px,transparent 10px) 0 0/28px 28px,
+    #fff;
+  position:relative;
+}
+
+.qr::before,
+.qr::after{
+  content:"";
+  position:absolute;
+  width:42px;
+  height:42px;
+  border:10px solid #000;
+  background:#fff;
+}
+
+.qr::before{
+  top:10px;
+  left:10px;
+}
+
+.qr::after{
+  right:10px;
+  bottom:10px;
+}
+
+/* info */
+
+.info-box{
+  margin-top:16px;
+  padding:16px;
+  border-radius:18px;
+  background:rgba(168,85,247,.08);
+  border:1px solid rgba(168,85,247,.12);
+}
+
+.info-label{
+  color:#94a3b8;
+  font-size:12px;
+  margin-bottom:8px;
+}
+
+.address{
+  color:white;
+  font-size:14px;
+  line-height:1.6;
+  word-break:break-all;
+}
+
+/* buttons */
+
+.copy-btn{
+  width:100%;
+  height:56px;
+  margin-top:20px;
+  border:none;
+  border-radius:20px;
+  color:white;
+  font-size:16px;
+  font-weight:900;
+
+  background:
+    linear-gradient(90deg,#7c3aed,#38bdf8);
+
+  box-shadow:
+    0 0 28px rgba(168,85,247,.45);
+}
+
+/* notice */
+
+.notice{
+  padding:18px;
+}
+
+.notice h3{
+  font-size:16px;
+  margin-bottom:10px;
+}
+
+.notice p{
+  color:#94a3b8;
+  font-size:13px;
+  line-height:1.6;
+  margin-bottom:8px;
+}
+
+.hidden{
+  display:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- top -->
+
+  <div class="topbar">
+
+    <a class="back" href="javascript:history.back()">‹</a>
+
+    <div class="page-title">
+      <h1>Deposit</h1>
+      <p>Add funds to your AI Trade account</p>
+    </div>
+
+    <div class="icon-btn">⌁</div>
+
+  </div>
+
+  <!-- balance -->
+
+  <div class="card balance-card">
+
+    <span>Total Assets</span>
+
+    <div class="balance-row">
+      <h2 id="totalAssets">$0.00</h2>
+    <small id="assetProfit">+$0.00 (+0.00%) Today</small>
+    </div>
+
+  </div>
+
+  <!-- tabs -->
+
+  <div class="tabs">
+
+    <button class="tab active" onclick="showDeposit('usdt', this)">
+      USDT
+    </button>
+
+    <button class="tab" onclick="showDeposit('btc', this)">
+      BTC
+    </button>
+
+    <button class="tab" onclick="showDeposit('eth', this)">
+      ETH
+    </button>
+
+    <button class="tab" onclick="showDeposit('wire', this)">
+      Wire
+    </button>
+
+    <button class="tab" onclick="showDeposit('ach', this)">
+      ACH
+    </button>
+
+  </div>
+
+  <!-- USDT -->
+
+  <div id="usdt" class="card deposit-card">
+
+    <div class="asset-head">
+
+      <div class="coin">
+
+        <div class="coin-icon">₮</div>
+
+        <div>
+          <h2>USDT Deposit</h2>
+          <p>Network: TRC20</p>
+        </div>
+
+      </div>
+
+      <div class="status">Active</div>
+
+    </div>
+
+
+    <div class="info-box">
+
+      <img
+      id="qrImage"
+      class="qr-img"
+      src="images/usdt_qr.jpg"
+      />
+
+      <div class="address" id="usdtAddress">
+        0xdeAA90c4f3DdFE70217e701feBc4E94B660A18b1
+      </div>
+
+    </div>
+
+    <button class="copy-btn" onclick="copyText('usdtAddress')">
+      Copy USDT Address
+    </button>
+
+  </div>
+
+  <!-- BTC -->
+
+  <div id="btc" class="card deposit-card hidden">
+
+    <div class="asset-head">
+
+      <div class="coin">
+
+        <div class="coin-icon">₿</div>
+
+        <div>
+          <h2>BTC Deposit</h2>
+          <p>Network: Bitcoin</p>
+        </div>
+
+      </div>
+
+      <div class="status">Active</div>
+
+    </div>
+
+    <div class="info-box">
+
+      <img
+       id="qrImage"
+        class="qr-img"
+        src="images/btc_qr.jpg"
+       />
+
+      <div class="address" id="btcAddress">
+        bc1pvjjkwwezq0ca2h6uxaddknhyy3zqew97ju8jecgmcvdv0rmdnlpqxt97zw
+      </div>
+
+    </div>
+
+    <button class="copy-btn" onclick="copyText('btcAddress')">
+      Copy BTC Address
+    </button>
+
+  </div>
+
+  <!-- ETH -->
+
+  <div id="eth" class="card deposit-card hidden">
+
+    <div class="asset-head">
+
+      <div class="coin">
+
+        <div class="coin-icon">Ξ</div>
+
+        <div>
+          <h2>ETH Deposit</h2>
+          <p>Network: ERC20</p>
+        </div>
+
+      </div>
+
+      <div class="status">Active</div>
+
+    </div>
+
+
+    <div class="info-box">
+
+      <img
+       id="qrImage"
+       class="qr-img"
+       src="images/eth_qr.jpg"
+       />
+
+      <div class="address" id="ethAddress">
+        0xdeAA90c4f3DdFE70217e701feBc4E94B660A18b1
+      </div>
+
+    </div>
+
+    <button class="copy-btn" onclick="copyText('ethAddress')">
+      Copy ETH Address
+    </button>
+
+  </div>
+
+  <!-- Wire -->
+
+  <div id="wire" class="card deposit-card hidden">
+
+    <div class="asset-head">
+
+      <div class="coin">
+
+        <div class="coin-icon">🏦</div>
+
+        <div>
+          <h2>Wire Transfer</h2>
+          <p>Contact support for bank deposit details</p>
+        </div>
+
+      </div>
+
+      <div class="status">Support</div>
+
+    </div>
+
+    <div class="info-box">
+
+      <div class="info-label">
+        Bank Transfer Notice
+      </div>
+
+      <div class="address">
+        For Wire Transfer deposits, please contact customer support to receive the correct bank account information and deposit instructions.
+      </div>
+
+    </div>
+
+    <button class="copy-btn" onclick="location.href='support.html'">
+      Contact Customer Support
+    </button>
+
+  </div>
+
+  <!-- ACH -->
+
+  <div id="ach" class="card deposit-card hidden">
+
+    <div class="asset-head">
+
+      <div class="coin">
+
+        <div class="coin-icon">⌁</div>
+
+        <div>
+          <h2>ACH Deposit</h2>
+          <p>Contact support for ACH instructions</p>
+        </div>
+
+      </div>
+
+      <div class="status">Support</div>
+
+    </div>
+
+    <div class="info-box">
+
+      <div class="info-label">
+        ACH Deposit Notice
+      </div>
+
+      <div class="address">
+        For ACH deposits, please contact customer support to confirm your account eligibility and receive the correct ACH transfer instructions.
+      </div>
+
+    </div>
+
+    <button class="copy-btn" onclick="location.href='support.html'">
+      Contact Customer Support
+    </button>
+
+  </div>
+
+  <!-- notice -->
+
+  <div class="card notice">
+
+    <h3>Deposit Notice</h3>
+
+    <p>
+      Only send assets through supported networks.
+      Sending unsupported assets may result in permanent loss.
+    </p>
+
+    <p>
+      Crypto deposits require blockchain confirmations before being credited.
+    </p>
+
+    <p>
+      Bank deposits may require additional review depending on payment method.
+    </p>
+
+  </div>
+
+</div>
+
+<script>
+
+function showDeposit(id, btn){
+
+  document.querySelectorAll('.deposit-card').forEach(card=>{
+    card.classList.add('hidden');
+  });
+
+  document.getElementById(id).classList.remove('hidden');
+
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.classList.remove('active');
+  });
+
+  btn.classList.add('active');
+}
+
+function copyText(id){
+
+  const text = document.getElementById(id).innerText;
+
+  navigator.clipboard.writeText(text).then(()=>{
+    alert('Copied successfully');
+  });
+
+}
+
+</script>
+
+<script>
+const localUser = JSON.parse(localStorage.getItem("user"));
+
+async function loadAssets(){
+
+  if(!localUser || !localUser.id) return;
+
+  const res = await fetch(
+    "http://localhost:3000/api/users/" + localUser.id
+  );
+
+  const result = await res.json();
+
+  if(result.success){
+
+    const user = result.user;
+
+    localStorage.setItem("user", JSON.stringify(user));
+
+    const balance = Number(user.balance || 0);
+    const totalProfit = Number(user.totalProfit || 0);
+
+    document.getElementById("totalAssets").innerText =
+      "$" + balance.toLocaleString(undefined,{
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+      });
+
+    const roiBase = balance - totalProfit;
+
+    const roi =
+      roiBase > 0
+        ? ((totalProfit / roiBase) * 100).toFixed(2)
+        : "0.00";
+
+    document.getElementById("assetProfit").innerText =
+      "+$" +
+      totalProfit.toLocaleString(undefined,{
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+      }) +
+      " (+" + roi + "%) Today";
+  }
+}
+
+loadAssets();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KYC 审核后台</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,"Microsoft YaHei",sans-serif;}
+
+body{
+  background:#070707;
+  color:#fff;
+  display:flex;
+  min-height:100vh;
+}
+
+.sidebar{
+  width:250px;
+  background:#191919;
+  padding:28px 20px;
+}
+
+.logo{
+  font-size:26px;
+  font-weight:900;
+  color:#7c3aed;
+  margin-bottom:50px;
+}
+
+.nav a{
+  display:block;
+  color:white;
+  text-decoration:none;
+  padding:16px 0;
+  font-size:18px;
+  font-weight:700;
+}
+
+.nav a.active{
+  color:#8b5cf6;
+}
+
+.main{
+  flex:1;
+  padding:45px 34px;
+  overflow-x:auto;
+}
+
+h1{
+  font-size:54px;
+  color:#7c3aed;
+  margin-bottom:32px;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:22px;
+  margin-bottom:28px;
+}
+
+.stat-card{
+  background:#181818;
+  border:1px solid #333;
+  border-radius:14px;
+  padding:26px;
+}
+
+.stat-card span{
+  color:#bbb;
+  font-size:16px;
+}
+
+.stat-card strong{
+  display:block;
+  color:#7c3aed;
+  font-size:32px;
+  margin-top:14px;
+}
+
+.search{
+  width:460px;
+  height:48px;
+  border:none;
+  outline:none;
+  border-radius:6px;
+  background:#222;
+  color:white;
+  padding:0 16px;
+  font-size:16px;
+  margin-bottom:22px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#111;
+}
+
+th,td{
+  border:1px solid #333;
+  padding:16px;
+  text-align:center;
+  font-size:15px;
+}
+
+th{
+  background:#202020;
+}
+
+.status{
+  color:#ffc107;
+  font-weight:800;
+}
+
+.view-btn,.approve-btn,.reject-btn{
+  border:none;
+  border-radius:8px;
+  padding:8px 12px;
+  color:white;
+  cursor:pointer;
+  margin:2px;
+  font-weight:700;
+}
+
+.view-btn{background:#2563eb;}
+.approve-btn{background:#00b894;}
+.reject-btn{background:#e11d48;}
+
+.empty{
+  text-align:center;
+  color:#888;
+  padding:40px;
+}
+
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .main{padding:24px 14px;}
+  h1{font-size:38px;}
+  .stats{grid-template-columns:1fr 1fr;}
+  .search{width:100%;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <div class="logo">人工智能贸易</div>
+
+  <div class="nav">
+    <a href="index.html">仪表板</a>
+    <a href="trade_management.html">交易管理</a>
+    <a href="user_management.html">用户管理</a>
+    <a href="kyc.html" class="active">KYC审核</a>
+    <a href="order_management.html">订单管理</a>
+  </div>
+</div>
+
+<div class="main">
+
+  <h1>KYC 审核</h1>
+
+  <div class="stats">
+    <div class="stat-card">
+      <span>总申请</span>
+      <strong id="totalCount">0</strong>
+    </div>
+
+    <div class="stat-card">
+      <span>待审核</span>
+      <strong id="pendingCount">0</strong>
+    </div>
+
+    <div class="stat-card">
+      <span>已通过</span>
+      <strong id="approvedCount">0</strong>
+    </div>
+
+    <div class="stat-card">
+      <span>已驳回</span>
+      <strong id="rejectedCount">0</strong>
+    </div>
+  </div>
+
+  <input class="search" id="searchInput" placeholder="搜索姓名 / 证件类型 / 状态">
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>姓名</th>
+        <th>证件类型</th>
+        <th>提交时间</th>
+        <th>状态</th>
+        <th>查看资料</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+
+    <tbody id="kycTable">
+      <tr>
+        <td colspan="7" class="empty">正在加载 KYC 数据...</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<script>
+let kycData = [];
+
+async function loadKYC(){
+  try{
+    const res = await fetch("/api/kyc/list");
+    kycData = await res.json();
+
+    renderTable(kycData);
+    updateStats();
+
+  }catch(error){
+    console.error(error);
+    document.getElementById("kycTable").innerHTML = `
+      <tr>
+        <td colspan="7" class="empty">无法读取 KYC 数据，请确认 server.js 已启动</td>
+      </tr>
+    `;
+  }
+}
+
+function renderTable(data){
+  const table = document.getElementById("kycTable");
+
+  if(!data || data.length === 0){
+    table.innerHTML = `
+      <tr>
+        <td colspan="7" class="empty">暂无用户上传 KYC 资料</td>
+      </tr>
+    `;
+    return;
+  }
+
+  table.innerHTML = "";
+
+  data.forEach(item => {
+    table.innerHTML += `
+      <tr>
+        <td>${item.id}</td>
+        <td>${item.username || "Marjorie AI"}</td>
+        <td>${item.type || "KYC Document"}</td>
+        <td>${item.time || "-"}</td>
+        <td class="status">${item.status || "Pending"}</td>
+        <td>
+          <a href="${item.fileUrl}" target="_blank">
+            <button class="view-btn">查看</button>
+          </a>
+        </td>
+        <td>
+          <button class="approve-btn" onclick="changeStatus(${item.id}, 'Approved')">通过</button>
+          <button class="reject-btn" onclick="changeStatus(${item.id}, 'Rejected')">驳回</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function updateStats(){
+  document.getElementById("totalCount").innerText = kycData.length;
+  document.getElementById("pendingCount").innerText = kycData.filter(x => x.status === "Pending").length;
+  document.getElementById("approvedCount").innerText = kycData.filter(x => x.status === "Approved").length;
+  document.getElementById("rejectedCount").innerText = kycData.filter(x => x.status === "Rejected").length;
+}
+
+function changeStatus(id,status){
+  const item = kycData.find(x => x.id === id);
+
+  if(item){
+    item.status = status;
+    renderTable(kycData);
+    updateStats();
+  }
+}
+
+document.getElementById("searchInput").addEventListener("input",function(){
+  const keyword = this.value.toLowerCase();
+
+  const filtered = kycData.filter(item =>
+    String(item.username || "").toLowerCase().includes(keyword) ||
+    String(item.type || "").toLowerCase().includes(keyword) ||
+    String(item.status || "").toLowerCase().includes(keyword)
+  );
+
+  renderTable(filtered);
+});
+
+loadKYC();
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Trade - Withdraw</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top left, rgba(168,85,247,.22), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(56,189,248,.14), transparent 28%),
+    linear-gradient(180deg,#03040d 0%,#040816 45%,#02030a 100%);
+  color:white;
+  overflow-x:hidden;
+}
+
+.app{
+  max-width:430px;
+  min-height:100vh;
+  margin:0 auto;
+  padding:18px 16px 100px;
+  position:relative;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px);
+  background-size:40px 40px;
+  opacity:.08;
+  pointer-events:none;
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:20px;
+}
+
+.back,.icon-btn{
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  border:1px solid rgba(168,85,247,.22);
+  background:linear-gradient(145deg,rgba(17,24,39,.92),rgba(8,12,25,.95));
+  color:white;
+  font-size:26px;
+  display:grid;
+  place-items:center;
+  text-decoration:none;
+  box-shadow:0 0 24px rgba(168,85,247,.18),inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.icon-btn{
+  color:#c084fc;
+  font-size:20px;
+}
+
+.page-title{
+  text-align:center;
+}
+
+.page-title h1{
+  font-size:30px;
+  font-weight:800;
+  background:linear-gradient(90deg,#c084fc,#38bdf8);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+.page-title p{
+  color:#94a3b8;
+  font-size:12px;
+  margin-top:4px;
+}
+
+.card{
+  border-radius:28px;
+  margin-bottom:16px;
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(168,85,247,.12);
+  background:linear-gradient(145deg,rgba(10,16,38,.96),rgba(5,10,24,.98));
+  box-shadow:0 12px 45px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(120deg,rgba(168,85,247,.06),transparent 45%,rgba(56,189,248,.04));
+  pointer-events:none;
+}
+
+.balance-card{
+  padding:22px;
+}
+
+.balance-card span{
+  color:#94a3b8;
+  font-size:13px;
+}
+
+.balance-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  margin-top:8px;
+}
+
+.balance-row h2{
+  font-size:42px;
+  letter-spacing:-2px;
+}
+
+.tabs{
+  display:flex;
+  gap:12px;
+  overflow-x:auto;
+  padding:4px 2px 16px;
+  scrollbar-width:none;
+}
+
+.tabs::-webkit-scrollbar{
+  display:none;
+}
+
+.tab{
+  flex:1;
+  min-width:110px;
+  height:52px;
+  border:none;
+  border-radius:18px;
+  color:#94a3b8;
+  font-size:16px;
+  font-weight:800;
+  border:1px solid rgba(148,163,184,.08);
+  background:linear-gradient(145deg,rgba(17,24,39,.92),rgba(8,12,25,.95));
+}
+
+.tab.active{
+  color:white;
+  background:linear-gradient(135deg,#7c3aed,#38bdf8);
+  box-shadow:0 0 28px rgba(168,85,247,.45);
+}
+
+.form-card{
+  padding:22px;
+  background:
+    radial-gradient(circle at top right,rgba(168,85,247,.14),transparent 35%),
+    linear-gradient(145deg,rgba(10,16,38,.98),rgba(5,9,24,.96));
+}
+
+.field{
+  margin-bottom:22px;
+}
+
+.field label{
+  display:block;
+  color:#aab3d1;
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:10px;
+}
+
+.input-box{
+  height:64px;
+  border-radius:22px;
+  padding:0 18px;
+  border:1px solid rgba(148,163,184,.12);
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
+  display:flex;
+  align-items:center;
+}
+
+.input-box input{
+  flex:1;
+  height:100%;
+  border:none;
+  outline:none;
+  background:transparent;
+  color:white;
+  font-size:15px;
+  font-weight:600;
+}
+
+.input-box input::placeholder{
+  color:#64748b;
+}
+
+.input-action{
+  color:#38bdf8;
+  font-size:13px;
+  font-weight:900;
+  padding-left:14px;
+  cursor:pointer;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:16px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+
+.row:last-child{
+  border-bottom:none;
+}
+
+.row span{
+  color:#94a3b8;
+  font-size:13px;
+}
+
+.row strong{
+  font-size:14px;
+  font-weight:900;
+}
+
+.notice{
+  padding:18px;
+}
+
+.notice h3{
+  font-size:16px;
+  margin-bottom:10px;
+}
+
+.notice p{
+  color:#94a3b8;
+  font-size:13px;
+  line-height:1.6;
+  margin-bottom:8px;
+}
+
+.submit-btn{
+  width:100%;
+  height:62px;
+  border:none;
+  border-radius:24px;
+  color:white;
+  font-size:16px;
+  font-weight:900;
+  background:linear-gradient(90deg,#7c3aed,#38bdf8);
+  box-shadow:0 0 32px rgba(168,85,247,.45);
+}
+
+.toast{
+  position:fixed;
+  left:50%;
+  top:45%;
+  transform:translate(-50%,-50%) scale(.9);
+  width:280px;
+  padding:26px 22px;
+  border-radius:26px;
+  background:linear-gradient(145deg,rgba(15,23,55,.98),rgba(5,10,28,.98));
+  border:1px solid rgba(168,85,247,.35);
+  box-shadow:0 0 40px rgba(168,85,247,.35);
+  text-align:center;
+  z-index:9999;
+  opacity:0;
+  pointer-events:none;
+  transition:.25s;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
+
+.toast-icon{
+  font-size:42px;
+  margin-bottom:12px;
+}
+
+.toast-title{
+  font-size:20px;
+  font-weight:900;
+}
+
+.toast-text{
+  color:#94a3b8;
+  font-size:13px;
+  margin-top:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <a class="back" href="javascript:history.back()">‹</a>
+
+    <div class="page-title">
+      <h1>Withdraw</h1>
+      <p>Withdraw your assets securely</p>
+    </div>
+
+    <div class="icon-btn">?</div>
+  </div>
+
+  <div class="card balance-card">
+    <span>Total Assets</span>
+    <div class="balance-row">
+      <h2 id="totalAssets">$0.00</h2>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setNetwork('TRC20', this)">TRC20</button>
+    <button class="tab" onclick="setNetwork('ERC20', this)">ERC20</button>
+    <button class="tab" onclick="setNetwork('Bitcoin', this)">Bitcoin</button>
+  </div>
+
+  <div class="card form-card">
+
+    <div class="field">
+      <label>Withdrawal Address</label>
+      <div class="input-box">
+        <input id="withdrawAddress" type="text" placeholder="Enter wallet address">
+        <span class="input-action">Scan</span>
+        <span class="input-action">Copy</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Network</label>
+      <div class="input-box">
+        <input id="networkInput" type="text" value="TRC20" readonly>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Amount</label>
+      <div class="input-box">
+        <input id="withdrawAmount" type="text" inputmode="decimal" placeholder="Enter amount" oninput="calcReceive()">
+        <span class="input-action" onclick="setMax()">All</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <span>Available</span>
+      <strong id="availableAssets">$0.00</strong>
+    </div>
+
+    <div class="row">
+      <span>Fee</span>
+      <strong id="feeText">$1.00</strong>
+    </div>
+
+    <div class="row">
+      <span>You will receive</span>
+      <strong id="receiveText">$0.00</strong>
+    </div>
+
+  </div>
+
+  <div class="card notice">
+    <h3>Withdrawal Notice</h3>
+    <p>Minimum withdrawal amount required for processing.</p>
+    <p>Please verify the destination wallet address carefully before submitting.</p>
+    <p>Withdrawals may require additional security review.</p>
+  </div>
+
+  <button class="submit-btn" onclick="submitWithdrawal()">
+    Submit Withdrawal
+  </button>
+
+  <div class="toast" id="toast">
+    <div class="toast-icon">✓</div>
+    <div class="toast-title" id="toastTitle">Success</div>
+    <div class="toast-text" id="toastText">Submitted successfully</div>
+  </div>
+
+</div>
+
+<script>
+let currentBalance = 0;
+
+function getLocalUser(){
+  return JSON.parse(localStorage.getItem("user") || "{}");
+}
+
+function setNetwork(network, btn){
+  document.getElementById("networkInput").value = network;
+
+  document.querySelectorAll(".tab").forEach(tab=>{
+    tab.classList.remove("active");
+  });
+
+  btn.classList.add("active");
+}
+
+function calcReceive(){
+  const amount = Number(document.getElementById("withdrawAmount").value || 0);
+  const fee = 1;
+  const receive = Math.max(amount - fee, 0);
+
+  document.getElementById("receiveText").innerText =
+    "$" + receive.toFixed(2);
+}
+
+function setMax(){
+  document.getElementById("withdrawAmount").value = currentBalance;
+  calcReceive();
+}
+
+function showToast(title, text){
+  document.getElementById("toastTitle").innerText = title;
+  document.getElementById("toastText").innerText = text;
+
+  const toast = document.getElementById("toast");
+  toast.classList.add("show");
+
+  setTimeout(()=>{
+    toast.classList.remove("show");
+  }, 1800);
+}
+
+async function loadAssets(){
+  const localUser = getLocalUser();
+
+  if(!localUser || !localUser.id){
+    return;
+  }
+
+  try{
+    const res = await fetch("http://localhost:3000/api/users/" + localUser.id);
+    const result = await res.json();
+
+    if(result.success){
+      const user = result.user;
+
+      localStorage.setItem("user", JSON.stringify(user));
+
+      const balance = Number(user.balance || 0);
+      currentBalance = balance;
+
+      document.getElementById("totalAssets").innerText =
+        "$" + balance.toLocaleString(undefined,{
+          minimumFractionDigits:2,
+          maximumFractionDigits:2
+        });
+
+      document.getElementById("availableAssets").innerText =
+        "$" + balance.toLocaleString(undefined,{
+          minimumFractionDigits:2,
+          maximumFractionDigits:2
+        });
+    }
+
+  }catch(err){
+    console.log(err);
+  }
+}
+
+async function submitWithdrawal(){
+
+  const localUser = getLocalUser();
+
+  const address =
+    document.getElementById("withdrawAddress").value.trim();
+
+  const amount =
+    Number(document.getElementById("withdrawAmount").value);
+
+  const network =
+    document.getElementById("networkInput").value;
+
+  if(!localUser || !localUser.id){
+    alert("Please login again");
+    return;
+  }
+
+  if(!address){
+    alert("Please enter wallet address");
+    return;
+  }
+
+  if(!amount || amount <= 0){
+    alert("Please enter amount");
+    return;
+  }
+
+  if(amount > currentBalance){
+    alert("Insufficient balance");
+    return;
+  }
+
+  try{
+    const res = await fetch("http://localhost:3000/api/withdraw",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        userId: localUser.id,
+        uid: localUser.uid || "",
+        email: localUser.email || "",
+        address,
+        amount,
+        network,
+        time:new Date().toLocaleString(),
+        status:"Pending"
+      })
+    });
+
+    const result = await res.json();
+
+    if(result.success){
+
+      localUser.balance = result.balance;
+      localStorage.setItem("user", JSON.stringify(localUser));
+
+      showToast(
+        "Withdrawal Submitted",
+        "Balance deducted, pending review"
+      );
+
+      document.getElementById("withdrawAmount").value = "";
+      document.getElementById("withdrawAddress").value = "";
+      document.getElementById("receiveText").innerText = "$0.00";
+
+      await loadAssets();
+
+    }else{
+      alert(result.message || "Withdrawal failed");
+    }
+
+  }catch(err){
+    console.log(err);
+    alert("Server connection failed");
+  }
+}
+
+loadAssets();
+</script>
+
+</body>
+</html>

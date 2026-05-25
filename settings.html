@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+body{background:linear-gradient(180deg,#040612,#050816,#02030a);color:white;max-width:430px;margin:0 auto;min-height:100vh;padding:18px 16px 110px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.back{width:44px;height:44px;border-radius:16px;background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.28);display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;}
+h1{font-size:30px;font-weight:900;background:linear-gradient(90deg,#fff,#c084fc,#38bdf8);-webkit-background-clip:text;color:transparent;}
+.card{background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));border:1px solid rgba(168,85,247,.22);border-radius:28px;overflow:hidden;margin-bottom:18px;}
+.item{display:flex;align-items:center;justify-content:space-between;padding:20px;border-bottom:1px solid rgba(255,255,255,.06);}
+.item:last-child{border-bottom:none;}
+.left strong{font-size:18px;}
+.left p{color:#94a3b8;font-size:13px;margin-top:5px;}
+.toggle{width:58px;height:32px;border-radius:99px;background:#1e293b;position:relative;cursor:pointer;}
+.toggle.active{background:#00f5a0;}
+.toggle span{width:26px;height:26px;border-radius:50%;background:white;position:absolute;top:3px;left:3px;transition:.3s;}
+.toggle.active span{left:29px;}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:82px;background:rgba(5,8,22,.96);display:flex;justify-content:space-around;align-items:center;border-top:1px solid rgba(168,85,247,.22);}
+.nav-item{text-decoration:none;color:#64748b;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:5px;width:20%;}
+.nav-item b{font-size:22px;font-weight:400;}
+.nav-item.active{color:#c084fc;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="back" onclick="history.back()">‹</div>
+  <h1>Settings</h1>
+  <div style="width:44px;"></div>
+</div>
+
+<div class="card">
+  <div class="item">
+    <div class="left"><strong>Account Security</strong><p>Password, 2FA and device protection</p></div>
+    <div onclick="location.href='security.html'">›</div>
+  </div>
+
+  <div class="item">
+    <div class="left"><strong>Push Notifications</strong><p>Receive account and AI strategy alerts</p></div>
+    <div class="toggle active" onclick="this.classList.toggle('active')"><span></span></div>
+  </div>
+
+  <div class="item">
+    <div class="left"><strong>Dark Mode</strong><p>AI neon interface enabled</p></div>
+    <div class="toggle active" onclick="this.classList.toggle('active')"><span></span></div>
+  </div>
+
+  <div class="item">
+    <div class="left"><strong>Currency</strong><p>Display balance in USD</p></div>
+    <div>USD ›</div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <a class="nav-item" href="index.html"><b>⌂</b>Home</a>
+  <a class="nav-item" href="market.html"><b>▥</b>Markets</a>
+  <a class="nav-item" href="trade.html"><b>↻</b>Trade</a>
+  <a class="nav-item" href="portfolio.html"><b>◔</b>Portfolio</a>
+  <a class="nav-item active" href="profile.html"><b>●</b>Profile</a>
+</div>
+
+</body>
+</html>

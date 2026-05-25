@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Quant Trading</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+
+body{
+    background:
+    radial-gradient(circle at 20% 10%,rgba(124,58,237,.30),transparent 30%),
+    radial-gradient(circle at 85% 40%,rgba(0,212,255,.16),transparent 35%),
+    linear-gradient(180deg,#030712,#050816,#020617);
+    color:white;
+    max-width:430px;
+    min-height:100vh;
+    margin:0 auto;
+    overflow-x:hidden;
+    padding:18px 16px 110px;
+}
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+    background-size:42px 42px;
+    pointer-events:none;
+    z-index:-1;
+}
+
+.header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:22px;
+}
+
+.back-btn,
+.top-icon{
+    width:52px;
+    height:52px;
+    border-radius:18px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(168,85,247,.22);
+    color:#c084fc;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    cursor:pointer;
+}
+
+.header-title{
+    flex:1;
+    padding-left:14px;
+}
+
+.header-title h1{
+    font-size:25px;
+    font-weight:900;
+}
+
+.header-title p{
+    color:#94a3b8;
+    font-size:13px;
+    margin-top:4px;
+}
+
+.header-icons{
+    display:flex;
+    gap:10px;
+}
+
+.balance-card{
+    position:relative;
+    overflow:hidden;
+    border-radius:30px;
+    padding:24px;
+    margin-bottom:28px;
+    background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+    border:1px solid rgba(139,92,246,.22);
+    box-shadow:0 0 35px rgba(139,92,246,.12);
+}
+
+.balance-card::before{
+    content:"";
+    position:absolute;
+    width:220px;
+    height:220px;
+    right:-90px;
+    top:-90px;
+    background:radial-gradient(circle,rgba(0,212,255,.18),transparent 70%);
+}
+
+.balance-title{
+    color:#cbd5e1;
+    font-size:15px;
+    margin-bottom:12px;
+    position:relative;
+    z-index:2;
+}
+
+.balance{
+    font-size:46px;
+    font-weight:900;
+    letter-spacing:-2px;
+    position:relative;
+    z-index:2;
+}
+
+.profit{
+    color:#00f5a0;
+    font-size:19px;
+    font-weight:900;
+    margin-top:10px;
+    position:relative;
+    z-index:2;
+}
+
+.stat-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:22px;
+    position:relative;
+    z-index:2;
+}
+
+.stat{
+    padding:14px;
+    border-radius:18px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.06);
+}
+
+.stat span{
+    color:#94a3b8;
+    font-size:11px;
+}
+
+.stat strong{
+    display:block;
+    margin-top:8px;
+    font-size:15px;
+}
+
+.green{ color:#00f5a0; }
+.purple{ color:#c084fc; }
+
+.run-btn{
+    width:100%;
+    height:58px;
+    margin-top:20px;
+    border:none;
+    border-radius:20px;
+    background:linear-gradient(135deg,#00d4ff,#8b5cf6);
+    color:white;
+    font-size:17px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 0 24px rgba(139,92,246,.35);
+    transition:.25s;
+    position:relative;
+    z-index:2;
+}
+
+.run-btn:hover{
+    transform:translateY(-2px);
+}
+
+.run-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+}
+
+.section{
+    margin-bottom:18px;
+}
+
+.section h2{
+    font-size:32px;
+    font-weight:900;
+}
+
+.section p{
+    color:#94a3b8;
+    font-size:14px;
+    line-height:1.6;
+    margin-top:8px;
+}
+
+.level-card{
+    position:relative;
+    overflow:hidden;
+    border-radius:28px;
+    padding:18px;
+    margin-bottom:14px;
+    background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+    border:1px solid rgba(139,92,246,.18);
+}
+
+.level-card::before{
+    content:"";
+    position:absolute;
+    width:160px;
+    height:160px;
+    right:-90px;
+    top:-90px;
+    background:radial-gradient(circle,rgba(168,85,247,.18),transparent 70%);
+}
+
+.level-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    position:relative;
+    z-index:2;
+}
+
+.level-icon{
+    width:70px;
+    height:70px;
+    border-radius:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:32px;
+    font-weight:900;
+    flex-shrink:0;
+}
+
+.blue-box{ background:rgba(0,183,255,.12); color:#00b7ff; }
+.green-box{ background:rgba(0,255,170,.12); color:#00ffaa; }
+.purple-box{ background:rgba(168,85,247,.12); color:#c084fc; }
+.orange-box{ background:rgba(255,170,0,.12); color:#ffb300; }
+.cyan-box{ background:rgba(0,255,255,.12); color:#00ffff; }
+.pink-box{ background:rgba(255,0,140,.12); color:#ff4fd8; }
+.gold-box{ background:rgba(255,200,0,.12); color:#ffd000; }
+
+.level-info h3{
+    font-size:19px;
+    margin-bottom:4px;
+}
+
+.level-info p{
+    color:#94a3b8;
+    font-size:13px;
+    margin-bottom:8px;
+}
+
+.level-info span{
+    font-size:13px;
+    font-weight:800;
+    color:#dbeafe;
+}
+
+.notice-toast{
+    position:fixed;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%) scale(.9);
+    width:320px;
+    padding:26px 24px;
+    border-radius:28px;
+    background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.98));
+    border:1px solid rgba(168,85,247,.35);
+    box-shadow:0 0 40px rgba(168,85,247,.35);
+    z-index:5000;
+    text-align:center;
+    opacity:0;
+    visibility:hidden;
+    transition:.35s;
+}
+
+.notice-toast.show{
+    opacity:1;
+    visibility:visible;
+    transform:translate(-50%,-50%) scale(1);
+}
+
+.notice-icon{
+    width:74px;
+    height:74px;
+    border-radius:50%;
+    margin:0 auto 18px;
+    background:linear-gradient(135deg,#ff4d6d,#ff9f1c);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:34px;
+    color:white;
+}
+
+.notice-toast h3{
+    font-size:23px;
+    margin-bottom:8px;
+}
+
+.notice-toast p{
+    color:#94a3b8;
+    font-size:14px;
+    line-height:1.8;
+    white-space:pre-line;
+}
+
+.bottom-nav{
+    position:fixed;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+    width:100%;
+    max-width:430px;
+    height:84px;
+    background:rgba(5,8,22,.96);
+    backdrop-filter:blur(22px);
+    border-top:1px solid rgba(168,85,247,.22);
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    z-index:999;
+}
+
+.nav-item{
+    width:20%;
+    text-decoration:none;
+    color:#64748b;
+    font-size:12px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+}
+
+.nav-item i{
+    font-size:20px;
+}
+
+.nav-item.active{
+    color:#c084fc;
+    text-shadow:0 0 16px rgba(168,85,247,.9);
+}
+
+.trade-modal-mask{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.72);
+    backdrop-filter:blur(10px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:6000;
+}
+
+.trade-modal{
+    width:90%;
+    max-width:360px;
+    padding:28px;
+    border-radius:28px;
+    background:linear-gradient(
+        145deg,
+        rgba(15,23,42,.98),
+        rgba(8,13,32,.98)
+    );
+    border:1px solid rgba(139,92,246,.35);
+    box-shadow:0 0 40px rgba(139,92,246,.35);
+}
+
+.trade-modal h2{
+    font-size:28px;
+    margin-bottom:10px;
+}
+
+.trade-modal p{
+    color:#94a3b8;
+    margin-bottom:20px;
+}
+
+.trade-modal input{
+    width:100%;
+    height:56px;
+    border:none;
+    outline:none;
+    border-radius:18px;
+    padding:0 18px;
+    font-size:18px;
+    color:white;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    margin-bottom:20px;
+}
+
+.trade-actions{
+    display:flex;
+    gap:12px;
+}
+
+.trade-actions button{
+    flex:1;
+    height:52px;
+    border:none;
+    border-radius:18px;
+    color:white;
+    font-weight:900;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.cancel-btn{
+    background:#1e293b;
+}
+
+.confirm-btn{
+    background:linear-gradient(
+        135deg,
+        #00d4ff,
+        #8b5cf6
+    );
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="header">
+
+    <div class="back-btn" onclick="history.back()">
+        <i class="fa-solid fa-arrow-left"></i>
+    </div>
+
+    <div class="header-title">
+        <h1>AI Quant Trading</h1>
+        <p>AI-Powered Quantitative Trading Engine</p>
+    </div>
+
+    <div class="header-icons">
+        <div class="top-icon" onclick="window.location.href='billing.html'">
+            <i class="fa-regular fa-file-lines"></i>
+        </div>
+
+        <div class="top-icon">
+            <i class="fa-regular fa-circle-question"></i>
+        </div>
+    </div>
+
+</div>
+
+<div class="balance-card">
+
+    <div class="balance-title">
+        Total Quant Balance
+    </div>
+
+    <div class="balance" id="quantBalance">
+        $0.00
+    </div>
+
+    <div class="profit" id="quantProfit">
+        +$0.00 (+0.00%)
+    </div>
+
+    <div class="stat-grid">
+
+        <div class="stat">
+            <span>AI Quant Status</span>
+            <strong class="green">
+                ● Active
+            </strong>
+        </div>
+
+        <div class="stat">
+            <span>This Period Trades</span>
+            <strong id="tradeCounter">
+                2 / 2
+            </strong>
+        </div>
+
+        <div class="stat">
+            <span>Current Level</span>
+            <strong class="purple" id="currentLevelText">
+                Basic
+            </strong>
+        </div>
+
+    </div>
+
+    <button
+    class="run-btn"
+    id="runTradeBtn"
+    onclick="openTradeModal()">
+    Run AI Quant Trade
+</button>
+
+</div>
+
+<div class="section">
+    <h2>Quantum AI Quant Levels</h2>
+    <p>
+        The more capital you deploy, the more AI quant opportunities you unlock.
+    </p>
+</div>
+
+<div class="level-card">
+    <div class="level-left">
+        <div class="level-icon blue-box">B</div>
+        <div class="level-info">
+            <h3>Basic Quant</h3>
+            <p>Capital Range: $100 - $10K</p>
+            <span>Crypto Market Access</span>
+            <br><br>
+            <span>2 AI Quant Trades / Week</span>
+        </div>
+    </div>
+</div>
+
+<div class="level-card">
+    <div class="level-left">
+        <div class="level-icon green-box">A</div>
+        <div class="level-info">
+            <h3>Advanced Quant</h3>
+            <p>Capital Range: $10K - $50K</p>
+            <span>Crypto + Stock Market Access</span>
+            <br><br>
+            <span>3 AI Quant Trades / Week</span>
+        </div>
+    </div>
+</div>
+
+<div class="level-card">
+    <div class="level-left">
+        <div class="level-icon purple-box">Q</div>
+        <div class="level-info">
+            <h3>Quantum Quant</h3>
+            <p>Capital Range: $50K - $100K</p>
+            <span>Multi-Market AI Trading</span>
+            <br><br>
+            <span>4 AI Quant Trades / Week</span>
+        </div>
+    </div>
+</div>
+
+<div class="level-card">
+    <div class="level-left">
+        <div class="level-icon orange-box">P</div>
+        <div class="level-info">
+            <h3>Pro Quant</h3>
+            <p>Capital Range: $100K - $300K</p>
+            <span>Advanced AI Execution Engine</span>
+            <br><br>
+            <span>20 AI Quant Trades / Month</span>
+        </div>
+    </div>
+</div>
+
+<div class="level-card">
+    <div class="level-left">
+        <div class="level-icon cyan-box">I</div>
+        <div class="level-info">
+            <h3>Institutional Quant</h3>
+            <p>Capital Range: $300K - $800K</p>
+            <span>Institutional AI Trading Access</span>
+            <br><br>
+            <span>25 AI Quant Trades / Month</span>
+        </div>
+    </div>
+</div>
+
+<div class="level-card">
+    <div class="level-left">
+        <div class="level-icon pink-box">E</div>
+        <div class="level-info">
+            <h3>Elite Quant</h3>
+            <p>Capital Range: $800K - $1M</p>
+            <span>Global AI Allocation Engine</span>
+            <br><br>
+            <span>30 AI Quant Trades / Month</span>
+        </div>
+    </div>
+</div>
+
+<div class="level-card">
+    <div class="level-left">
+        <div class="level-icon gold-box">
+            <i class="fa-solid fa-crown"></i>
+        </div>
+        <div class="level-info">
+            <h3>Full Quant Engine</h3>
+            <p>Capital Range: $1M+</p>
+            <span>Unlimited AI Quant Trading</span>
+            <br><br>
+            <span>Full Institutional Market Access</span>
+        </div>
+    </div>
+</div>
+
+<div class="trade-modal-mask" id="tradeModal">
+
+    <div class="trade-modal">
+
+        <h2>AI Quant Trade</h2>
+
+        <p>
+            Enter AI Quant trade amount
+        </p>
+
+        <input
+        type="number"
+        id="tradeAmountInput"
+        placeholder="Minimum 100 USDT"
+        />
+
+        <div class="trade-actions">
+
+            <button
+            class="cancel-btn"
+            onclick="closeTradeModal()">
+                Cancel
+            </button>
+
+            <button
+            class="confirm-btn"
+            onclick="confirmTrade()">
+                Start Trade
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="notice-toast" id="noticeToast">
+
+    <div class="notice-icon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+
+    <h3 id="noticeTitle">
+        Trade Failed
+    </h3>
+
+    <p id="noticeText">
+        AI Quant trade failed.
+    </p>
+
+</div>
+
+<div class="bottom-nav">
+
+    <a class="nav-item" href="index.html">
+        <i class="fa-solid fa-house"></i>
+        Home
+    </a>
+
+    <a class="nav-item" href="market.html">
+        <i class="fa-solid fa-chart-column"></i>
+        Markets
+    </a>
+
+    <a class="nav-item active" href="trade.html">
+        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+        Trade
+    </a>
+
+    <a class="nav-item" href="portfolio.html">
+        <i class="fa-regular fa-folder"></i>
+        Portfolio
+    </a>
+
+    <a class="nav-item" href="profile.html">
+        <i class="fa-regular fa-user"></i>
+        Profile
+    </a>
+
+</div>
+
+<script>
+
+let currentLevel = "Basic Quant";
+let maxTrades = 2;
+
+const localUser =
+JSON.parse(localStorage.getItem("user"));
+
+const tradeKey =
+"usedTrades_" +
+(localUser?.uid || localUser?.id || "guest");
+
+let usedTrades =
+Number(localStorage.getItem(tradeKey) || 0);
+
+const quantLevels = {
+    "Basic Quant": {
+        maxTrades: 2,
+        short: "Basic"
+    },
+    "Advanced Quant": {
+        maxTrades: 3,
+        short: "Advanced"
+    },
+    "Quantum Quant": {
+        maxTrades: 4,
+        short: "Quantum"
+    },
+    "Pro Quant": {
+        maxTrades: 20,
+        short: "Pro"
+    },
+    "Institutional Quant": {
+        maxTrades: 25,
+        short: "Institutional"
+    },
+    "Elite Quant": {
+        maxTrades: 30,
+        short: "Elite"
+    },
+    "Full Quant Engine": {
+        maxTrades: 999999,
+        short: "Full"
+    }
+};
+
+function openTradeModal(){
+
+    document.getElementById(
+        "tradeModal"
+    ).style.display = "flex";
+}
+
+function closeTradeModal(){
+
+    document.getElementById(
+        "tradeModal"
+    ).style.display = "none";
+}
+
+function showNotice(title, text){
+
+    document.getElementById("noticeTitle").innerText = title;
+    document.getElementById("noticeText").innerText = text;
+
+    const toast = document.getElementById("noticeToast");
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2500);
+}
+
+function formatMoney(value){
+    return "$" + Number(value || 0).toLocaleString(undefined,{
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+    });
+}
+
+function detectLevel(balance){
+
+    if(balance >= 1000000){
+        currentLevel = "Full Quant Engine";
+    }else if(balance >= 800000){
+        currentLevel = "Elite Quant";
+    }else if(balance >= 300000){
+        currentLevel = "Institutional Quant";
+    }else if(balance >= 100000){
+        currentLevel = "Pro Quant";
+    }else if(balance >= 50000){
+        currentLevel = "Quantum Quant";
+    }else if(balance >= 10000){
+        currentLevel = "Advanced Quant";
+    }else{
+        currentLevel = "Basic Quant";
+    }
+
+    maxTrades = quantLevels[currentLevel].maxTrades;
+}
+
+function updateTradeCounter(){
+
+    const btn = document.getElementById("runTradeBtn");
+    const remaining = maxTrades - usedTrades;
+
+    document.getElementById("tradeCounter").innerText =
+        maxTrades === 999999 ? "Unlimited" : remaining + " / " + maxTrades;
+
+    document.getElementById("currentLevelText").innerText =
+        quantLevels[currentLevel].short;
+
+    if(maxTrades !== 999999 && remaining <= 0){
+        btn.disabled = true;
+        btn.innerText = "Trade Limit Reached";
+    }else{
+        btn.disabled = false;
+        btn.innerText = "Run AI Quant Trade";
+    }
+}
+
+async function loadBalance(){
+
+    if(!localUser || !localUser.id){
+        return;
+    }
+
+    const response =
+    await fetch(
+        "http://192.168.66.160:3000/api/users/" +localUser.id
+    );
+
+    const result =
+    await response.json();
+
+    if(result.success){
+
+     console.log("USER BALANCE =", result.user.balance);
+
+        const balance =
+        Number(result.user.balance || 0);
+
+        document.getElementById("quantBalance").innerText =
+        formatMoney(balance);
+
+        const totalProfit =
+Number(result.user.totalProfit || 0);
+
+const roiBase =
+balance - totalProfit;
+
+const roi =
+roiBase > 0
+? ((totalProfit / roiBase) * 100).toFixed(2)
+: "0.00";
+
+document.getElementById("quantProfit").innerText =
+"+$" +
+totalProfit.toLocaleString(undefined,{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+})
++
+" (+" + roi + "%)";
+
+        detectLevel(balance);
+
+        updateTradeCounter();
+    }
+}
+
+function confirmTrade(){
+
+    const amount = Number(
+        document.getElementById("tradeAmountInput").value
+    );
+
+    if(!amount || amount < 100){
+        showNotice(
+            "Invalid Amount",
+            "Minimum trade amount is 100 USDT."
+        );
+        return;
+    }
+
+    closeTradeModal();
+
+    runQuantTrade(amount);
+}
+
+async function runQuantTrade(amount){
+
+    if(!localUser || !localUser.id){
+
+        showNotice(
+            "Login Required",
+            "Please login first."
+        );
+
+        return;
+    }
+
+    
+
+    const response =
+    await fetch(
+        "http://localhost:3000/api/ai/quant/start",
+        {
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                userId: localUser.id,
+                amount: amount
+            })
+        }
+    );
+
+    const result =
+    await response.json();
+
+    if(result.success){
+
+        usedTrades++;
+
+      localStorage.setItem(
+    tradeKey,
+    usedTrades
+);
+
+        updateTradeCounter();
+
+       showNotice(
+    "AI Quant Trade Started",
+    "Market: " + result.order.market +
+    "\nProduct: " + result.order.product +
+    "\nAmount: $" + result.order.amount +
+    "\nEstimated Time: 30 minutes"
+);
+
+        loadBalance();
+        updateTradeCounter();
+
+    }else{
+
+        showNotice(
+            "Trade Failed",
+            result.message || "AI Quant trade failed."
+        );
+    }
+}
+
+loadBalance();
+
+</script>
+
+</body>
+</html>

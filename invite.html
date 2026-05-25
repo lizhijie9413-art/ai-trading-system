@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invite Friends</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+body{
+  background:
+    radial-gradient(circle at top left,rgba(168,85,247,.24),transparent 30%),
+    radial-gradient(circle at bottom right,rgba(56,189,248,.14),transparent 30%),
+    linear-gradient(180deg,#040612,#050816,#02030a);
+  color:white;
+  max-width:430px;
+  min-height:100vh;
+  margin:0 auto;
+  padding:18px 16px 105px;
+  overflow-x:hidden;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:24px;
+}
+
+.back-btn{
+  width:44px;
+  height:44px;
+  border-radius:16px;
+  background:rgba(168,85,247,.14);
+  border:1px solid rgba(168,85,247,.28);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:26px;
+  box-shadow:0 0 18px rgba(168,85,247,.25);
+  cursor:pointer;
+}
+
+.header-title{
+  text-align:center;
+}
+
+.header-title h1{
+  font-size:28px;
+  font-weight:900;
+}
+
+.header-title p{
+  color:#94a3b8;
+  font-size:14px;
+  margin-top:4px;
+}
+
+.card{
+  background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));
+  border:1px solid rgba(168,85,247,.22);
+  border-radius:28px;
+  padding:20px;
+  margin-bottom:16px;
+  box-shadow:0 0 30px rgba(168,85,247,.12);
+  position:relative;
+  overflow:hidden;
+}
+
+.invite-core{
+  text-align:center;
+}
+
+.core{
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  margin:0 auto 18px;
+  background:radial-gradient(circle,#38bdf8 0%,#7c3aed 42%,rgba(124,58,237,.15) 70%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:38px;
+  font-weight:900;
+  box-shadow:0 0 38px rgba(56,189,248,.45),0 0 70px rgba(168,85,247,.35);
+  animation:pulse 2.4s infinite ease-in-out;
+}
+
+@keyframes pulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.05);}
+}
+
+.invite-core h2{
+  font-size:30px;
+  margin-bottom:10px;
+}
+
+.invite-core p{
+  color:#94a3b8;
+  line-height:1.6;
+}
+
+.code-box{
+  margin-top:18px;
+  padding:16px;
+  border-radius:18px;
+  background:rgba(168,85,247,.12);
+  border:1px solid rgba(168,85,247,.22);
+}
+
+.code-label{
+  color:#94a3b8;
+  font-size:13px;
+  margin-bottom:8px;
+}
+
+.code{
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:3px;
+  color:#38bdf8;
+}
+
+.copy-btn{
+  width:100%;
+  height:48px;
+  border:none;
+  border-radius:16px;
+  margin-top:14px;
+  color:white;
+  font-size:16px;
+  font-weight:800;
+  background:linear-gradient(90deg,#7c3aed,#9333ea);
+  box-shadow:0 0 18px rgba(168,85,247,.3);
+  cursor:pointer;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.stat-card{
+  background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));
+  border:1px solid rgba(168,85,247,.22);
+  border-radius:22px;
+  padding:18px;
+}
+
+.stat-title{
+  color:#94a3b8;
+  font-size:13px;
+}
+
+.stat-value{
+  margin-top:10px;
+  font-size:26px;
+  font-weight:900;
+}
+
+.green{
+  color:#00f5a0;
+}
+
+.reward-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.reward-row:last-child{
+  border-bottom:none;
+}
+
+.reward-left strong{
+  display:block;
+  font-size:17px;
+}
+
+.reward-left p{
+  color:#94a3b8;
+  font-size:13px;
+  margin-top:4px;
+}
+
+.reward-badge{
+  padding:7px 13px;
+  border-radius:14px;
+  background:rgba(0,245,160,.12);
+  color:#00f5a0;
+  font-weight:800;
+}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:95px;
+  transform:translateX(-50%) translateY(20px);
+  background:rgba(10,18,38,.96);
+  border:1px solid rgba(0,245,160,.35);
+  color:#00f5a0;
+  padding:12px 18px;
+  border-radius:16px;
+  opacity:0;
+  transition:.35s;
+  z-index:1000;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:430px;
+  height:78px;
+  background:rgba(5,8,22,.96);
+  backdrop-filter:blur(22px);
+  border-top:1px solid rgba(168,85,247,.22);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+
+.nav-item{
+  width:20%;
+  text-decoration:none;
+  color:#64748b;
+  font-size:12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+}
+
+.nav-item b{
+  font-size:22px;
+  font-weight:400;
+}
+
+.nav-item.active{
+  color:#c084fc;
+  text-shadow:0 0 16px rgba(168,85,247,.9);
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="back-btn" onclick="window.history.back()">‹</div>
+
+  <div class="header-title">
+    <h1>Invite Friends</h1>
+    <p>Earn rewards with your AI network</p>
+  </div>
+
+  <div style="width:44px;"></div>
+</div>
+
+<div class="card invite-core">
+  <div class="core">IF</div>
+
+  <h2>Grow Your AI Team</h2>
+  <p>Invite friends to join the AI investment platform and earn referral rewards.</p>
+
+  <div class="code-box">
+    <div class="code-label">Your Invitation Code</div>
+    <div class="code" id="inviteCode">AIX2048</div>
+  </div>
+
+  <button class="copy-btn" onclick="copyCode()">Copy Invite Code</button>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-title">Total Invites</div>
+    <div class="stat-value">128</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-title">Invite Rewards</div>
+    <div class="stat-value green">$2,486.50</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-title">Active Team</div>
+    <div class="stat-value">76</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-title">Team Level</div>
+    <div class="stat-value green">VIP 3</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <h2 style="margin-bottom:14px;">Reward Levels</h2>
+
+  <div class="reward-row">
+    <div class="reward-left">
+      <strong>Level 1 Referral</strong>
+      <p>Direct invite reward</p>
+    </div>
+    <div class="reward-badge">8%</div>
+  </div>
+
+  <div class="reward-row">
+    <div class="reward-left">
+      <strong>Level 2 Team</strong>
+      <p>Team activity bonus</p>
+    </div>
+    <div class="reward-badge">3%</div>
+  </div>
+
+  <div class="reward-row">
+    <div class="reward-left">
+      <strong>AI Strategy Bonus</strong>
+      <p>Extra rewards from AI plans</p>
+    </div>
+    <div class="reward-badge">+2%</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Invitation code copied</div>
+
+<div class="bottom-nav">
+
+  <a class="nav-item" href="index.html">
+    <b>⌂</b>
+    Home
+  </a>
+
+  <a class="nav-item" href="market.html">
+    <b>▥</b>
+    Markets
+  </a>
+
+  <a class="nav-item" href="trade.html">
+    <b>↻</b>
+    Trade
+  </a>
+
+  <a class="nav-item" href="portfolio.html">
+    <b>◔</b>
+    Portfolio
+  </a>
+
+  <a class="nav-item active" href="profile.html">
+    <b>●</b>
+    Profile
+  </a>
+
+</div>
+
+<script>
+function copyCode(){
+  const code = document.getElementById("inviteCode").innerText;
+  navigator.clipboard.writeText(code);
+
+  const toast = document.getElementById("toast");
+  toast.classList.add("show");
+
+  setTimeout(()=>{
+    toast.classList.remove("show");
+  },1800);
+}
+</script>
+
+</body>
+</html>

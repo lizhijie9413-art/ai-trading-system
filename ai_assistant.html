@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>AI Trading Center</title>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+
+body{
+    background:
+    radial-gradient(circle at 20% 10%,rgba(124,58,237,.28),transparent 30%),
+    radial-gradient(circle at 85% 40%,rgba(0,212,255,.16),transparent 34%),
+    linear-gradient(180deg,#030712,#050816,#020617);
+
+    color:white;
+
+    max-width:430px;
+
+    min-height:100vh;
+
+    margin:0 auto;
+
+    overflow-x:hidden;
+
+    padding:22px 18px 120px;
+}
+
+body::before{
+    content:"";
+
+    position:fixed;
+    inset:0;
+
+    background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+
+    background-size:42px 42px;
+
+    pointer-events:none;
+
+    z-index:-1;
+}
+
+.header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    margin-bottom:24px;
+}
+
+.menu-btn,
+.pro-btn{
+
+    width:56px;
+    height:56px;
+
+    border-radius:18px;
+
+    background:rgba(255,255,255,.05);
+
+    border:1px solid rgba(168,85,247,.20);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    color:#c084fc;
+
+    font-size:22px;
+}
+
+.title-box{
+    text-align:center;
+    flex:1;
+}
+
+.title-box h1{
+    font-size:18px;
+    letter-spacing:3px;
+    font-weight:800;
+}
+
+.title-box p{
+    color:#94a3b8;
+    margin-top:6px;
+    font-size:13px;
+}
+
+.ai-core{
+
+    position:relative;
+
+    width:240px;
+    height:240px;
+
+    margin:30px auto 24px;
+
+    border-radius:50%;
+
+    background:
+    radial-gradient(circle,
+    rgba(168,85,247,.95),
+    rgba(91,33,182,.55),
+    rgba(0,0,0,0));
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    box-shadow:
+    0 0 80px rgba(168,85,247,.45),
+    0 0 140px rgba(168,85,247,.20);
+}
+
+.ai-core::before{
+
+    content:"";
+
+    position:absolute;
+
+    width:280px;
+    height:280px;
+
+    border-radius:50%;
+
+    border:1px solid rgba(168,85,247,.20);
+
+    animation:pulse 4s infinite;
+}
+
+.ai-core i{
+    font-size:70px;
+    color:white;
+}
+
+@keyframes pulse{
+
+    0%{
+        transform:scale(1);
+        opacity:1;
+    }
+
+    100%{
+        transform:scale(1.15);
+        opacity:0;
+    }
+}
+
+.main-text{
+    text-align:center;
+}
+
+.main-text h2{
+    font-size:36px;
+    font-weight:800;
+
+    margin-bottom:10px;
+}
+
+.main-text p{
+    color:#94a3b8;
+    font-size:17px;
+    line-height:1.7;
+}
+
+.ask-box{
+
+    margin-top:34px;
+
+    background:
+    linear-gradient(
+        145deg,
+        rgba(15,23,42,.95),
+        rgba(8,13,32,.95)
+    );
+
+    border:1px solid rgba(168,85,247,.18);
+
+    border-radius:28px;
+
+    padding:18px;
+
+    display:flex;
+    align-items:center;
+    gap:14px;
+
+    box-shadow:
+    0 0 28px rgba(168,85,247,.10);
+}
+
+.ask-box input{
+
+    flex:1;
+
+    background:none;
+
+    border:none;
+
+    outline:none;
+
+    color:white;
+
+    font-size:16px;
+}
+
+.ask-box input::placeholder{
+    color:#64748b;
+}
+
+.voice-btn{
+
+    width:60px;
+    height:60px;
+
+    border-radius:50%;
+
+    border:none;
+
+    background:
+    linear-gradient(
+        135deg,
+        #8b5cf6,
+        #a855f7
+    );
+
+    color:white;
+
+    font-size:24px;
+
+    box-shadow:
+    0 0 25px rgba(168,85,247,.45);
+}
+
+.quick-actions{
+
+    display:flex;
+
+    gap:12px;
+
+    overflow-x:auto;
+
+    margin-top:22px;
+
+    padding-bottom:6px;
+}
+
+.quick-actions::-webkit-scrollbar{
+    display:none;
+}
+
+.action-chip{
+
+    min-width:max-content;
+
+    padding:14px 18px;
+
+    border-radius:999px;
+
+    background:rgba(255,255,255,.04);
+
+    border:1px solid rgba(168,85,247,.14);
+
+    color:#c084fc;
+
+    font-size:14px;
+}
+
+.ai-result{
+
+    margin-top:30px;
+
+    border-radius:30px;
+
+    padding:22px;
+
+    background:
+    linear-gradient(
+        145deg,
+        rgba(15,23,42,.96),
+        rgba(8,13,32,.96)
+    );
+
+    border:1px solid rgba(168,85,247,.18);
+
+    box-shadow:
+    0 0 35px rgba(168,85,247,.10);
+}
+
+.result-top{
+
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    margin-bottom:18px;
+}
+
+.result-top i{
+    color:#c084fc;
+    font-size:22px;
+}
+
+.result-top h3{
+    font-size:22px;
+    font-weight:800;
+}
+
+.result-text{
+
+    color:#cbd5e1;
+
+    line-height:1.8;
+
+    font-size:15px;
+
+    margin-bottom:22px;
+}
+
+.asset-list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.asset-card{
+
+    background:rgba(255,255,255,.04);
+
+    border-radius:20px;
+
+    padding:16px;
+
+    border:1px solid rgba(255,255,255,.05);
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.asset-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.asset-icon{
+
+    width:48px;
+    height:48px;
+
+    border-radius:16px;
+
+    background:rgba(168,85,247,.12);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    color:#c084fc;
+
+    font-size:22px;
+}
+
+.asset-name{
+    font-size:17px;
+    font-weight:700;
+}
+
+.asset-sub{
+    color:#94a3b8;
+    font-size:13px;
+    margin-top:4px;
+}
+
+.asset-right{
+    text-align:right;
+}
+
+.asset-profit{
+    color:#00f5a0;
+    font-size:18px;
+    font-weight:800;
+}
+
+.asset-action{
+
+    margin-top:8px;
+
+    display:inline-block;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    background:
+    linear-gradient(
+        135deg,
+        #8b5cf6,
+        #a855f7
+    );
+
+    font-size:12px;
+    font-weight:700;
+}
+
+.bottom-nav{
+
+    position:fixed;
+
+    bottom:0;
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    width:100%;
+    max-width:430px;
+
+    height:86px;
+
+    background:rgba(5,8,22,.96);
+
+    backdrop-filter:blur(20px);
+
+    border-top:1px solid rgba(168,85,247,.20);
+
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+
+    z-index:999;
+}
+
+.nav-item{
+
+    width:20%;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+
+    gap:5px;
+
+    text-decoration:none;
+
+    color:#64748b;
+
+    font-size:12px;
+}
+
+.nav-item i{
+    font-size:22px;
+}
+
+.nav-item.active{
+
+    color:#c084fc;
+
+    text-shadow:
+    0 0 16px rgba(168,85,247,.9);
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <div class="menu-btn">
+        <i class="fa-solid fa-bars"></i>
+    </div>
+
+    <div class="title-box">
+        <h1>AI TRADING CENTER</h1>
+        <p>Your AI Financial Assistant</p>
+    </div>
+
+    <div class="pro-btn">
+        <i class="fa-solid fa-gem"></i>
+    </div>
+
+</div>
+
+<div class="ai-core">
+    <i class="fa-solid fa-wave-square"></i>
+</div>
+
+<div class="main-text">
+
+    <h2>Hello.</h2>
+
+    <p>
+        What can I help you analyze today?
+    </p>
+
+</div>
+
+<div class="ask-box">
+
+    <i class="fa-solid fa-keyboard"
+    style="color:#8b5cf6;font-size:22px;"></i>
+
+    <input
+    type="text"
+    placeholder="Ask me anything about markets..." />
+
+    <button class="voice-btn">
+        <i class="fa-solid fa-microphone"></i>
+    </button>
+
+</div>
+
+<div class="quick-actions">
+
+    <div class="action-chip">
+        Market Overview
+    </div>
+
+    <div class="action-chip">
+        Best Opportunities
+    </div>
+
+    <div class="action-chip">
+        Risk Analysis
+    </div>
+
+    <div class="action-chip">
+        ETF Allocation
+    </div>
+
+</div>
+
+<div class="ai-result">
+
+    <div class="result-top">
+
+        <i class="fa-solid fa-sparkles"></i>
+
+        <h3>AI Analysis Result</h3>
+
+    </div>
+
+    <div class="result-text">
+
+        AI currently detects strong momentum in
+        AI semiconductor assets, crypto and
+        defensive sectors this week.
+
+    </div>
+
+    <div class="asset-list">
+
+        <div class="asset-card">
+
+            <div class="asset-left">
+
+                <div class="asset-icon">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+
+                <div>
+
+                    <div class="asset-name">
+                        NVIDIA
+                    </div>
+
+                    <div class="asset-sub">
+                        AI Semiconductor
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="asset-right">
+
+                <div class="asset-profit">
+                    +3.28%
+                </div>
+
+                <div class="asset-action">
+                    Strong Buy
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="asset-card">
+
+            <div class="asset-left">
+
+                <div class="asset-icon">
+                    <i class="fa-brands fa-bitcoin"></i>
+                </div>
+
+                <div>
+
+                    <div class="asset-name">
+                        Bitcoin
+                    </div>
+
+                    <div class="asset-sub">
+                        Crypto Momentum
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="asset-right">
+
+                <div class="asset-profit">
+                    +1.85%
+                </div>
+
+                <div class="asset-action">
+                    Buy
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="asset-card">
+
+            <div class="asset-left">
+
+                <div class="asset-icon">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+
+                <div>
+
+                    <div class="asset-name">
+                        Gold ETF
+                    </div>
+
+                    <div class="asset-sub">
+                        Defensive Asset
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="asset-right">
+
+                <div class="asset-profit">
+                    +0.65%
+                </div>
+
+                <div class="asset-action">
+                    Hold
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="bottom-nav">
+
+    <a class="nav-item" href="index.html">
+        <i class="fa-solid fa-house"></i>
+        Home
+    </a>
+
+    <a class="nav-item" href="market.html">
+        <i class="fa-solid fa-chart-column"></i>
+        Markets
+    </a>
+
+    <a class="nav-item active" href="ai_assistant.html">
+        <i class="fa-solid fa-wave-square"></i>
+        AI
+    </a>
+
+    <a class="nav-item" href="portfolio.html">
+        <i class="fa-regular fa-folder"></i>
+        Portfolio
+    </a>
+
+    <a class="nav-item" href="profile.html">
+        <i class="fa-regular fa-user"></i>
+        Profile
+    </a>
+
+</div>
+
+</body>
+</html>

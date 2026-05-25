@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Transaction History</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+body{
+  background:#050816;
+  color:white;
+  padding:16px;
+  max-width:430px;
+  margin:0 auto;
+  overflow-x:hidden;
+}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.back-icon{
+  width:36px;height:36px;border-radius:12px;
+  background:rgba(140,100,255,.16);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;cursor:pointer;
+}
+.title{font-size:22px;font-weight:800;}
+.history-box{
+  background:linear-gradient(180deg,#11183c,#090d22);
+  border:1px solid rgba(140,100,255,.25);
+  border-radius:20px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:0 0 18px rgba(140,100,255,.12);
+}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.left{display:flex;flex-direction:column;gap:6px;}
+.right{text-align:right;}
+.type{font-size:16px;font-weight:700;}
+.date{font-size:12px;color:#aeb6d8;}
+.amount{font-size:16px;font-weight:700;white-space:nowrap;}
+.green{color:#00ff9d;}
+.red{color:#ff5f7a;}
+.purple{color:#9d7bff;text-shadow:0 0 10px #7b4dff;}
+.desc{margin-top:6px;font-size:12px;color:#aeb6d8;}
+.status{
+  margin-top:12px;
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:600;
+}
+.empty{
+  text-align:center;
+  color:#94a3b8;
+  margin-top:80px;
+}
+.back-btn{
+
+  position:fixed;
+
+  left:50%;
+  transform:translateX(-50%);
+
+  bottom:20px;
+
+  width:calc(100% - 32px);
+  max-width:398px;
+
+  height:56px;
+
+  border:none;
+
+  border-radius:18px;
+
+  font-size:16px;
+  font-weight:800;
+
+  color:white;
+
+  cursor:pointer;
+
+  background:
+    linear-gradient(90deg,#7b4dff,#a855f7);
+
+  box-shadow:
+    0 0 20px rgba(140,100,255,.35);
+
+  z-index:999;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="back-icon" onclick="window.history.back()">←</div>
+  <div class="title">Transaction History</div>
+</div>
+
+<div id="historyList">
+  <div class="empty">Loading history...</div>
+</div>
+
+<button class="back-btn" onclick="window.history.back()">Back</button>
+
+<script>
+const API = "http://localhost:3000";
+
+function getLocalUser(){
+  return JSON.parse(localStorage.getItem("user") || "{}");
+}
+
+function formatAmount(amount){
+  return Number(amount || 0).toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
+}
+
+function formatDate(time){
+  if(!time) return "-";
+  return String(time);
+}
+
+function statusStyle(status){
+  if(status === "Approved" || status === "Completed"){
+    return "background:rgba(0,255,157,.12);color:#00ff9d;";
+  }
+
+  if(status === "Rejected"){
+    return "background:rgba(255,95,122,.12);color:#ff5f7a;";
+  }
+
+  return "background:rgba(255,170,0,.12);color:#ffb347;";
+}
+
+function renderItem(item){
+  return `
+    <div class="history-box">
+      <div class="top">
+        <div class="left">
+          <div class="type">${item.type}</div>
+          <div class="date">${formatDate(item.time)}</div>
+        </div>
+
+        <div class="right">
+          <div class="amount ${item.color}">
+            ${item.sign} ${formatAmount(item.amount)} USDT
+          </div>
+          <div class="desc">${item.desc}</div>
+        </div>
+      </div>
+
+      <div class="status" style="${statusStyle(item.status)}">
+        ${item.status}
+      </div>
+    </div>
+  `;
+}
+
+async function loadHistory(){
+
+  const user = getLocalUser();
+
+  if(!user || !user.id){
+    document.getElementById("historyList").innerHTML =
+      `<div class="empty">Please login again</div>`;
+    return;
+  }
+
+  let history = [];
+
+  try{
+    const res = await fetch(API + "/api/withdrawals");
+    const withdrawals = await res.json();
+
+    withdrawals
+      .filter(item => String(item.userId) === String(user.id))
+      .forEach(item => {
+        history.push({
+          type:"Withdraw",
+          amount:item.amount,
+          sign:"-",
+          color:"red",
+          desc:(item.network || "TRC20") + " Wallet",
+          status:item.status || "Pending",
+          time:item.time || "-"
+        });
+      });
+
+  }catch(err){
+    console.log(err);
+  }
+
+  try{
+    const res = await fetch(API + "/api/users/" + user.id);
+    const result = await res.json();
+
+    if(result.success && result.user.records){
+
+      result.user.records.forEach(record => {
+
+        if(record.includes("充值") || record.includes("Recharge")){
+          const amount =
+            Number(String(record).match(/\d+(\.\d+)?/)?.[0] || 0);
+
+          history.push({
+            type:"Deposit",
+            amount,
+            sign:"+",
+            color:"green",
+            desc:"Wallet Funding",
+            status:"Completed",
+            time:"Account Record"
+          });
+        }
+
+        if(record.includes("AI Quant completed")){
+          const amount =
+            Number(String(record).match(/\d+(\.\d+)?/)?.[0] || 0);
+
+          history.push({
+            type:"AI Profit",
+            amount,
+            sign:"+",
+            color:"purple",
+            desc:"AI Quant Strategy",
+            status:"Auto Settled",
+            time:"Account Record"
+          });
+        }
+
+        if(record.includes("Token Yield completed")){
+          const amount =
+            Number(String(record).match(/\d+(\.\d+)?/)?.[0] || 0);
+
+          history.push({
+            type:"Token Profit",
+            amount,
+            sign:"+",
+            color:"purple",
+            desc:"Token Yield",
+            status:"Auto Settled",
+            time:"Account Record"
+          });
+        }
+
+      });
+    }
+
+  }catch(err){
+    console.log(err);
+  }
+
+  if(history.length === 0){
+    document.getElementById("historyList").innerHTML =
+      `<div class="empty">No transaction history</div>`;
+    return;
+  }
+
+  document.getElementById("historyList").innerHTML =
+    history.map(renderItem).join("");
+}
+
+loadHistory();
+</script>
+
+</body>
+</html>

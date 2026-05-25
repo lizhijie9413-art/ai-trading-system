@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>提现管理</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top left,rgba(124,58,237,.22),transparent 30%),
+    radial-gradient(circle at bottom right,rgba(56,189,248,.12),transparent 30%),
+    linear-gradient(180deg,#03040d,#050816,#02030a);
+  color:white;
+  padding:26px;
+}
+
+h1{
+  font-size:38px;
+  margin-bottom:8px;
+  background:linear-gradient(90deg,#c084fc,#38bdf8);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+.desc{
+  color:#94a3b8;
+  margin-bottom:26px;
+}
+
+.top{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+  margin-bottom:22px;
+}
+
+.stat{
+  background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));
+  border:1px solid rgba(168,85,247,.22);
+  border-radius:22px;
+  padding:22px;
+}
+
+.stat span{
+  color:#94a3b8;
+  font-size:14px;
+}
+
+.stat strong{
+  display:block;
+  margin-top:10px;
+  font-size:28px;
+  color:#8b5cf6;
+}
+
+.search{
+  width:420px;
+  max-width:100%;
+  height:48px;
+  border:none;
+  outline:none;
+  border-radius:14px;
+  padding:0 16px;
+  margin-bottom:20px;
+  background:rgba(255,255,255,.08);
+  color:white;
+  font-size:15px;
+}
+
+.table-wrap{
+  overflow-x:auto;
+  border-radius:22px;
+  border:1px solid rgba(168,85,247,.18);
+  background:rgba(5,10,28,.88);
+}
+
+table{
+  width:100%;
+  min-width:1050px;
+  border-collapse:collapse;
+}
+
+th{
+  background:rgba(255,255,255,.08);
+  padding:16px;
+  color:#cbd5e1;
+  font-size:14px;
+  text-align:left;
+}
+
+td{
+  padding:16px;
+  border-top:1px solid rgba(255,255,255,.06);
+  color:#e5e7eb;
+  font-size:14px;
+}
+
+.address{
+  max-width:260px;
+  word-break:break-all;
+  color:#93c5fd;
+}
+
+.amount{
+  font-weight:900;
+  color:#22c55e;
+}
+
+.status{
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:999px;
+  font-weight:800;
+  font-size:12px;
+}
+
+.Pending{
+  background:rgba(250,204,21,.14);
+  color:#facc15;
+}
+
+.Approved{
+  background:rgba(34,197,94,.14);
+  color:#22c55e;
+}
+
+.Rejected{
+  background:rgba(239,68,68,.14);
+  color:#ef4444;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+}
+
+.btn{
+  border:none;
+  border-radius:12px;
+  padding:9px 14px;
+  color:white;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.approve{
+  background:linear-gradient(90deg,#16a34a,#00f5a0);
+}
+
+.reject{
+  background:linear-gradient(90deg,#ef4444,#f97316);
+}
+
+.empty{
+  text-align:center;
+  color:#94a3b8;
+  padding:70px 0;
+}
+
+.toast{
+  position:fixed;
+  top:24px;
+  right:24px;
+  background:linear-gradient(145deg,rgba(15,23,55,.98),rgba(5,10,28,.98));
+  border:1px solid rgba(168,85,247,.35);
+  border-radius:18px;
+  padding:16px 20px;
+  box-shadow:0 0 35px rgba(168,85,247,.35);
+  opacity:0;
+  transform:translateY(-15px);
+  transition:.25s;
+  z-index:9999;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateY(0);
+}
+
+@media(max-width:800px){
+  body{
+    padding:18px;
+  }
+
+  .top{
+    grid-template-columns:1fr 1fr;
+  }
+
+  h1{
+    font-size:32px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>提现管理</h1>
+<div class="desc">审核和管理用户提现申请</div>
+
+<div class="top">
+  <div class="stat">
+    <span>总申请</span>
+    <strong id="totalCount">0</strong>
+  </div>
+
+  <div class="stat">
+    <span>待审核</span>
+    <strong id="pendingCount">0</strong>
+  </div>
+
+  <div class="stat">
+    <span>已通过</span>
+    <strong id="approvedCount">0</strong>
+  </div>
+
+  <div class="stat">
+    <span>总金额</span>
+    <strong id="totalAmount">$0.00</strong>
+  </div>
+</div>
+
+<input
+  class="search"
+  id="searchInput"
+  placeholder="搜索提现ID / 钱包地址 / 网络 / 状态"
+  oninput="renderWithdrawals()"
+/>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>提现ID</th>
+        <th>钱包地址</th>
+        <th>金额</th>
+        <th>网络</th>
+        <th>申请时间</th>
+        <th>状态</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+
+    <tbody id="withdrawTable">
+      <tr>
+        <td colspan="7" class="empty">加载中...</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="toast" id="toast">状态已更新</div>
+
+<script>
+let withdrawals = [];
+
+async function loadWithdrawals(){
+
+  try{
+
+    const res = await fetch("http://localhost:3000/api/withdrawals");
+
+    withdrawals = await res.json();
+
+    renderWithdrawals();
+
+  }catch(err){
+
+    document.getElementById("withdrawTable").innerHTML =
+      `<tr><td colspan="7" class="empty">加载提现申请失败</td></tr>`;
+  }
+}
+
+function renderWithdrawals(){
+
+  const keyword =
+    document.getElementById("searchInput").value.toLowerCase();
+
+  const filtered = withdrawals.filter(item => {
+
+    return (
+      String(item.id || "").toLowerCase().includes(keyword) ||
+      String(item.address || "").toLowerCase().includes(keyword) ||
+      String(item.network || "").toLowerCase().includes(keyword) ||
+      String(item.status || "").toLowerCase().includes(keyword)
+    );
+
+  });
+
+  document.getElementById("totalCount").innerText =
+    withdrawals.length;
+
+  document.getElementById("pendingCount").innerText =
+    withdrawals.filter(i => i.status === "Pending").length;
+
+  document.getElementById("approvedCount").innerText =
+    withdrawals.filter(i => i.status === "Approved").length;
+
+  const totalAmount =
+    withdrawals.reduce((sum,item)=>sum + Number(item.amount || 0),0);
+
+  document.getElementById("totalAmount").innerText =
+    "$" + totalAmount.toLocaleString(undefined,{
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    });
+
+  if(filtered.length === 0){
+
+    document.getElementById("withdrawTable").innerHTML =
+      `<tr><td colspan="7" class="empty">暂无提现申请</td></tr>`;
+
+    return;
+  }
+
+  document.getElementById("withdrawTable").innerHTML =
+    filtered.map(item => {
+
+      const status = item.status || "Pending";
+
+      return `
+        <tr>
+          <td>${item.id || item._id || "-"}</td>
+
+          <td class="address">${item.address || "-"}</td>
+
+          <td class="amount">
+            $${Number(item.amount || 0).toLocaleString(undefined,{
+              minimumFractionDigits:2,
+              maximumFractionDigits:2
+            })}
+          </td>
+
+          <td>${item.network || "-"}</td>
+
+          <td>${item.time || "-"}</td>
+
+          <td>
+            <span class="status ${status}">
+              ${status}
+            </span>
+          </td>
+
+          <td>
+            <div class="actions">
+              <button
+                class="btn approve"
+                onclick="updateStatus('${item._id}','Approved')"
+              >
+                通过
+              </button>
+
+              <button
+                class="btn reject"
+                onclick="updateStatus('${item._id}','Rejected')"
+              >
+                拒绝
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+}
+
+async function updateStatus(id, status){
+
+  const res = await fetch("http://localhost:3000/api/withdraw/status", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      id,
+      status
+    })
+  });
+
+  const data = await res.json();
+
+  if(data.success){
+
+    showToast("状态已更新");
+
+    await loadWithdrawals();
+
+  }else{
+
+    showToast(data.message || "更新失败");
+  }
+}
+
+function showToast(text){
+
+  const toast = document.getElementById("toast");
+
+  toast.innerText = text;
+
+  toast.classList.add("show");
+
+  setTimeout(()=>{
+    toast.classList.remove("show");
+  },1800);
+}
+
+loadWithdrawals();
+</script>
+
+</body>
+</html>
