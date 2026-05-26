@@ -427,6 +427,17 @@ async function loadUsers() {
 
   const result =
     await response.json();
+
+  if(result.success){
+
+    users = result.data || [];
+
+    renderTable();
+
+  }else{
+
+    alert("加载用户失败");
+  }
 }
 
 let todayRecharge =
@@ -776,7 +787,6 @@ async function recharge(id, btn) {
 /* 提现 */
 
 async function withdraw(id, btn) {
-
   const row = btn.closest("tr");
   const input = row.querySelector(".withdraw-input");
   const amount = Number(input.value);
@@ -786,15 +796,14 @@ async function withdraw(id, btn) {
     return;
   }
 
- await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/recharge",
-  {
+  const response = await fetch(
+    "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/withdraw",
+    {
       method: "PUT",
-
-   headers: {
-  "Content-Type": "application/json",
-  "admin-token":"AI_ADMIN_2026"
-},
+      headers: {
+        "Content-Type": "application/json",
+        "admin-token": "AI_ADMIN_2026"
+      },
       body: JSON.stringify({ amount })
     }
   );
@@ -815,11 +824,15 @@ async function withdraw(id, btn) {
 async function freezeUser(id) {
 
   const response = await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/freeze",
-  {
-    method: "PUT"
-  }
-);
+    "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/freeze",
+    {
+      method: "PUT",
+
+      headers:{
+        "admin-token":"AI_ADMIN_2026"
+      }
+    }
+  );
 
   const result = await response.json();
 
@@ -884,7 +897,7 @@ async function restoreUser(id) {
 function showUserDetail(id) {
 
   const user =
-    users.find(u => u.id === id);
+  users.find(u => u._id === id);
 
   document.getElementById("detailName").innerText =
     "用户详情：" + user.name;
