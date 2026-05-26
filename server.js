@@ -317,9 +317,11 @@ app.use(express.static(__dirname, {
   fallthrough: true
 }));
 
-mongoose.connect("mongodb://127.0.0.1:27017/ai_trading_admin")
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log("MongoDB error:", err));
+mongoose.connect(
+  "mongodb+srv://lizhijie9413_db_user:7IosWudKAGOOqhLq@cluster0.4yivc9k.mongodb.net/ai_trading_admin?retryWrites=true&w=majority&appName=Cluster0&authSource=admin"
+)
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.log("MongoDB error:", err));
 
 const User = mongoose.model("User", new mongoose.Schema({
   
