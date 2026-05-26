@@ -16,52 +16,6 @@ const { Server } = require("socket.io");
 const multer = require("multer");
 const path = require("path");
 
-const UserSchema = new mongoose.Schema({
-
-  uid: Number,
-
-  name: String,
-
-  email: String,
-
-  password: String,
-
-  asset: {
-    type: Number,
-    default: 0
-  },
-
-  balance: {
-    type: Number,
-    default: 0
-  },
-
-  totalProfit: {
-    type: Number,
-    default: 0
-  },
-
-  status: {
-    type: String,
-    default: "active"
-  },
-
-  kyc: {
-    type: String,
-    default: "未审核"
-  },
-
-  records: {
-    type: Array,
-    default: []
-  },
-
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-
-});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -323,31 +277,99 @@ mongoose.connect(
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log("MongoDB error:", err));
 
-const User = mongoose.model("User", new mongoose.Schema({
-  
-  uid: Number, 
+const UserSchema = new mongoose.Schema({
+
+  uid: Number,
+
   name: String,
-  wallet: String,
-  asset: Number,
-  status: { type: String, default: "正常" },
+
   email: String,
+
   password: String,
-  phone: String,
-  register: String,
-  ip: String,
-  kyc: { type: String, default: "未审核" },
-  records: [String],
 
-totalProfit: {
-  type: Number,
-  default: 0
-},
+  asset: {
+    type: Number,
+    default: 0
+  },
 
-lockedAsset: {
-  type: Number,
-  default: 0
-}
+  balance: {
+    type: Number,
+    default: 0
+  },
+
+  totalProfit: {
+    type: Number,
+    default: 0
+  },
+
+  lockedAsset: {
+    type: Number,
+    default: 0
+  },
+
+  tokenLocked: {
+    type: Number,
+    default: 0
+  },
+
+  tokenProfit: {
+    type: Number,
+    default: 0
+  },
+
+  tokenTodayProfit: {
+    type: Number,
+    default: 0
+  },
+
+  todayProfit: {
+    type: Number,
+    default: 0
+  },
+
+  status: {
+    type: String,
+    default: "active"
+  },
+
+  kyc: {
+    type: String,
+    default: "未审核"
+  },
+
+  records: {
+    type: Array,
+    default: []
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+
+});
+
+const User = mongoose.model("User", UserSchema);
+
+const User = mongoose.model("User", UserSchema);
+
+const KYC = mongoose.model("KYC", new mongoose.Schema({
+  userId: String,
+  uid: String,
+  name: String,
+  email: String,
+  frontImage: String,
+  backImage: String,
+  status: {
+    type: String,
+    default: "未审核"
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 }));
+  
 
 
 
@@ -1768,7 +1790,13 @@ app.post(
 let aiSupportEnabled = true;
 let serviceOnline = false;
 
+async function getAIReply(message) {
+  return "您好，AI客服已收到您的消息，人工客服会尽快处理。";
+}
+
 io.on("connection", (socket) => {
+
+
 
   console.log("客服系统用户已连接");
 
