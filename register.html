@@ -267,7 +267,7 @@ async function register(){
 
         const data = await response.json();
 
-        if(response.ok){
+        if(data.success){
 
             successBox.innerText = "Registration Successful";
             successBox.style.display = "block";
