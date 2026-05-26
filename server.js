@@ -297,27 +297,7 @@ const io = new Server(server, {
   }
 });
 
-app.post("/api/kyc/upload", upload.single("file"), (req, res) => {
 
-  const data = {
-    id: Date.now(),
-    type: req.body.type,
-    username: req.body.username || "Marjorie AI",
-    filename: req.file.filename,
-    fileUrl: "/uploads/" + req.file.filename,
-    status: "Pending",
-    time: new Date().toLocaleString()
-  };
-
-  kycSubmissions.push(data);
-
-  res.json({
-    success: true,
-    message: "KYC uploaded successfully",
-    data
-  });
-
-});
 
 app.get("/api/kyc/list", (req, res) => {
   res.json(kycSubmissions);
@@ -330,7 +310,9 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, {
+  fallthrough: true
+}));
 
 mongoose.connect("mongodb://127.0.0.1:27017/ai_trading_admin")
   .then(() => console.log("MongoDB connected"))
@@ -376,6 +358,28 @@ const Order = mongoose.model("Order", new mongoose.Schema({
   remark: String
 }));
 
+const Trade = mongoose.model("Trade", new mongoose.Schema({
+  id: String,
+
+  strategy: String,
+
+  pair: String,
+
+  direction: String,
+
+  entryPrice: Number,
+
+  currentPrice: Number,
+
+  amount: Number,
+
+  profit: Number,
+
+  status: String,
+
+  time: String
+}));
+
 const Withdrawal = mongoose.model("Withdrawal", new mongoose.Schema({
   userId: String,
   uid: String,
@@ -393,6 +397,7 @@ const Withdrawal = mongoose.model("Withdrawal", new mongoose.Schema({
     default: Date.now
   }
 }));
+
 
 let stats = {
   todayRecharge: 0,
@@ -600,6 +605,7 @@ app.put("/api/orders/:id/cancel", async (req, res) => {
   res.json({ success: true, data: order });
 });
 
+
 /* AI Quant 订单模型 */
 
 const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
@@ -611,6 +617,12 @@ const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
   amount: Number,
   profitRate: Number,
   profit: Number,
+  finalRate: Number,
+
+  subTrades: {
+  type: Array,
+  default: []
+},
   status: String,
   startTime: Date,
   endTime: Date,
@@ -646,6 +658,135 @@ const TokenYieldOrder = mongoose.model("TokenYieldOrder", new mongoose.Schema({
   }
 
 }));
+
+/* 后台订单接口 */
+
+app.get("/api/admin/trade-orders", async (req, res) => {
+
+  try {
+
+    const aiOrders =
+    await AIQuantOrder.find()
+    .sort({ createdAt: -1 });
+
+    const tokenOrders =
+    await TokenYieldOrder.find()
+    .sort({ createdAt: -1 });
+
+    const users = await User.find();
+
+    const userMap = {};
+
+    users.forEach(user => {
+      userMap[user._id.toString()] = user;
+    });
+
+    const aiList = aiOrders.map(order => {
+
+      const user =
+      userMap[order.userId] || {};
+
+      return {
+
+        id: order._id,
+
+        userId: order.userId,
+
+        uid: user.uid || "",
+
+        user:
+        user.name ||
+        order.username ||
+        user.email ||
+        "Unknown",
+
+        email: user.email || "",
+
+        type:
+        order.level === "AI Assistant"
+        ? "AI Assistant"
+        : "AI Quant",
+        coin: order.product || "",
+
+        amount: order.amount || 0,
+
+        profit: order.profit || 0,
+
+        rate: order.profitRate || 0,
+
+        status: order.status || "",
+
+        time:
+        new Date(order.createdAt)
+        .toLocaleString(),
+
+        remark:
+        (order.market || "") +
+        " / " +
+        (order.level || "")
+      };
+    });
+
+    const tokenList =
+    tokenOrders.map(order => {
+
+      const user =
+      userMap[order.userId] || {};
+
+      return {
+
+        id: order._id,
+
+        userId: order.userId,
+
+        uid: user.uid || "",
+
+        user:
+        user.name ||
+        user.email ||
+        "Unknown",
+
+        email: user.email || "",
+
+        type: "Token Yield",
+
+        coin: order.planName || "",
+
+        amount: order.amount || 0,
+
+        profit: order.profit || 0,
+
+        rate: order.rate || 0,
+
+        status: order.status || "",
+
+        time:
+        new Date(order.createdAt)
+        .toLocaleString(),
+
+        remark:
+        (order.days || 0) +
+        " days"
+      };
+    });
+
+    res.json({
+      success: true,
+      data: [...aiList, ...tokenList]
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.json({
+      success: false,
+      message: "Failed to load trade orders"
+    });
+
+  }
+
+});
 
 /* AI Quant 收益配置 */
 
@@ -693,6 +834,233 @@ function getUserLevel(asset) {
 function randomBetween(min, max) {
   return Math.random() * (max - min) + min;
 }
+
+function generateSubTrades(finalRate) {
+
+  const count =
+  Math.floor(Math.random() * 3) + 4;
+
+  const list = [];
+
+  let total = 0;
+
+  for (let i = 0; i < count - 1; i++) {
+
+    const market =
+    aiMarkets[
+      Math.floor(Math.random() * aiMarkets.length)
+    ];
+
+    const rate =
+    Number(
+      randomBetween(-2.5, 4.5).toFixed(2)
+    );
+
+    total += rate;
+
+    list.push({
+
+      no: i + 1,
+
+      market: market.market,
+
+      product: market.product,
+
+      direction:
+      rate >= 0
+      ? "Up"
+      : "Down",
+
+      rate: rate,
+
+      result:
+      rate >= 0
+      ? "Profit"
+      : "Loss"
+    });
+  }
+
+  const lastMarket =
+  aiMarkets[
+    Math.floor(Math.random() * aiMarkets.length)
+  ];
+
+  const lastRate =
+  Number(
+    (finalRate - total).toFixed(2)
+  );
+
+  list.push({
+
+    no: count,
+
+    market: lastMarket.market,
+
+    product: lastMarket.product,
+
+    direction:
+    lastRate >= 0
+    ? "Up"
+    : "Down",
+
+    rate: lastRate,
+
+    result:
+    lastRate >= 0
+    ? "Profit"
+    : "Loss"
+  });
+
+  return list;
+}
+
+/* AI Assistant 方案交易 */
+
+app.post("/api/ai/assistant/start", async (req, res) => {
+
+  try {
+
+    const {
+      userId,
+      amount,
+      strategy
+    } = req.body;
+
+    const user =
+    await User.findById(userId);
+
+    if (!user) {
+
+      return res.json({
+        success:false,
+        message:"User not found"
+      });
+    }
+
+    const asset =
+    Number(user.asset || 0);
+
+    const tradeAmount =
+    Number(amount || 0);
+
+    if (tradeAmount <= 0) {
+
+      return res.json({
+        success:false,
+        message:"Please enter amount"
+      });
+    }
+
+    if (tradeAmount > asset) {
+
+      return res.json({
+        success:false,
+        message:"Insufficient balance"
+      });
+    }
+
+    const now = new Date();
+
+    const profitRate =
+    Number(
+      randomBetween(1.5, 6.5).toFixed(2)
+    );
+
+    const profit =
+    Number(
+      (
+        tradeAmount *
+        profitRate / 100
+      ).toFixed(2)
+    );
+
+    const durationMinutes =
+    Math.floor(Math.random() * 120) + 60;
+
+    const endTime =
+    new Date(
+      now.getTime() +
+      durationMinutes * 60 * 1000
+    );
+
+    const selected =
+    aiMarkets[
+      Math.floor(Math.random() * aiMarkets.length)
+    ];
+
+    const order =
+    await AIQuantOrder.create({
+
+      userId,
+
+      username:
+      user.name ||
+      user.email,
+
+      market:
+      selected.market,
+
+      product:
+      selected.product,
+
+      level:
+      "AI Assistant",
+
+      amount:
+      tradeAmount,
+
+      profitRate,
+
+      profit,
+
+      finalRate:
+      profitRate,
+
+      subTrades:
+      generateSubTrades(profitRate),
+
+      status:
+      "Running",
+
+      startTime:
+      now,
+
+      endTime
+    });
+
+    user.asset =
+    asset - tradeAmount;
+
+    user.balance =
+    user.asset;
+
+    if(!user.records){
+      user.records = [];
+    }
+
+    user.records.push(
+      `AI Assistant locked ${tradeAmount} USDT`
+    );
+
+    await user.save();
+
+    res.json({
+      success:true,
+      message:"AI Assistant started",
+      order
+    });
+
+  } catch(err){
+
+    console.log(err);
+
+    res.json({
+      success:false,
+      message:"AI Assistant failed"
+    });
+  }
+
+});
 
 /* 开始 AI Quant 交易 */
 
@@ -777,13 +1145,51 @@ if (tradeAmount > asset) {
       }
     }
 
-    const profitRate = randomBetween(rateRange.min, rateRange.max);
-    const profit = tradeAmount * profitRate / 100;
+    const profitRate =
+Number(
+  randomBetween(
+    rateRange.min,
+    rateRange.max
+  ).toFixed(2)
+);
+
+const subTrades =
+generateSubTrades(profitRate);
+
+const profit =
+Number(
+  (tradeAmount * profitRate / 100)
+  .toFixed(2)
+);
 
     const selected =
       aiMarkets[Math.floor(Math.random() * aiMarkets.length)];
 
-    const endTime = new Date(now.getTime() + 30 * 60 * 1000);
+    const durationMinutes =
+Math.floor(Math.random() * 61) + 60;
+
+const endTime =
+new Date(
+  now.getTime() +
+  durationMinutes * 60 * 1000
+);
+
+subTrades.forEach(item => {
+  item.showAfterMinutes =
+  Math.floor(
+    Math.random() * (durationMinutes - 10)
+  ) + 5;
+
+  item.showTime =
+  new Date(
+    now.getTime() +
+    item.showAfterMinutes * 60 * 1000
+  );
+});
+
+subTrades.sort((a, b) => {
+  return new Date(a.showTime) - new Date(b.showTime);
+});
 
     const order = await AIQuantOrder.create({
       userId,
@@ -793,7 +1199,11 @@ if (tradeAmount > asset) {
       level,
       amount: tradeAmount,
       profitRate,
-      profit,
+       profit,
+
+       finalRate: profitRate,
+
+      subTrades,
       status: "Running",
       startTime: now,
       endTime
@@ -901,6 +1311,79 @@ app.post("/api/ai/quant/settle/:id", async (req, res) => {
       message: "Settlement failed"
     });
   }
+});
+
+/* 修改 AI 收益率 */
+
+app.post("/api/admin/ai-quant/set-rate/:id", async (req, res) => {
+
+  try {
+
+    const { rate } = req.body;
+
+    const order =
+    await AIQuantOrder.findById(
+      req.params.id
+    );
+
+    if (!order) {
+
+      return res.json({
+        success:false,
+        message:"Order not found"
+      });
+    }
+
+    if (order.status !== "Running") {
+
+      return res.json({
+        success:false,
+        message:"Only running orders can be edited"
+      });
+    }
+
+    const finalRate =
+    Number(rate || 0);
+
+    const profit =
+    Number(
+      (
+        Number(order.amount || 0)
+        *
+        finalRate
+        / 100
+      ).toFixed(2)
+    );
+
+    order.profitRate =
+    finalRate;
+
+    order.finalRate =
+    finalRate;
+
+    order.profit =
+    profit;
+
+    order.subTrades =
+    generateSubTrades(finalRate);
+
+    await order.save();
+
+    res.json({
+      success:true,
+      order
+    });
+
+  } catch(err) {
+
+    console.log(err);
+
+    res.json({
+      success:false,
+      message:"Set rate failed"
+    });
+  }
+
 });
 
 /* 获取 AI Quant 订单 */

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Assistant Orders</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+
+body{
+  max-width:430px;
+  margin:0 auto;
+  min-height:100vh;
+  color:white;
+  background:
+  radial-gradient(circle at 20% 8%,rgba(124,58,237,.35),transparent 32%),
+  radial-gradient(circle at 85% 45%,rgba(0,212,255,.12),transparent 35%),
+  linear-gradient(180deg,#030712,#050816,#020617);
+  padding:18px 16px 110px;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;
+}
+
+.icon-btn{
+  width:52px;
+  height:52px;
+  border-radius:18px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(168,85,247,.25);
+  color:#c084fc;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:21px;
+  cursor:pointer;
+}
+
+.title{
+  text-align:center;
+}
+
+.title h1{
+  font-size:18px;
+  letter-spacing:3px;
+  font-weight:900;
+}
+
+.title p{
+  color:#94a3b8;
+  font-size:13px;
+  margin-top:6px;
+}
+
+.summary-card{
+  background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+  border:1px solid rgba(168,85,247,.25);
+  border-radius:28px;
+  padding:22px;
+  margin-bottom:18px;
+  box-shadow:0 0 28px rgba(168,85,247,.16);
+}
+
+.summary-label{
+  color:#94a3b8;
+  font-size:14px;
+}
+
+.summary-value{
+  font-size:38px;
+  font-weight:900;
+  margin-top:12px;
+  color:#00f5a0;
+}
+
+.summary-sub{
+  margin-top:8px;
+  color:#c084fc;
+  font-size:14px;
+}
+
+.tabs{
+  display:flex;
+  gap:10px;
+  margin-bottom:18px;
+}
+
+.tab{
+  flex:1;
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(168,85,247,.25);
+  background:rgba(255,255,255,.04);
+  color:#94a3b8;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.tab.active{
+  color:white;
+  background:linear-gradient(135deg,#7c3aed,#a855f7);
+  box-shadow:0 0 20px rgba(168,85,247,.25);
+}
+
+.order-card{
+  background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+  border:1px solid rgba(168,85,247,.22);
+  border-radius:24px;
+  padding:18px;
+  margin-bottom:14px;
+  box-shadow:0 0 24px rgba(168,85,247,.12);
+}
+
+.order-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+}
+
+.order-name{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.order-icon{
+  width:46px;
+  height:46px;
+  border-radius:16px;
+  background:linear-gradient(135deg,#7c3aed,#22d3ee);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+}
+
+.order-title{
+  font-size:17px;
+  font-weight:900;
+}
+
+.order-sub{
+  color:#94a3b8;
+  font-size:12px;
+  margin-top:4px;
+}
+
+.status{
+  padding:7px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+}
+
+.running{
+  background:rgba(34,211,238,.12);
+  color:#22d3ee;
+}
+
+.completed{
+  background:rgba(0,245,160,.12);
+  color:#00f5a0;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:12px;
+}
+
+.box{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:12px;
+}
+
+.box span{
+  display:block;
+  color:#94a3b8;
+  font-size:12px;
+  margin-bottom:6px;
+}
+
+.box b{
+  font-size:16px;
+}
+
+.profit{
+  color:#00f5a0;
+}
+
+.detail-btn{
+  margin-top:14px;
+  width:100%;
+  padding:13px;
+  border:none;
+  border-radius:16px;
+  background:rgba(168,85,247,.12);
+  color:#c084fc;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.sub-trades{
+  display:none;
+  margin-top:14px;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-top:12px;
+}
+
+.sub-row{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  color:#cbd5e1;
+  font-size:13px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.empty{
+  text-align:center;
+  padding:40px 20px;
+  color:#94a3b8;
+}
+
+.empty i{
+  font-size:50px;
+  color:#c084fc;
+  margin-bottom:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="icon-btn" onclick="history.back()">
+    <i class="fa-solid fa-arrow-left"></i>
+  </div>
+
+  <div class="title">
+    <h1>AI ASSISTANT ORDERS</h1>
+    <p>Execution history</p>
+  </div>
+
+  <div class="icon-btn" onclick="loadOrders()">
+    <i class="fa-solid fa-rotate-right"></i>
+  </div>
+</div>
+
+<div class="summary-card">
+  <div class="summary-label">Total AI Assistant Profit</div>
+  <div class="summary-value" id="totalProfit">+$0.00</div>
+  <div class="summary-sub" id="orderCount">0 Orders</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="setFilter('all', this)">All</button>
+  <button class="tab" onclick="setFilter('Running', this)">Running</button>
+  <button class="tab" onclick="setFilter('Completed', this)">Completed</button>
+</div>
+
+<div id="ordersBox">
+  <div class="empty">
+    <i class="fa-solid fa-robot"></i>
+    <div>Loading AI Assistant orders...</div>
+  </div>
+</div>
+
+<script>
+let allOrders = [];
+let currentFilter = "all";
+
+function money(n){
+  return "$" + Number(n || 0).toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
+}
+
+function plusMoney(n){
+  const num = Number(n || 0);
+  return (num >= 0 ? "+" : "-") + money(Math.abs(num));
+}
+
+function formatTime(t){
+  if(!t) return "-";
+  return new Date(t).toLocaleString();
+}
+
+function setFilter(type, btn){
+  currentFilter = type;
+
+  document.querySelectorAll(".tab").forEach(item=>{
+    item.classList.remove("active");
+  });
+
+  btn.classList.add("active");
+
+  renderOrders();
+}
+
+async function loadOrders(){
+
+  const localUser = JSON.parse(localStorage.getItem("user"));
+
+  if(!localUser || !localUser.id){
+    document.getElementById("ordersBox").innerHTML = `
+      <div class="empty">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <div>User not found. Please login again.</div>
+      </div>
+    `;
+    return;
+  }
+
+  try{
+
+    const response = await fetch(
+      "http://192.168.66.160:3000/api/ai/quant/orders/" +
+      localUser.id
+    );
+
+    const result = await response.json();
+
+    if(!result.success){
+      document.getElementById("ordersBox").innerHTML = `
+        <div class="empty">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <div>Failed to load orders.</div>
+        </div>
+      `;
+      return;
+    }
+
+    allOrders = (result.data || []).filter(order =>
+      order.level === "AI Assistant"
+    );
+
+    renderOrders();
+
+  }catch(err){
+
+    document.getElementById("ordersBox").innerHTML = `
+      <div class="empty">
+        <i class="fa-solid fa-wifi"></i>
+        <div>Network connection failed.</div>
+      </div>
+    `;
+  }
+}
+
+function renderOrders(){
+
+  const box = document.getElementById("ordersBox");
+
+  let list = allOrders;
+
+  if(currentFilter !== "all"){
+    list = allOrders.filter(order => order.status === currentFilter);
+  }
+
+  const totalProfit = allOrders.reduce((sum, order)=>{
+    return sum + Number(order.profit || 0);
+  },0);
+
+  document.getElementById("totalProfit").innerText = plusMoney(totalProfit);
+  document.getElementById("orderCount").innerText =
+    allOrders.length + " Orders";
+
+  if(list.length === 0){
+    box.innerHTML = `
+      <div class="empty">
+        <i class="fa-solid fa-robot"></i>
+        <div>No AI Assistant orders yet.</div>
+      </div>
+    `;
+    return;
+  }
+
+  box.innerHTML = list.map(order => {
+
+    const statusClass =
+    order.status === "Completed"
+    ? "completed"
+    : "running";
+
+    const subTrades = order.subTrades || [];
+
+    return `
+      <div class="order-card">
+
+        <div class="order-top">
+          <div class="order-name">
+            <div class="order-icon">AI</div>
+            <div>
+              <div class="order-title">${order.product || "AI Assistant"}</div>
+              <div class="order-sub">${order.market || "Smart Strategy"}</div>
+            </div>
+          </div>
+
+          <div class="status ${statusClass}">
+            ${order.status || "Running"}
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="box">
+            <span>Amount</span>
+            <b>${money(order.amount || 0)}</b>
+          </div>
+
+          <div class="box">
+            <span>Profit Rate</span>
+            <b class="profit">+${Number(order.profitRate || 0).toFixed(2)}%</b>
+          </div>
+
+          <div class="box">
+            <span>Profit</span>
+            <b class="profit">${plusMoney(order.profit || 0)}</b>
+          </div>
+
+          <div class="box">
+            <span>Start Time</span>
+            <b style="font-size:12px;">${formatTime(order.startTime)}</b>
+          </div>
+        </div>
+
+        <div class="box" style="margin-top:10px;">
+          <span>End Time</span>
+          <b style="font-size:12px;">${formatTime(order.endTime)}</b>
+        </div>
+
+        <button class="detail-btn" onclick="toggleDetail('${order._id}')">
+          View AI Execution Details
+        </button>
+
+        <div class="sub-trades" id="detail-${order._id}">
+          ${
+            subTrades.length === 0
+            ? `<div class="sub-row"><span>No execution details</span><b>-</b></div>`
+            : subTrades.map(item => `
+              <div class="sub-row">
+                <span>${item.product || "AI Market"} · ${item.direction || ""}</span>
+                <b class="profit">${Number(item.rate || 0).toFixed(2)}%</b>
+              </div>
+            `).join("")
+          }
+        </div>
+
+      </div>
+    `;
+  }).join("");
+}
+
+function toggleDetail(id){
+  const el = document.getElementById("detail-" + id);
+
+  if(!el) return;
+
+  el.style.display =
+  el.style.display === "block"
+  ? "none"
+  : "block";
+}
+
+loadOrders();
+</script>
+
+</body>
+</html>

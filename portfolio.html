@@ -541,64 +541,29 @@ body::before{
 </div>
 
 <div class="card">
-  <div class="section-title">Holdings</div>
 
-  <div class="holding-row">
-    <div class="coin">
-      <div class="coin-icon">₿</div>
-      <div>
-        <div class="coin-name">BTC</div>
-        <div class="coin-sub">Bitcoin</div>
-      </div>
-    </div>
-    <div class="holding-value">
-      <strong id="btcValue">$0.00</strong>
-      <span id="btcReturn">+0.00%</span>
+  <div class="section-title">
+    AI Assistant Orders
+  </div>
+
+  <div id="assistantOrders">
+
+  <div class="ai-card">
+    <div class="robot">AI</div>
+
+    <div>
+      <h2>Assistant Trading</h2>
+      <div class="badge">No Active Order</div>
+      <div class="ai-return">+0.00%</div>
+      <div class="subtitle">Smart strategy · Waiting</div>
     </div>
   </div>
 
-  <div class="holding-row">
-    <div class="coin">
-      <div class="coin-icon">Ξ</div>
-      <div>
-        <div class="coin-name">ETH</div>
-        <div class="coin-sub">Ethereum</div>
-      </div>
-    </div>
-    <div class="holding-value">
-      <strong id="ethValue">$0.00</strong>
-      <span id="ethReturn">+0.00%</span>
-    </div>
-  </div>
-
-  <div class="holding-row">
-    <div class="coin">
-      <div class="coin-icon">N</div>
-      <div>
-        <div class="coin-name">NVDA</div>
-        <div class="coin-sub">NVIDIA Stock</div>
-      </div>
-    </div>
-    <div class="holding-value">
-      <strong id="nvdaValue">$0.00</strong>
-      <span id="nvdaReturn">+0.00%</span>
-    </div>
-  </div>
-
-  <div class="holding-row">
-    <div class="coin">
-      <div class="coin-icon">AI</div>
-      <div>
-        <div class="coin-name">AI Tech Fund</div>
-        <div class="coin-sub">AI Investment</div>
-      </div>
-    </div>
-    <div class="holding-value">
-      <strong id="aiFundValue">$0.00</strong>
-      <span id="aiFundReturn">+0.00%</span>
-    </div>
-  </div>
 </div>
+
+  </div>
+
+
 
 <div class="bottom-nav">
   <div class="nav-item" onclick="location.href='index.html'">
@@ -628,6 +593,75 @@ body::before{
 </div>
 
 <script>
+
+async function loadAssistantOrders(){
+
+  const localUser = JSON.parse(localStorage.getItem("user"));
+  if(!localUser || !localUser.id) return;
+
+  const res = await fetch(
+    "http://192.168.66.160:3000/api/ai/quant/orders/" +
+    localUser.id
+  );
+
+  const result = await res.json();
+
+  const box = document.getElementById("assistantOrders");
+
+  if(!result.success || !result.data || result.data.length === 0){
+    box.innerHTML = `
+  <div class="ai-card">
+    <div class="robot">AI</div>
+
+    <div>
+      <h2>Assistant Trading</h2>
+      <div class="badge">No Active Order</div>
+      <div class="ai-return">+0.00%</div>
+      <div class="subtitle">Smart strategy · Waiting</div>
+    </div>
+  </div>
+`;
+    return;
+  }
+
+  const assistantOrders = result.data.filter(order =>
+    order.level === "AI Assistant"
+  );
+  
+  if(assistantOrders.length === 0){
+  box.innerHTML = `
+    <div class="ai-card">
+      <div class="robot">AI</div>
+
+      <div>
+        <h2>Assistant Trading</h2>
+        <div class="badge">No Active Order</div>
+        <div class="ai-return">+0.00%</div>
+        <div class="subtitle">Smart strategy · Waiting</div>
+      </div>
+    </div>
+  `;
+  return;
+}
+
+  box.innerHTML = assistantOrders.map(order => `
+    <div class="holding-row">
+      <div class="coin">
+        <div class="coin-icon">AI</div>
+        <div>
+          <div class="coin-name">${order.product || "AI Assistant"}</div>
+          <div class="coin-sub">${order.status || "Running"}</div>
+        </div>
+      </div>
+
+      <div class="holding-value">
+        <strong>${money(order.amount || 0)}</strong>
+        <span>+${Number(order.profitRate || 0).toFixed(2)}%</span>
+      </div>
+    </div>
+  `).join("");
+}
+
 function money(n){
   return "$" + Number(n || 0).toLocaleString(undefined,{
     minimumFractionDigits:2,
@@ -767,19 +801,10 @@ tokenBase > 0
   document.getElementById("tokenBoxStatus").innerText =
     tokenLocked > 0 ? "Running" : "Waiting";
 
-  document.getElementById("aiFundValue").innerText = money(aiLocked + aiProfit);
-  document.getElementById("aiFundReturn").innerText = percent(aiReturn);
-
-  document.getElementById("btcValue").innerText = money(user.btcValue || 0);
-  document.getElementById("ethValue").innerText = money(user.ethValue || 0);
-  document.getElementById("nvdaValue").innerText = money(user.nvdaValue || 0);
-
-  document.getElementById("btcReturn").innerText = percent(user.btcReturn || 0);
-  document.getElementById("ethReturn").innerText = percent(user.ethReturn || 0);
-  document.getElementById("nvdaReturn").innerText = percent(user.nvdaReturn || 0);
 }
 
 loadPortfolioBalance();
+loadAssistantOrders();
 </script>
 
 </body>

@@ -6,49 +6,36 @@
 <title>订单管理</title>
 
 <style>
-body { margin:0; background:#0b0b0b; color:white; font-family:Arial,sans-serif; }
-.sidebar { width:260px; height:100vh; background:#1a1a1a; position:fixed; left:0; top:0; padding-top:20px; }
-.sidebar h2 { color:#7c4dff; padding-left:20px; margin-bottom:40px; }
-.sidebar a { display:block; color:white; text-decoration:none; padding:15px 20px; font-size:18px; }
-.sidebar a:hover { background:#333; }
-
-.main { margin-left:260px; padding:30px; }
-h1 { color:#7c4dff; font-size:52px; margin-bottom:20px; }
-
-.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:25px; }
-.stat-card { background:#181818; border:1px solid #333; border-radius:12px; padding:22px; }
-.stat-card p { margin:0; color:#aaa; font-size:15px; }
-.stat-card h2 { margin:12px 0 0; font-size:28px; color:#7c4dff; }
-
-.search-box { margin-bottom:20px; }
-#searchInput { width:420px; padding:12px; border-radius:6px; border:none; background:#222; color:white; font-size:16px; outline:none; }
-
-table { width:100%; border-collapse:collapse; background:#141414; }
-th,td { border:1px solid #333; padding:16px; text-align:center; }
-th { background:#1f1f1f; }
-tr:hover { background:#1a1a1a; }
-
-.type.buy { color:#00ff88; font-weight:bold; }
-.type.sell { color:red; font-weight:bold; }
-
-.profit.positive { color:#00ff88; font-weight:bold; }
-.profit.negative { color:red; font-weight:bold; }
-
-.status.pending { color:orange; font-weight:bold; }
-.status.completed { color:#00ff88; font-weight:bold; }
-.status.cancelled { color:red; font-weight:bold; }
-
-button { border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-weight:bold; margin:3px; }
-.detail-btn { background:#2979ff; color:white; }
-.complete-btn { background:#00c853; color:white; }
-.cancel-btn { background:red; color:white; }
-
-.modal { display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.75); }
-.modal-content { background:#181818; width:620px; margin:70px auto; padding:25px; border-radius:10px; border:1px solid #333; }
-.modal-content h2 { color:#7c4dff; margin-top:0; }
-.detail-row { margin:12px 0; font-size:16px; }
-.detail-row span { color:#aaa; display:inline-block; width:120px; }
-.close-btn { background:red; color:white; margin-top:20px; }
+body{margin:0;background:#0b0b0b;color:white;font-family:Arial,sans-serif;}
+.sidebar{width:260px;height:100vh;background:#1a1a1a;position:fixed;left:0;top:0;padding-top:20px;}
+.sidebar h2{color:#7c4dff;padding-left:20px;margin-bottom:40px;}
+.sidebar a{display:block;color:white;text-decoration:none;padding:15px 20px;font-size:18px;}
+.sidebar a:hover{background:#333;}
+.main{margin-left:260px;padding:30px;}
+h1{color:#7c4dff;font-size:46px;margin-bottom:20px;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:25px;}
+.stat-card{background:#181818;border:1px solid #333;border-radius:12px;padding:22px;}
+.stat-card p{margin:0;color:#aaa;font-size:15px;}
+.stat-card h2{margin:12px 0 0;font-size:28px;color:#7c4dff;}
+.search-box{margin-bottom:20px;}
+#searchInput{width:420px;padding:12px;border-radius:6px;border:none;background:#222;color:white;font-size:16px;outline:none;}
+table{width:100%;border-collapse:collapse;background:#141414;font-size:14px;}
+th,td{border:1px solid #333;padding:12px;text-align:center;}
+th{background:#1f1f1f;color:#bbb;}
+tr:hover{background:#1a1a1a;}
+.profit.positive{color:#00ff88;font-weight:bold;}
+.profit.negative{color:red;font-weight:bold;}
+.status.running{color:orange;font-weight:bold;}
+.status.completed{color:#00ff88;font-weight:bold;}
+.status.cancelled{color:red;font-weight:bold;}
+button{border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:bold;margin:3px;}
+.detail-btn{background:#2979ff;color:white;}
+.modal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.75);}
+.modal-content{background:#181818;width:660px;margin:70px auto;padding:25px;border-radius:10px;border:1px solid #333;}
+.modal-content h2{color:#7c4dff;margin-top:0;}
+.detail-row{margin:12px 0;font-size:16px;}
+.detail-row span{color:#aaa;display:inline-block;width:130px;}
+.close-btn{background:red;color:white;margin-top:20px;}
 </style>
 </head>
 
@@ -56,11 +43,13 @@ button { border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-
 
 <div class="sidebar">
   <h2>人工智能贸易</h2>
-  <a href="index.html">仪表板</a>
+  <a href="dashboard.html">仪表板</a>
   <a href="trade_management.html">交易管理</a>
   <a href="user_management.html">用户管理</a>
   <a href="kyc.html">KYC审核</a>
   <a href="order_management.html">订单管理</a>
+  <a href="customer_service.html">客服管理</a>
+  <a href="withdraw_management.html" class="active">提现管理</a>
 </div>
 
 <div class="main">
@@ -71,17 +60,14 @@ button { border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-
       <p>总订单</p>
       <h2 id="totalOrders">0</h2>
     </div>
-
     <div class="stat-card">
       <p>已完成</p>
       <h2 id="completedOrders">0</h2>
     </div>
-
     <div class="stat-card">
-      <p>待处理</p>
-      <h2 id="pendingOrders">0</h2>
+      <p>运行中</p>
+      <h2 id="runningOrders">0</h2>
     </div>
-
     <div class="stat-card">
       <p>总交易额</p>
       <h2 id="totalVolume">0 USDT</h2>
@@ -92,7 +78,7 @@ button { border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-
     <input
       type="text"
       id="searchInput"
-      placeholder="搜索订单号 / 用户名 / 币种 / 状态"
+      placeholder="搜索 UID / 用户名 / 邮箱 / 类型 / 产品 / 状态"
       oninput="searchOrders()"
     />
   </div>
@@ -101,17 +87,19 @@ button { border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-
     <thead>
       <tr>
         <th>订单号</th>
+        <th>UID</th>
         <th>用户名</th>
+        <th>邮箱</th>
         <th>类型</th>
-        <th>币种</th>
+        <th>产品</th>
         <th>金额</th>
-        <th>盈亏</th>
+        <th>收益率</th>
+        <th>收益</th>
         <th>状态</th>
         <th>创建时间</th>
         <th>操作</th>
       </tr>
     </thead>
-
     <tbody id="orderTable"></tbody>
   </table>
 </div>
@@ -121,11 +109,14 @@ button { border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-
     <h2 id="detailTitle">订单详情</h2>
 
     <div class="detail-row"><span>订单号：</span><strong id="detailOrderId"></strong></div>
+    <div class="detail-row"><span>UID：</span><strong id="detailUid"></strong></div>
     <div class="detail-row"><span>用户名：</span><strong id="detailUser"></strong></div>
+    <div class="detail-row"><span>邮箱：</span><strong id="detailEmail"></strong></div>
     <div class="detail-row"><span>交易类型：</span><strong id="detailType"></strong></div>
-    <div class="detail-row"><span>交易币种：</span><strong id="detailCoin"></strong></div>
+    <div class="detail-row"><span>交易产品：</span><strong id="detailCoin"></strong></div>
     <div class="detail-row"><span>订单金额：</span><strong id="detailAmount"></strong></div>
-    <div class="detail-row"><span>盈亏：</span><strong id="detailProfit"></strong></div>
+    <div class="detail-row"><span>收益率：</span><strong id="detailRate"></strong></div>
+    <div class="detail-row"><span>收益：</span><strong id="detailProfit"></strong></div>
     <div class="detail-row"><span>状态：</span><strong id="detailStatus"></strong></div>
     <div class="detail-row"><span>创建时间：</span><strong id="detailTime"></strong></div>
     <div class="detail-row"><span>说明：</span><strong id="detailRemark"></strong></div>
@@ -135,43 +126,69 @@ button { border:none; padding:9px 14px; border-radius:6px; cursor:pointer; font-
 </div>
 
 <script>
+const API_BASE = "http://localhost:3000";
+
 let orders = [];
 
 async function loadOrders() {
-  const response = await fetch("http://localhost:3000/api/orders");
-  const result = await response.json();
+  try {
+    const response = await fetch(API_BASE + "/api/admin/trade-orders");
+    const result = await response.json();
 
-  orders = result.data;
+    if (result.success) {
+      orders = result.data || [];
+    } else {
+      orders = [];
+      alert(result.message || "订单加载失败");
+    }
 
-  renderOrders();
-}
+    renderOrders();
 
-  saveOrders();
-}
-
-function saveOrders() {
-  localStorage.setItem("orders", JSON.stringify(orders));
+  } catch (err) {
+    console.log(err);
+    alert("无法连接服务器");
+  }
 }
 
 function formatUSDT(value) {
-  return Number(value).toLocaleString() + " USDT";
+  return Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) + " USDT";
+}
+
+function formatRate(value) {
+  return Number(value || 0).toFixed(2) + "%";
+}
+
+function getStatusClass(status) {
+  if (status === "Completed" || status === "已完成") return "completed";
+  if (status === "Running" || status === "运行中") return "running";
+  if (status === "Cancelled" || status === "已取消") return "cancelled";
+  return "running";
+}
+
+function getStatusText(status) {
+  if (status === "Completed") return "已完成";
+  if (status === "Running") return "运行中";
+  if (status === "Cancelled") return "已取消";
+  return status || "未知";
 }
 
 function updateStats() {
   document.getElementById("totalOrders").innerText = orders.length;
 
   document.getElementById("completedOrders").innerText =
-    orders.filter(order => order.status === "已完成").length;
+    orders.filter(order => order.status === "Completed" || order.status === "已完成").length;
 
-  document.getElementById("pendingOrders").innerText =
-    orders.filter(order => order.status === "待处理").length;
+  document.getElementById("runningOrders").innerText =
+    orders.filter(order => order.status === "Running" || order.status === "运行中").length;
 
   const totalVolume = orders.reduce((sum, order) => {
     return sum + Number(order.amount || 0);
   }, 0);
 
-  document.getElementById("totalVolume").innerText =
-    formatUSDT(totalVolume);
+  document.getElementById("totalVolume").innerText = formatUSDT(totalVolume);
 }
 
 function renderOrders() {
@@ -179,26 +196,30 @@ function renderOrders() {
   tbody.innerHTML = "";
 
   orders.forEach(order => {
-    const profitClass = Number(order.profit) >= 0 ? "positive" : "negative";
-    const profitText = Number(order.profit) >= 0
+    const profitClass = Number(order.profit || 0) >= 0 ? "positive" : "negative";
+    const profitText = Number(order.profit || 0) >= 0
       ? "+" + formatUSDT(order.profit)
       : formatUSDT(order.profit);
+
+    const statusClass = getStatusClass(order.status);
+    const statusText = getStatusText(order.status);
 
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td>${order.id}</td>
-      <td>${order.user}</td>
-      <td class="type ${order.typeClass}">${order.type}</td>
-      <td>${order.coin}</td>
+      <td>${order.id || ""}</td>
+      <td>${order.uid || ""}</td>
+      <td>${order.user || ""}</td>
+      <td>${order.email || ""}</td>
+      <td>${order.type || ""}</td>
+      <td>${order.coin || ""}</td>
       <td>${formatUSDT(order.amount)}</td>
+      <td>${formatRate(order.rate)}</td>
       <td class="profit ${profitClass}">${profitText}</td>
-      <td class="status ${order.statusClass}">${order.status}</td>
-      <td>${order.time}</td>
+      <td class="status ${statusClass}">${statusText}</td>
+      <td>${order.time || ""}</td>
       <td>
         <button class="detail-btn" onclick="showOrderDetail('${order.id}')">详情</button>
-        <button class="complete-btn" onclick="completeOrder('${order.id}')">完成</button>
-        <button class="cancel-btn" onclick="cancelOrder('${order.id}')">取消</button>
       </td>
     `;
 
@@ -218,48 +239,29 @@ function searchOrders() {
   });
 }
 
-function completeOrder(id) {
-  const order = orders.find(item => item.id === id);
-
-  order.status = "已完成";
-  order.statusClass = "completed";
-  order.remark = "订单已完成";
-
-  saveOrders();
-  renderOrders();
-}
-
-function cancelOrder(id) {
-  const order = orders.find(item => item.id === id);
-
-  order.status = "已取消";
-  order.statusClass = "cancelled";
-  order.remark = "订单已取消";
-
-  saveOrders();
-  renderOrders();
-}
-
 function showOrderDetail(id) {
-  const order = orders.find(item => item.id === id);
+  const order = orders.find(item => String(item.id) === String(id));
 
-  document.getElementById("detailTitle").innerText =
-    "订单详情：" + order.id;
+  if (!order) return;
 
-  document.getElementById("detailOrderId").innerText = order.id;
-  document.getElementById("detailUser").innerText = order.user;
-  document.getElementById("detailType").innerText = order.type;
-  document.getElementById("detailCoin").innerText = order.coin;
+  document.getElementById("detailTitle").innerText = "订单详情：" + order.id;
+  document.getElementById("detailOrderId").innerText = order.id || "";
+  document.getElementById("detailUid").innerText = order.uid || "";
+  document.getElementById("detailUser").innerText = order.user || "";
+  document.getElementById("detailEmail").innerText = order.email || "";
+  document.getElementById("detailType").innerText = order.type || "";
+  document.getElementById("detailCoin").innerText = order.coin || "";
   document.getElementById("detailAmount").innerText = formatUSDT(order.amount);
+  document.getElementById("detailRate").innerText = formatRate(order.rate);
 
   document.getElementById("detailProfit").innerText =
-    Number(order.profit) >= 0
+    Number(order.profit || 0) >= 0
       ? "+" + formatUSDT(order.profit)
       : formatUSDT(order.profit);
 
-  document.getElementById("detailStatus").innerText = order.status;
-  document.getElementById("detailTime").innerText = order.time;
-  document.getElementById("detailRemark").innerText = order.remark;
+  document.getElementById("detailStatus").innerText = getStatusText(order.status);
+  document.getElementById("detailTime").innerText = order.time || "";
+  document.getElementById("detailRemark").innerText = order.remark || "";
 
   document.getElementById("orderModal").style.display = "block";
 }

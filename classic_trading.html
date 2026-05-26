@@ -35,92 +35,46 @@ body::before{
     z-index:-1;
 }
 
-.header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:18px;
-}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 
 .icon-btn{
-    width:56px;
-    height:56px;
-    border-radius:18px;
+    width:56px;height:56px;border-radius:18px;
     background:rgba(255,255,255,.05);
     border:1px solid rgba(168,85,247,.25);
     color:#c084fc;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    display:flex;align-items:center;justify-content:center;
     font-size:22px;
 }
 
-.title{
-    text-align:center;
-    flex:1;
-}
-
-.title h1{
-    font-size:19px;
-    letter-spacing:4px;
-    font-weight:900;
-}
-
-.title p{
-    color:#94a3b8;
-    font-size:13px;
-    margin-top:6px;
-}
+.title{text-align:center;flex:1;}
+.title h1{font-size:19px;letter-spacing:4px;font-weight:900;}
+.title p{color:#94a3b8;font-size:13px;margin-top:6px;}
 
 .ai-core{
-    width:210px;
-    height:210px;
-    border-radius:50%;
+    width:210px;height:210px;border-radius:50%;
     margin:18px auto 20px;
-    background:
-    radial-gradient(circle,rgba(168,85,247,.95),rgba(91,33,182,.55),rgba(0,0,0,0));
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    background:radial-gradient(circle,rgba(168,85,247,.95),rgba(91,33,182,.55),rgba(0,0,0,0));
+    display:flex;align-items:center;justify-content:center;
     box-shadow:0 0 90px rgba(168,85,247,.45);
     position:relative;
 }
 
 .ai-core::before{
-    content:"";
-    position:absolute;
-    width:250px;
-    height:250px;
-    border-radius:50%;
-    border:1px solid rgba(168,85,247,.25);
+    content:"";position:absolute;width:250px;height:250px;
+    border-radius:50%;border:1px solid rgba(168,85,247,.25);
     animation:pulse 3s infinite;
 }
 
-.ai-core i{
-    font-size:66px;
-    color:white;
-}
+.ai-core i{font-size:66px;color:white;}
 
 @keyframes pulse{
     0%{transform:scale(.9);opacity:.8;}
     100%{transform:scale(1.18);opacity:0;}
 }
 
-.hero-text{
-    text-align:center;
-    margin-bottom:22px;
-}
-
-.hero-text h2{
-    font-size:40px;
-    font-weight:900;
-}
-
-.hero-text p{
-    margin-top:8px;
-    color:#94a3b8;
-    font-size:17px;
-}
+.hero-text{text-align:center;margin-bottom:22px;}
+.hero-text h2{font-size:40px;font-weight:900;}
+.hero-text p{margin-top:8px;color:#94a3b8;font-size:17px;}
 
 .chat-area{
     display:flex;
@@ -150,11 +104,7 @@ body::before{
     box-shadow:0 0 28px rgba(168,85,247,.12);
 }
 
-.ai-label{
-    color:#c084fc;
-    font-weight:900;
-    margin-bottom:8px;
-}
+.ai-label{color:#c084fc;font-weight:900;margin-bottom:8px;}
 
 .recommend-card{
     margin-top:12px;
@@ -166,20 +116,9 @@ body::before{
     align-items:center;
 }
 
-.recommend-card strong{
-    display:block;
-    font-size:15px;
-}
-
-.recommend-card span{
-    color:#94a3b8;
-    font-size:12px;
-}
-
-.green{
-    color:#00f5a0;
-    font-weight:900;
-}
+.recommend-card strong{display:block;font-size:15px;}
+.recommend-card span{color:#94a3b8;font-size:12px;}
+.green{color:#00f5a0;font-weight:900;}
 
 .quick-actions{
     display:flex;
@@ -188,7 +127,6 @@ body::before{
     margin:20px 0;
     padding-bottom:4px;
 }
-
 .quick-actions::-webkit-scrollbar{display:none;}
 
 .chip{
@@ -234,12 +172,9 @@ body::before{
     font-size:15px;
 }
 
-.input-box input::placeholder{
-    color:#64748b;
-}
+.input-box input::placeholder{color:#64748b;}
 
-.send-btn,
-.mic-btn{
+.send-btn,.mic-btn{
     width:46px;
     height:46px;
     border-radius:50%;
@@ -278,29 +213,28 @@ body::before{
 }
 
 .nav-item i{font-size:21px;}
-
-.nav-item.active{
-    color:#c084fc;
-    text-shadow:0 0 16px rgba(168,85,247,.9);
-}
+.nav-item.active{color:#c084fc;text-shadow:0 0 16px rgba(168,85,247,.9);}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-    <div class="icon-btn">
-        <i class="fa-solid fa-bars"></i>
-    </div>
+    <div class="icon-btn"
+    onclick="goBack()">
+    <i class="fa-solid fa-arrow-left"></i>
+</div>
 
     <div class="title">
         <h1>AI TRADING CENTER</h1>
         <p>Your AI Financial Assistant</p>
     </div>
 
-    <div class="icon-btn">
-        <i class="fa-solid fa-gem"></i>
-    </div>
+    <div class="icon-btn"
+onclick="location.href='assistant_orders.html'">
+    <i class="fa-solid fa-file-lines"></i>
+</div>
+
 </div>
 
 <div class="ai-core">
@@ -309,22 +243,36 @@ body::before{
 
 <div class="hero-text">
     <h2>Hello.</h2>
-    <p>What can I help you analyze today?</p>
+    <p>What can AI help you analyze today?</p>
 </div>
 
 <div class="chat-area" id="chatArea">
-
     <div class="msg ai-msg">
-        <div class="ai-label">AI Assistant</div>
-        This is the AI Trading Center. You can ask me about market trends, risk, portfolio allocation, or today’s potential opportunities.
-    </div>
+        <div class="ai-label">AI Financial Engine</div>
 
+        Global Market Intelligence System Online.<br><br>
+
+        AI has connected to:<br><br>
+
+        • Global Equity Markets<br>
+        • AI Infrastructure Sector<br>
+        • Institutional Capital Flow<br>
+        • ETF Rotation Signals<br>
+        • Defensive Asset Monitoring<br><br>
+
+        Try asking:<br><br>
+
+        • Build An AI Trading Plan For My Capital<br>
+        • Scan Global Markets<br>
+        • Analyze AI Opportunities<br>
+        • Detect Market Risk
+    </div>
 </div>
 
 <div class="quick-actions">
-    <div class="chip" onclick="quickAsk('What are today best opportunities?')">Best Opportunities</div>
-    <div class="chip" onclick="quickAsk('Analyze my market risk today')">Risk Analysis</div>
-    <div class="chip" onclick="quickAsk('Recommend a balanced portfolio')">Portfolio Plan</div>
+    <div class="chip" onclick="quickAsk('Scan Global Markets')">Scan Markets</div>
+    <div class="chip" onclick="quickAsk('Build An AI Trading Plan For My Capital')">AI Trading Plan</div>
+    <div class="chip" onclick="quickAsk('Detect Momentum Signals')">Momentum Signals</div>
 </div>
 
 <div class="input-bar">
@@ -371,25 +319,34 @@ body::before{
 </div>
 
 <script>
+
+function goBack(){
+
+    if(window.speechSynthesis){
+        window.speechSynthesis.cancel();
+    }
+
+    history.back();
+}
+
+window.addEventListener("beforeunload", function(){
+
+    if(window.speechSynthesis){
+        window.speechSynthesis.cancel();
+    }
+
+});
+
 function addMessage(text,type){
+    const chat = document.getElementById("chatArea");
+    const div = document.createElement("div");
 
-    const chat =
-    document.getElementById("chatArea");
-
-    const div =
-    document.createElement("div");
-
-    div.className =
-    type === "user"
-    ? "msg user-msg"
-    : "msg ai-msg";
+    div.className = type === "user" ? "msg user-msg" : "msg ai-msg";
 
     div.innerHTML =
     type === "user"
     ? text
-    : `<div class="ai-label">
-        AI Assistant
-       </div>${text}`;
+    : `<div class="ai-label">AI Assistant</div>${text}`;
 
     chat.appendChild(div);
 
@@ -406,58 +363,490 @@ function addMessage(text,type){
 function speakAI(text){
     if(!window.speechSynthesis) return;
 
-    const cleanText = text
-        .replace(/<br>/g,". ")
-        .replace(/<[^>]*>/g," ")
-        .replace(/\s+/g," ")
-        .trim();
+    const cleanText =
+    text
+    .replace(/<br>/g,". ")
+    .replace(/<[^>]*>/g," ")
+    .replace(/\s+/g," ")
+    .trim();
 
     if(!cleanText) return;
 
     window.speechSynthesis.cancel();
 
-    const voice = new SpeechSynthesisUtterance(cleanText);
+    const parts =
+    cleanText
+    .split(".")
+    .map(t => t.trim())
+    .filter(t => t.length > 0);
 
-    voice.lang = "en-US";
-    voice.rate = 0.92;
-    voice.pitch = 1;
-    voice.volume = 1;
+    let delay = 0;
 
-    window.speechSynthesis.speak(voice);
+    parts.forEach(part => {
+        setTimeout(() => {
+            const voice = new SpeechSynthesisUtterance(part);
+
+            voice.lang = "en-US";
+            voice.rate = 0.82;
+            voice.pitch = 1.05;
+            voice.volume = 0.9;
+
+            const voices = window.speechSynthesis.getVoices();
+
+            const femaleVoice =
+            voices.find(v =>
+                v.name.includes("Samantha") ||
+                v.name.includes("Google US English") ||
+                v.name.includes("Microsoft Aria")
+            );
+
+            if(femaleVoice){
+                voice.voice = femaleVoice;
+            }
+
+            window.speechSynthesis.speak(voice);
+        }, delay);
+
+        delay += 1900;
+    });
+}
+
+let aiPlanStep = "";
+let aiPlanAmount = 0;
+let aiPlanOptions = {};
+
+function randomItem(list){
+    return list[Math.floor(Math.random() * list.length)];
 }
 
 function aiReply(message){
+    message = message.toLowerCase().trim();
+
+    const localUser =
+    JSON.parse(localStorage.getItem("user")) || {};
+
+    const balance =
+    Number(localUser.balance || localUser.asset || 50000);
+
+    if(
+        message.includes("build") ||
+        message.includes("trading plan") ||
+        message.includes("trade plan")
+    ){
+        aiPlanStep = "waiting_amount";
+
+        return `
+        AI Trading Plan Builder Activated<br><br>
+
+        I can help build a structured trading plan for your capital.<br><br>
+
+        Please enter the amount you would like to allocate.<br><br>
+
+        Example:<br>
+        20000
+        `;
+    }
+
+    if(aiPlanStep === "waiting_amount"){
+        const amount =
+        Number(message.replace(/[^0-9.]/g,""));
+
+        if(!amount || amount <= 0){
+            return `
+            Please enter a valid investment amount.<br><br>
+            Example: 20000
+            `;
+        }
+
+        const shortReturns = ["3% - 8%","4% - 10%","5% - 12%"];
+        const shortFocus = [
+            "AI Momentum Trading",
+            "Market Liquidity Rotation",
+            "AI Sector Volatility Capture"
+        ];
+
+        const midReturns = ["8% - 18%","10% - 20%","12% - 22%"];
+        const midFocus = [
+            "AI + Global Equity Rotation",
+            "Technology Growth Allocation",
+            "Institutional Capital Rotation"
+        ];
+
+        const longReturns = ["20% - 45%","25% - 50%","30% - 60%"];
+        const longFocus = [
+            "AI Infrastructure + ETF Allocation",
+            "Long-Term Global AI Expansion",
+            "AI + Energy Strategic Allocation"
+        ];
+
+        aiPlanAmount = amount;
+        aiPlanStep = "waiting_choice";
+
+        aiPlanOptions = {
+            one:{
+                name:"Short-Term AI Quant",
+                duration:"60 - 120 Minutes",
+                focus:randomItem(shortFocus),
+                returns:randomItem(shortReturns),
+                risk:"Medium",
+                confidence:(Math.floor(Math.random() * 5) + 90) + "%"
+            },
+            two:{
+                name:"Mid-Term Smart Growth",
+                duration:"7 - 15 Days",
+                focus:randomItem(midFocus),
+                returns:randomItem(midReturns),
+                risk:"Medium",
+                confidence:(Math.floor(Math.random() * 5) + 88) + "%"
+            },
+            three:{
+                name:"Long-Term AI Wealth Plan",
+                duration:"30 - 90 Days",
+                focus:randomItem(longFocus),
+                returns:randomItem(longReturns),
+                risk:"Medium-Low",
+                confidence:(Math.floor(Math.random() * 5) + 86) + "%"
+            }
+        };
+
+        return `
+        AI Strategy Plan Ready<br><br>
+
+        Capital Analyzed:<br>
+        <strong>${amount.toLocaleString()} USDT</strong><br><br>
+
+        <div class="recommend-card">
+            <div>
+                <strong>1. ${aiPlanOptions.one.name}</strong>
+                <span>${aiPlanOptions.one.duration}</span>
+            </div>
+            <div class="green">${aiPlanOptions.one.returns}</div>
+        </div>
+
+        Risk Level: ${aiPlanOptions.one.risk}<br>
+        Strategy Focus: ${aiPlanOptions.one.focus}<br><br>
+
+        <div class="recommend-card">
+            <div>
+                <strong>2. ${aiPlanOptions.two.name}</strong>
+                <span>${aiPlanOptions.two.duration}</span>
+            </div>
+            <div class="green">${aiPlanOptions.two.returns}</div>
+        </div>
+
+        Risk Level: ${aiPlanOptions.two.risk}<br>
+        Strategy Focus: ${aiPlanOptions.two.focus}<br><br>
+
+        <div class="recommend-card">
+            <div>
+                <strong>3. ${aiPlanOptions.three.name}</strong>
+                <span>${aiPlanOptions.three.duration}</span>
+            </div>
+            <div class="green">${aiPlanOptions.three.returns}</div>
+        </div>
+
+        Risk Level: ${aiPlanOptions.three.risk}<br>
+        Strategy Focus: ${aiPlanOptions.three.focus}<br><br>
+
+        Please reply:<br>
+        1 / Plan 1<br>
+        2 / Plan 2<br>
+        3 / Plan 3
+        `;
+    }
+
+    if(aiPlanStep === "waiting_choice"){
+        if(message === "1" || message.includes("plan 1")){
+            aiPlanStep = "";
+            return buildSelectedPlan(aiPlanOptions.one);
+        }
+
+        if(message === "2" || message.includes("plan 2")){
+            aiPlanStep = "";
+            return buildSelectedPlan(aiPlanOptions.two);
+        }
+
+        if(message === "3" || message.includes("plan 3")){
+            aiPlanStep = "";
+            return buildSelectedPlan(aiPlanOptions.three);
+        }
+
+        return `
+        Please select one strategy:<br><br>
+        Reply 1, 2, or 3.
+        `;
+    }
+
+    if(message.includes("hello") || message.includes("hi")){
+        return `
+        AI Financial Engine Online.<br><br>
+
+        You can start by saying:<br><br>
+
+        Build An AI Trading Plan For My Capital
+        `;
+    }
+
+    if(message.includes("risk")){
+        return `
+        Risk Engine Analysis Completed<br><br>
+
+        Current Market Volatility: Medium<br>
+        Liquidity Risk: Stable<br>
+        Defensive Asset Demand: Increasing<br>
+        Portfolio Protection Level: Active<br><br>
+
+        Suggested Action:<br>
+        Reduce aggressive exposure and maintain defensive allocation.
+        `;
+    }
+
+    if(
+        message.includes("market") ||
+        message.includes("global") ||
+        message.includes("opportunity")
+    ){
+        return `
+        Global Market Intelligence Completed<br><br>
+
+        AI Infrastructure: Strong Momentum<br>
+        US Technology Sector: Bullish<br>
+        Global ETF Rotation: Active<br>
+        Gold Defensive Demand: Stable<br>
+        Energy & Commodities: Selective Opportunity<br><br>
+
+        Suggested Strategy:<br>
+        Diversified global allocation with balanced growth exposure.
+        `;
+    }
+
+    if(
+        message.includes("ai") ||
+        message.includes("technology") ||
+        message.includes("semiconductor")
+    ){
+        return `
+        AI Industry Analysis Completed<br><br>
+
+        AI Infrastructure Expansion: Accelerating<br>
+        Semiconductor Demand: Rising<br>
+        Cloud Computing Investment: Increasing<br>
+        Institutional AI Exposure: Strong<br><br>
+
+        Suggested Strategy:<br>
+        Long-term AI technology positioning.
+        `;
+    }
+
+    return buildPortfolio(balance, "Medium", 92);
+}
+
+function buildPortfolio(balance, risk, confidence){
+    let aiTech = 40;
+    let usEquities = 25;
+    let globalETF = 20;
+    let defensive = 10;
+    let cash = 5;
+
+    if(balance < 1000){
+        risk = "Low";
+        aiTech = 30;
+        usEquities = 20;
+        globalETF = 25;
+        defensive = 15;
+        cash = 10;
+    }
+
+    if(balance > 10000){
+        risk = "Medium-High";
+        aiTech = 45;
+        usEquities = 25;
+        globalETF = 15;
+        defensive = 10;
+        cash = 5;
+    }
+
+    if(balance >= 50000){
+        risk = "Institutional";
+        aiTech = 50;
+        usEquities = 25;
+        globalETF = 10;
+        defensive = 10;
+        cash = 5;
+        confidence = 94;
+    }
+
     return `
-        Based on current market behavior, AI detects stronger momentum in selected technology, crypto and defensive assets.<br><br>
+    <div style="font-size:18px;font-weight:900;color:#c084fc;margin-bottom:14px;">
+    AI Portfolio Allocation Completed
+    </div>
 
-        <div class="recommend-card">
-            <div>
-                <strong>NVIDIA</strong>
-                <span>AI semiconductor momentum</span>
-            </div>
-            <div class="green">Strong Buy</div>
+    Global allocation engine completed the capital distribution model.<br><br>
+
+    <div class="recommend-card">
+        <div>
+            <strong>AI Technology</strong>
+            <span>${aiTech}% Allocation</span>
         </div>
+        <div class="green">${(balance * aiTech / 100).toLocaleString()} USDT</div>
+    </div>
 
-        <div class="recommend-card">
-            <div>
-                <strong>Bitcoin</strong>
-                <span>Crypto market recovery</span>
-            </div>
-            <div class="green">Buy</div>
+    <div class="recommend-card">
+        <div>
+            <strong>US Equities</strong>
+            <span>${usEquities}% Allocation</span>
         </div>
+        <div class="green">${(balance * usEquities / 100).toLocaleString()} USDT</div>
+    </div>
 
-        <div class="recommend-card">
-            <div>
-                <strong>Gold ETF</strong>
-                <span>Defensive allocation</span>
-            </div>
-            <div class="green">Hold</div>
+    <div class="recommend-card">
+        <div>
+            <strong>Global ETF</strong>
+            <span>${globalETF}% Allocation</span>
         </div>
+        <div class="green">${(balance * globalETF / 100).toLocaleString()} USDT</div>
+    </div>
 
-        <br>
-        Risk Level: Medium-Low<br>
-        This is AI analysis only. Please confirm before making any trade.
+    <div class="recommend-card">
+        <div>
+            <strong>Defensive Assets</strong>
+            <span>${defensive}% Allocation</span>
+        </div>
+        <div class="green">${(balance * defensive / 100).toLocaleString()} USDT</div>
+    </div>
+
+    <div class="recommend-card">
+        <div>
+            <strong>Cash Reserve</strong>
+            <span>${cash}% Allocation</span>
+        </div>
+        <div class="green">${(balance * cash / 100).toLocaleString()} USDT</div>
+    </div>
+
+    <br>
+
+    Total Capital: ${balance.toLocaleString()} USDT<br>
+    Risk Level: ${risk}<br>
+    AI Confidence: ${confidence}%<br>
+    Estimated Strategy Duration: 7 - 30 Days<br>
+    Market Heat Index: Stable Bullish<br>
+    Global Signal Strength: Strong
     `;
+}
+
+function buildSelectedPlan(plan){
+    return `
+    Strategy Selected Successfully<br><br>
+
+    AI is now preparing a structured trading execution plan for your capital.<br><br>
+
+    Please wait while the system analyzes market momentum, liquidity conditions, and institutional flow.<br><br>
+
+    <div class="recommend-card">
+        <div>
+            <strong>Selected Strategy</strong>
+            <span>${plan.name}</span>
+        </div>
+        <div class="green">${plan.confidence}</div>
+    </div>
+
+    Capital:<br>
+    <strong>${aiPlanAmount.toLocaleString()} USDT</strong><br><br>
+
+    Market Focus:<br>
+    ${plan.focus}<br><br>
+
+    Estimated Duration:<br>
+    ${plan.duration}<br><br>
+
+    Expected Return Range:<br>
+    ${plan.returns}<br><br>
+
+    Risk Level:<br>
+    ${plan.risk}<br><br>
+
+    Institutional Confidence:<br>
+    ${plan.confidence}<br><br>
+
+   AI Trade Preparation Completed.<br><br>
+
+<button
+onclick="startAITrade()"
+style="
+width:100%;
+padding:14px;
+border:none;
+border-radius:18px;
+background:linear-gradient(135deg,#7c3aed,#a855f7);
+color:white;
+font-size:16px;
+font-weight:900;
+">
+Start AI Execution
+   </button>
+ `;
+}
+
+async function startAITrade(){
+
+    const localUser =
+    JSON.parse(localStorage.getItem("user"));
+
+    if(!localUser || !localUser.id){
+        alert("User not found");
+        return;
+    }
+
+    try{
+
+        const response =
+        await fetch(
+        "http://192.168.66.160:3000/api/ai/assistant/start",
+        {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify({
+                    userId: localUser.id,
+                    amount: aiPlanAmount
+                })
+            }
+        );
+
+        const result =
+        await response.json();
+
+        if(result.success){
+
+            addMessage(`
+            AI Trade Execution Started<br><br>
+
+            Capital Locked:<br>
+            ${aiPlanAmount.toLocaleString()} USDT<br><br>
+
+            AI Engine Status:<br>
+            Running<br><br>
+
+            Please check your portfolio or history page for trade progress.
+            `,"ai");
+
+        }else{
+
+           ddMessage(
+        result.message || "AI execution failed. Please check your available balance.",
+         "ai"
+          );
+        
+        }
+
+    }catch(err){
+
+        addMessage(
+        "Network connection failed.",
+        "ai"
+        );
+    }
 }
 
 function sendMessage(){
@@ -469,13 +858,26 @@ function sendMessage(){
     addMessage(text,"user");
     input.value = "";
 
-    addMessage("AI is analyzing global market signals...","ai");
+    const loadingTexts = [
+        "AI is scanning global liquidity signals...",
+        "AI is analyzing institutional capital flow...",
+        "AI is detecting market rotation patterns...",
+        "AI is calculating portfolio risk exposure...",
+        "AI is reading global market momentum..."
+    ];
+
+    const loadingText =
+    loadingTexts[
+        Math.floor(Math.random() * loadingTexts.length)
+    ];
+
+    addMessage(loadingText,"ai");
 
     setTimeout(()=>{
         const chat = document.getElementById("chatArea");
         chat.lastElementChild.remove();
         addMessage(aiReply(text),"ai");
-    },900);
+    },1000);
 }
 
 function quickAsk(text){
@@ -484,13 +886,12 @@ function quickAsk(text){
 }
 
 function voiceNotice(){
-
     const SpeechRecognition =
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
 
     if(!SpeechRecognition){
-        addMessage("Your browser does not support voice input. Please use text input.","ai");
+        alert("This browser does not support voice input.");
         return;
     }
 
@@ -502,22 +903,20 @@ function voiceNotice(){
 
     const input = document.getElementById("aiInput");
 
-    addMessage("Voice mode activated. Please speak now...","ai");
+    addMessage("AI Voice Engine Activated. Please speak now...","ai");
 
     recognition.start();
 
     recognition.onresult = function(event){
-
         const transcript =
         event.results[0][0].transcript;
 
         input.value = transcript;
-
-        addMessage("Voice recognized: " + transcript,"ai");
+        sendMessage();
     };
 
     recognition.onerror = function(){
-        addMessage("Voice recognition failed. Please try again or type your question.","ai");
+        alert("Voice recognition failed. Please try again.");
     };
 }
 

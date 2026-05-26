@@ -132,12 +132,26 @@ body::before{
   background:radial-gradient(circle,rgba(56,189,248,.18),transparent 70%);
 }
 
-.trade-main{
+.trade-tags{
   display:flex;
+  justify-content:space-between;
   align-items:center;
-  gap:20px;
-  position:relative;
-  z-index:2;
+  margin-top:24px;
+  gap:12px;
+}
+
+.tag{
+  flex:1;
+  text-align:center;
+  font-size:13px;
+  color:#d1d5db;
+}
+
+.tag i{
+  display:block;
+  margin-bottom:8px;
+  font-size:18px;
+  color:#a855f7;
 }
 
 .trade-icon{
@@ -302,19 +316,45 @@ body::before{
 
 <div class="card trade-card classic" onclick="location.href='classic_trading.html'">
   <div class="trade-main">
-    <div class="trade-icon">B</div>
-    <div class="trade-info">
-      <h2>Classic Trading</h2>
-      <p>Trade crypto, ETF and digital assets with real-time market execution.</p>
-    </div>
+
+  <div class="trade-icon">
+    <i class="fa-solid fa-wave-square"></i>
   </div>
 
-  <div class="trade-tags">
-    <div class="tag"><i class="fa-solid fa-chart-line"></i>Markets</div>
-    <div class="tag"><i class="fa-brands fa-bitcoin"></i>Crypto</div>
-    <div class="tag"><i class="fa-solid fa-arrow-trend-up"></i>ETF</div>
-    <div class="tag"><i class="fa-solid fa-wallet"></i>Assets</div>
+  <div class="trade-info">
+    <h2>Quantum Markets</h2>
+    <p>
+      AI-powered execution across global equities, ETF rotation,
+      macro assets and digital markets.
+    </p>
   </div>
+
+</div>
+
+<div class="trade-tags">
+
+    <div class="tag">
+      <i class="fa-solid fa-globe"></i>
+      Global
+    </div>
+
+    <div class="tag">
+      <i class="fa-solid fa-brain"></i>
+      AI Alpha
+    </div>
+
+    <div class="tag">
+      <i class="fa-solid fa-chart-line"></i>
+      Momentum
+    </div>
+
+    <div class="tag">
+      <i class="fa-solid fa-building-columns"></i>
+      Institutional
+    </div>
+
+  </div>
+
 </div>
 
 <div class="bottom-nav">
@@ -356,12 +396,10 @@ async function loadTradeBalance(){
   }
 
   const response =
-    await fetch(
-      "http://192.168.66.160:3000/api/users/" +
-     localUser.id
-      localUser.id
-    );
-
+await fetch(
+  "http://192.168.66.160:3000/api/users/" +
+  localUser.id
+);
   const result =
     await response.json();
 

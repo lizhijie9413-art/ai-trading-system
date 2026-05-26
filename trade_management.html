@@ -1,223 +1,179 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>交易管理</title>
 
 <style>
-body {
-  margin: 0;
-  background: #0b0b0b;
-  color: white;
-  font-family: Arial, sans-serif;
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,sans-serif;
 }
 
-.sidebar {
-  width: 260px;
-  height: 100vh;
-  background: #1a1a1a;
-  position: fixed;
-  left: 0;
-  top: 0;
-  padding-top: 20px;
+body{
+  background:#07070b;
+  color:white;
 }
 
-.sidebar h2 {
-  color: #7c4dff;
-  padding-left: 20px;
-  margin-bottom: 40px;
+.sidebar{
+  width:260px;
+  height:100vh;
+  background:#151515;
+  position:fixed;
+  left:0;
+  top:0;
+  padding-top:25px;
 }
 
-.sidebar a {
-  display: block;
-  color: white;
-  text-decoration: none;
-  padding: 15px 20px;
-  font-size: 18px;
+.sidebar h2{
+  color:#7c4dff;
+  padding-left:22px;
+  margin-bottom:35px;
 }
 
-.sidebar a:hover {
-  background: #333;
+.sidebar a{
+  display:block;
+  color:white;
+  text-decoration:none;
+  padding:15px 22px;
+  font-size:18px;
+  font-weight:bold;
 }
 
-.main {
-  margin-left: 260px;
-  padding: 30px;
+.sidebar a:hover,
+.sidebar a.active{
+  background:#252525;
+  color:#7c4dff;
 }
 
-h1 {
-  color: #7c4dff;
-  font-size: 52px;
-  margin-bottom: 20px;
+.main{
+  margin-left:260px;
+  padding:35px;
 }
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-bottom: 25px;
+h1{
+  font-size:58px;
+  color:#7c4dff;
+  margin-bottom:28px;
 }
 
-.stat-card {
-  background: #181818;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 22px;
+.top-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:22px;
+  margin-bottom:28px;
 }
 
-.stat-card p {
-  margin: 0;
-  color: #aaa;
-  font-size: 15px;
+.card{
+  background:#171717;
+  border:1px solid #333;
+  border-radius:16px;
+  padding:24px;
 }
 
-.stat-card h2 {
-  margin: 12px 0 0;
-  font-size: 28px;
-  color: #7c4dff;
+.card p{
+  color:#aaa;
+  font-size:15px;
 }
 
-.search-box {
-  margin-bottom: 20px;
+.card h2{
+  color:#7c4dff;
+  margin-top:16px;
+  font-size:38px;
 }
 
-#searchInput {
-  width: 420px;
-  padding: 12px;
-  border-radius: 6px;
-  border: none;
-  background: #222;
-  color: white;
-  font-size: 16px;
-  outline: none;
+.search{
+  margin-bottom:22px;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #141414;
+.search input{
+  width:500px;
+  background:#1f1f1f;
+  border:none;
+  color:white;
+  padding:15px;
+  border-radius:10px;
+  font-size:16px;
+  outline:none;
 }
 
-th,
-td {
-  border: 1px solid #333;
-  padding: 16px;
-  text-align: center;
+.table-box{
+  background:#121212;
+  border:1px solid #333;
+  border-radius:16px;
+  overflow:hidden;
 }
 
-th {
-  background: #1f1f1f;
+table{
+  width:100%;
+  border-collapse:collapse;
 }
 
-tr:hover {
-  background: #1a1a1a;
+th{
+  background:#1d1d1d;
+  color:white;
+  padding:18px;
+  border:1px solid #333;
+  font-size:16px;
 }
 
-.direction.buy {
-  color: #00ff88;
-  font-weight: bold;
+td{
+  padding:18px;
+  border:1px solid #333;
+  text-align:center;
+  color:#ddd;
 }
 
-.direction.sell {
-  color: red;
-  font-weight: bold;
+tr:hover{
+  background:#1b1b1b;
 }
 
-.profit.positive {
-  color: #00ff88;
-  font-weight: bold;
+.running{
+  color:orange;
+  font-weight:bold;
 }
 
-.profit.negative {
-  color: red;
-  font-weight: bold;
+.completed{
+  color:#00ff88;
+  font-weight:bold;
 }
 
-.status.running {
-  color: #00ff88;
-  font-weight: bold;
+.profit-positive{
+  color:#00ff88;
+  font-weight:bold;
 }
 
-.status.paused {
-  color: orange;
-  font-weight: bold;
+.profit-negative{
+  color:red;
+  font-weight:bold;
 }
 
-.status.closed {
-  color: red;
-  font-weight: bold;
+.action-btn{
+  border:none;
+  padding:8px 14px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+  margin:2px;
 }
 
-button {
-  border: none;
-  padding: 9px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  margin: 3px;
+.complete-btn{
+  background:#00c853;
+  color:white;
 }
 
-.detail-btn {
-  background: #2979ff;
-  color: white;
+.refresh-btn{
+  background:#2979ff;
+  color:white;
 }
 
-.start-btn {
-  background: #00c853;
-  color: white;
-}
-
-.pause-btn {
-  background: orange;
-  color: black;
-}
-
-.close-trade-btn {
-  background: red;
-  color: white;
-}
-
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.75);
-}
-
-.modal-content {
-  background: #181818;
-  width: 620px;
-  margin: 70px auto;
-  padding: 25px;
-  border-radius: 10px;
-  border: 1px solid #333;
-}
-
-.modal-content h2 {
-  color: #7c4dff;
-  margin-top: 0;
-}
-
-.detail-row {
-  margin: 12px 0;
-  font-size: 16px;
-}
-
-.detail-row span {
-  color: #aaa;
-  display: inline-block;
-  width: 120px;
-}
-
-.close-btn {
-  background: red;
-  color: white;
-  margin-top: 20px;
+.empty{
+  text-align:center;
+  color:#888;
+  padding:35px;
 }
 </style>
 </head>
@@ -225,246 +181,340 @@ button {
 <body>
 
 <div class="sidebar">
-  <h2>人工智能贸易</h2>
-  <a href="index.html">仪表板</a>
-  <a href="trade_management.html">交易管理</a>
+
+  <h2>AI Trade Admin</h2>
+
+  <a href="dashboard.html">仪表板</a>
+  <a href="trade_management.html" class="active">交易管理</a>
   <a href="user_management.html">用户管理</a>
-  <a href="kyc_management.html">KYC审核</a>
+  <a href="kyc.html">KYC审核</a>
   <a href="order_management.html">订单管理</a>
+  <a href="withdraw_management.html">提现管理</a>
+  <a href="customer_service.html">客服管理</a>
+
 </div>
 
 <div class="main">
+
   <h1>交易管理</h1>
 
-  <div class="stats">
-    <div class="stat-card">
-      <p>总交易策略</p>
+  <div class="top-grid">
+
+    <div class="card">
+      <p>总交易订单</p>
       <h2 id="totalTrades">0</h2>
     </div>
 
-    <div class="stat-card">
+    <div class="card">
       <p>运行中</p>
       <h2 id="runningTrades">0</h2>
     </div>
 
-    <div class="stat-card">
-      <p>已暂停</p>
-      <h2 id="pausedTrades">0</h2>
+    <div class="card">
+      <p>已完成</p>
+      <h2 id="completedTrades">0</h2>
     </div>
 
-    <div class="stat-card">
+    <div class="card">
       <p>总投入</p>
-      <h2 id="totalAmount">0 USDT</h2>
+      <h2 id="totalVolume">0 USDT</h2>
     </div>
+
   </div>
 
-  <div class="search-box">
+  <div class="search">
     <input
       type="text"
       id="searchInput"
-      placeholder="搜索策略 / 交易对 / 方向 / 状态"
+      placeholder="搜索 UID / 用户 / 产品 / 类型 / 状态"
       oninput="searchTrades()"
-    />
+    >
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>交易ID</th>
-        <th>AI策略</th>
-        <th>交易对</th>
-        <th>方向</th>
-        <th>开仓价</th>
-        <th>当前价</th>
-        <th>投入金额</th>
-        <th>收益率</th>
-        <th>状态</th>
-        <th>创建时间</th>
-        <th>操作</th>
-      </tr>
-    </thead>
+  <div class="table-box">
 
-    <tbody id="tradeTable"></tbody>
-  </table>
-</div>
+    <table>
 
-<div id="tradeModal" class="modal">
-  <div class="modal-content">
-    <h2 id="detailTitle">交易详情</h2>
+      <thead>
+        <tr>
+          <th>订单ID</th>
+          <th>UID</th>
+          <th>用户</th>
+          <th>交易类型</th>
+          <th>产品</th>
+          <th>投入金额</th>
+          <th>收益率</th>
+          <th>收益</th>
+          <th>状态</th>
+          <th>开始时间</th>
+        </tr>
+      </thead>
 
-    <div class="detail-row"><span>交易ID：</span><strong id="detailId"></strong></div>
-    <div class="detail-row"><span>AI策略：</span><strong id="detailStrategy"></strong></div>
-    <div class="detail-row"><span>交易对：</span><strong id="detailPair"></strong></div>
-    <div class="detail-row"><span>方向：</span><strong id="detailDirection"></strong></div>
-    <div class="detail-row"><span>开仓价：</span><strong id="detailEntryPrice"></strong></div>
-    <div class="detail-row"><span>当前价：</span><strong id="detailCurrentPrice"></strong></div>
-    <div class="detail-row"><span>投入金额：</span><strong id="detailAmount"></strong></div>
-    <div class="detail-row"><span>收益率：</span><strong id="detailProfitRate"></strong></div>
-    <div class="detail-row"><span>状态：</span><strong id="detailStatus"></strong></div>
-    <div class="detail-row"><span>创建时间：</span><strong id="detailTime"></strong></div>
+      <tbody id="tradeTable"></tbody>
 
-    <button class="close-btn" onclick="closeTradeDetail()">关闭</button>
+    </table>
+
   </div>
+
 </div>
 
 <script>
+
+const API_BASE = "http://localhost:3000";
+
 let trades = [];
 
-async function loadTrades() {
-  const response = await fetch("http://localhost:3000/api/trades");
-  const result = await response.json();
+async function loadTrades(){
 
-  trades = result.data;
+  try{
 
-  renderTrades();
+    const response =
+    await fetch(
+      API_BASE + "/api/admin/trade-orders"
+    );
+
+    const result =
+    await response.json();
+
+    if(result.success){
+
+     trades = (result.data || []).filter(item => {
+  return item.status === "Running";
+    });
+
+    }else{
+
+      trades = [];
+    }
+
+    renderTrades();
+
+  }catch(err){
+
+    console.log(err);
+
+    alert("交易数据加载失败");
+  }
 }
 
-function formatUSDT(value) {
-  return Number(value).toLocaleString() + " USDT";
+async function setRate(id){
+
+  const input =
+  document.getElementById("rate-" + id);
+
+  const rate =
+  Number(input.value);
+
+  if(isNaN(rate)){
+    alert("请输入收益率");
+    return;
+  }
+
+  const response =
+  await fetch(
+    API_BASE + "/api/admin/ai-quant/set-rate/" + id,
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        rate
+      })
+    }
+  );
+
+  const result =
+  await response.json();
+
+  if(result.success){
+    alert("收益率设置成功");
+    loadTrades();
+  }else{
+    alert(result.message || "设置失败");
+  }
 }
 
-function formatPrice(value) {
-  return Number(value).toLocaleString();
+function formatUSDT(value){
+
+  return Number(value || 0)
+  .toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  }) + " USDT";
 }
 
-function getDirectionClass(direction) {
-  return direction === "买入" ? "buy" : "sell";
+function formatRate(rate){
+
+  return Number(rate || 0)
+  .toFixed(2) + "%";
 }
 
-function getStatusClass(status) {
-  if (status === "运行中") return "running";
-  if (status === "暂停") return "paused";
-  return "closed";
+function getStatusText(status){
+
+  if(status === "Running")
+    return "运行中";
+
+  if(status === "Completed")
+    return "已完成";
+
+  return status || "未知";
 }
 
-function updateStats() {
-  document.getElementById("totalTrades").innerText =
-    trades.length;
+function getStatusClass(status){
 
-  document.getElementById("runningTrades").innerText =
-    trades.filter(item => item.status === "运行中").length;
+  if(status === "Completed")
+    return "completed";
 
-  document.getElementById("pausedTrades").innerText =
-    trades.filter(item => item.status === "暂停").length;
+  return "running";
+}
 
-  const totalAmount = trades.reduce((sum, item) => {
+function updateStats(){
+
+  document.getElementById(
+    "totalTrades"
+  ).innerText = trades.length;
+
+  document.getElementById(
+    "runningTrades"
+  ).innerText =
+  trades.filter(
+    item => item.status === "Running"
+  ).length;
+
+  document.getElementById(
+    "completedTrades"
+  ).innerText =
+  trades.filter(
+    item => item.status === "Completed"
+  ).length;
+
+  const totalVolume =
+  trades.reduce((sum,item)=>{
+
     return sum + Number(item.amount || 0);
-  }, 0);
 
-  document.getElementById("totalAmount").innerText =
-    formatUSDT(totalAmount);
+  },0);
+
+  document.getElementById(
+    "totalVolume"
+  ).innerText =
+  formatUSDT(totalVolume);
 }
 
-function renderTrades() {
-  const tbody = document.getElementById("tradeTable");
+function renderTrades(){
+
+  const tbody =
+  document.getElementById(
+    "tradeTable"
+  );
+
   tbody.innerHTML = "";
 
-  trades.forEach(item => {
+  if(trades.length === 0){
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="empty">
+          暂无交易订单
+        </td>
+      </tr>
+    `;
+
+    updateStats();
+
+    return;
+  }
+
+  trades.forEach(item=>{
+
+    const tr =
+    document.createElement("tr");
+
     const profitClass =
-      Number(item.profitRate) >= 0 ? "positive" : "negative";
-
-    const profitText =
-      Number(item.profitRate) >= 0
-        ? "+" + item.profitRate + "%"
-        : item.profitRate + "%";
-
-    const tr = document.createElement("tr");
+    Number(item.profit || 0) >= 0
+    ? "profit-positive"
+    : "profit-negative";
 
     tr.innerHTML = `
-      <td>${item.id}</td>
-      <td>${item.strategy}</td>
-      <td>${item.pair}</td>
-      <td class="direction ${getDirectionClass(item.direction)}">${item.direction}</td>
-      <td>${formatPrice(item.entryPrice)}</td>
-      <td>${formatPrice(item.currentPrice)}</td>
-      <td>${formatUSDT(item.amount)}</td>
-      <td class="profit ${profitClass}">${profitText}</td>
-      <td class="status ${getStatusClass(item.status)}">${item.status}</td>
-      <td>${item.time}</td>
+      <td>${item.id || ""}</td>
+
+      <td>${item.uid || ""}</td>
+
+      <td>${item.user || ""}</td>
+
+      <td>${item.type || ""}</td>
+
+      <td>${item.coin || ""}</td>
+
       <td>
-        <button class="detail-btn" onclick="showTradeDetail('${item.id}')">详情</button>
-        <button class="start-btn" onclick="startTrade('${item.id}')">开始</button>
-        <button class="pause-btn" onclick="pauseTrade('${item.id}')">暂停</button>
-        <button class="close-trade-btn" onclick="closeTrade('${item.id}')">结束</button>
+  <input
+    id="rate-${item.id}"
+    type="number"
+    step="0.01"
+    placeholder="收益率%"
+    style="width:90px;padding:6px;border-radius:6px;border:none;"
+  >
+
+  <button
+    class="action-btn refresh-btn"
+    onclick="setRate('${item.id}')"
+  >
+    设置
+  </button>
+</td>
+
+      <td>${formatUSDT(item.amount)}</td>
+
+      <td>${formatRate(item.rate)}</td>
+
+      <td class="${profitClass}">
+        ${formatUSDT(item.profit)}
       </td>
+
+      <td class="${getStatusClass(item.status)}">
+        ${getStatusText(item.status)}
+      </td>
+
+      <td>${item.time || ""}</td>
     `;
 
     tbody.appendChild(tr);
+
   });
 
   updateStats();
 }
 
-function searchTrades() {
-  const keyword = document.getElementById("searchInput").value.toLowerCase();
-  const rows = document.querySelectorAll("#tradeTable tr");
+function searchTrades(){
 
-  rows.forEach(row => {
-    const text = row.innerText.toLowerCase();
-    row.style.display = text.includes(keyword) ? "" : "none";
+  const keyword =
+  document.getElementById(
+    "searchInput"
+  ).value.toLowerCase();
+
+  const rows =
+  document.querySelectorAll(
+    "#tradeTable tr"
+  );
+
+  rows.forEach(row=>{
+
+    const text =
+    row.innerText.toLowerCase();
+
+    row.style.display =
+    text.includes(keyword)
+    ? ""
+    : "none";
+
   });
 }
-
-async function startTrade(id) {
-  await fetch(`http://localhost:3000/api/trades/${id}/start`, {
-    method: "PUT"
-  });
-
-  loadTrades();
-}
-
-async function pauseTrade(id) {
-  await fetch(`http://localhost:3000/api/trades/${id}/pause`, {
-    method: "PUT"
-  });
-
-  loadTrades();
-}
-
-async function closeTrade(id) {
-  await fetch(`http://localhost:3000/api/trades/${id}/close`, {
-    method: "PUT"
-  });
-
-  loadTrades();
-}
-
-function showTradeDetail(id) {
-  const item = trades.find(trade => trade.id === id);
-
-  document.getElementById("detailTitle").innerText =
-    "交易详情：" + item.id;
-
-  document.getElementById("detailId").innerText = item.id;
-  document.getElementById("detailStrategy").innerText = item.strategy;
-  document.getElementById("detailPair").innerText = item.pair;
-  document.getElementById("detailDirection").innerText = item.direction;
-  document.getElementById("detailEntryPrice").innerText = formatPrice(item.entryPrice);
-  document.getElementById("detailCurrentPrice").innerText = formatPrice(item.currentPrice);
-  document.getElementById("detailAmount").innerText = formatUSDT(item.amount);
-  document.getElementById("detailProfitRate").innerText =
-    Number(item.profitRate) >= 0
-      ? "+" + item.profitRate + "%"
-      : item.profitRate + "%";
-  document.getElementById("detailStatus").innerText = item.status;
-  document.getElementById("detailTime").innerText = item.time;
-
-  document.getElementById("tradeModal").style.display = "block";
-}
-
-function closeTradeDetail() {
-  document.getElementById("tradeModal").style.display = "none";
-}
-
-window.onclick = function(event) {
-  const modal = document.getElementById("tradeModal");
-
-  if (event.target === modal) {
-    modal.style.display = "none";
-  }
-};
 
 loadTrades();
+
+setInterval(loadTrades,10000);
+
 </script>
 
 </body>
