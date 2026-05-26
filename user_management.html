@@ -253,6 +253,15 @@ button {
 </style>
 </head>
 
+<script>
+const adminAuth = JSON.parse(localStorage.getItem("adminAuth") || "null");
+
+if (!adminAuth || adminAuth.role !== "admin") {
+  alert("Please login as admin");
+  window.location.href = "admin_login.html";
+}
+</script>
+
 <body>
 
 <div class="sidebar">
@@ -412,14 +421,12 @@ let users = [];
 async function loadUsers() {
 
   const response =
-    await fetch("http://localhost:3000/api/users");
+    await fetch(
+      "https://ai-trading-system-j5jf.onrender.com/api/users"
+    );
 
   const result =
     await response.json();
-
-  users = result.data;
-
-  renderTable();
 }
 
 let todayRecharge =
@@ -736,12 +743,13 @@ async function recharge(id, btn) {
 
   const response =
     await fetch(
-      "http://localhost:3000/api/users/" + id + "/recharge",
-      {
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/recharge",
+  {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json"
-        },
+        "Content-Type": "application/json",
+     "admin-token":"AI_ADMIN_2026"
+      },
         body: JSON.stringify({
           amount: amount
         })
@@ -778,13 +786,15 @@ async function withdraw(id, btn) {
     return;
   }
 
-  const response = await fetch(
-    "http://localhost:3000/api/users/" + id + "/withdraw",
-    {
+ await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/recharge",
+  {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
+
+   headers: {
+  "Content-Type": "application/json",
+  "admin-token":"AI_ADMIN_2026"
+},
       body: JSON.stringify({ amount })
     }
   );
@@ -805,11 +815,11 @@ async function withdraw(id, btn) {
 async function freezeUser(id) {
 
   const response = await fetch(
-    "http://localhost:3000/api/users/" + id + "/freeze",
-    {
-      method: "PUT"
-    }
-  );
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/freeze",
+  {
+    method: "PUT"
+  }
+);
 
   const result = await response.json();
 
@@ -826,9 +836,13 @@ async function freezeUser(id) {
 async function blacklistUser(id) {
 
   const response = await fetch(
-    "http://localhost:3000/api/users/" + id + "/blacklist",
+    "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/blacklist",
     {
-      method: "PUT"
+      method: "PUT",
+
+      headers:{
+        "admin-token":"AI_ADMIN_2026"
+      }
     }
   );
 
@@ -845,9 +859,13 @@ async function blacklistUser(id) {
 async function restoreUser(id) {
 
   const response = await fetch(
-    "http://localhost:3000/api/users/" + id + "/restore",
+    "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/restore",
     {
-      method: "PUT"
+      method: "PUT",
+
+      headers:{
+        "admin-token":"AI_ADMIN_2026"
+      }
     }
   );
 

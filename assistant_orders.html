@@ -333,9 +333,10 @@ async function loadOrders(){
   try{
 
     const response = await fetch(
-      "http://192.168.66.160:3000/api/ai/quant/orders/" +
-      localUser.id
-    );
+      
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" + localUser.id
+);
+    
 
     const result = await response.json();
 

@@ -1231,22 +1231,22 @@ async function confirmPlan(){
     JSON.parse(localStorage.getItem("user"));
 
     const response =
-    await fetch(
-        "http://localhost:3000/api/token-yield/start",
-        {
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                userId: localUser.id,
-                planName: currentPlan.planName,
-                amount: amount,
-                days: currentPlan.period,
-                rate: currentPlan.rate
-            })
-        }
-    );
+await fetch(
+    "https://ai-trading-system-j5jf.onrender.com/api/ai/assistant/start",
+    {
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+            userId: localUser.id,
+            planName: currentPlan.planName,
+            amount: amount,
+            days: currentPlan.period,
+            rate: currentPlan.rate
+        })
+    }
+);
 
     const result =
     await response.json();

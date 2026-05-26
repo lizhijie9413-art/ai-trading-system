@@ -286,7 +286,8 @@ body::before{
 </div>
 
 <script>
-const socket = io("http://localhost:3000");
+const socket =
+io("https://ai-trading-system-j5jf.onrender.com");
 
 const localUser =
   JSON.parse(localStorage.getItem("user")) || {};
@@ -358,8 +359,8 @@ function renderMessages(){
         class="chat-img"
         src="${
           data.imageUrl.startsWith("http")
-          ? data.imageUrl
-          : "http://localhost:3000" + data.imageUrl
+  ? data.imageUrl
+  : "https://ai-trading-system-j5jf.onrender.com" + data.imageUrl
         }"
      >`
     : escapeHTML(data.message || "");
@@ -418,10 +419,13 @@ async function sendImage(){
 
   try{
 
-    const res = await fetch("http://localhost:3000/api/chat/upload", {
-      method: "POST",
-      body: formData
-    });
+    const res = await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/chat/upload",
+  {
+    method: "POST",
+    body: formData
+  }
+);
 
     const result = await res.json();
 

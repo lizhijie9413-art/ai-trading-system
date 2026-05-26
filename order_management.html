@@ -39,6 +39,15 @@ button{border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight
 </style>
 </head>
 
+<script>
+const adminAuth = JSON.parse(localStorage.getItem("adminAuth") || "null");
+
+if (!adminAuth || adminAuth.role !== "admin") {
+  alert("Please login as admin");
+  window.location.href = "admin_login.html";
+}
+</script>
+
 <body>
 
 <div class="sidebar">
@@ -126,7 +135,8 @@ button{border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight
 </div>
 
 <script>
-const API_BASE = "http://localhost:3000";
+const API_BASE =
+"https://ai-trading-system-j5jf.onrender.com";
 
 let orders = [];
 

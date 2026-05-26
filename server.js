@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
-
+const ADMIN_TOKEN = "AI_ADMIN_2026";
 app.use(cors());
 app.use(express.json());
 
@@ -183,7 +183,10 @@ app.post("/api/register", async (req, res) => {
 });
 
 
-app.put("/api/users/:id/restore", async (req, res) => {
+app.put(
+  "/api/users/:id/restore",
+  verifyAdmin,
+  async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
@@ -525,8 +528,13 @@ app.put("/api/users/:id/withdraw", async (req, res) => {
   res.json({ success: true, data: user, stats });
 });
 
-app.put("/api/users/:id/freeze", async (req, res) => {
-  const user = await User.findById(req.params.id);
+ app.put(
+  "/api/users/:id/freeze",
+  verifyAdmin,
+  async (req, res) => {
+
+  const user =
+  await User.findById(req.params.id);
 
   if (!user) {
     return res.status(404).json({ success: false, message: "用户不存在" });
@@ -539,7 +547,10 @@ app.put("/api/users/:id/freeze", async (req, res) => {
   res.json({ success: true, data: user });
 });
 
-app.put("/api/users/:id/blacklist", async (req, res) => {
+app.put(
+  "/api/users/:id/blacklist",
+  verifyAdmin,
+  async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
@@ -824,6 +835,23 @@ const aiMarkets = [
   { market: "Fund", product: "AI Tech Fund" },
   { market: "Futures", product: "Gold Futures" }
 ];
+
+/* 管理员权限验证 */
+function verifyAdmin(req, res, next){
+
+  const token =
+  req.headers["admin-token"];
+
+  if(token !== ADMIN_TOKEN){
+
+    return res.status(403).json({
+      success:false,
+      message:"Unauthorized Admin Access"
+    });
+  }
+
+  next();
+}
 
 function getUserLevel(asset) {
   if (asset >= 50000) return "Quantum Quant";
@@ -1649,14 +1677,20 @@ app.get("/api/withdrawals", async (req, res) => {
 
 });
 
-/* 更新提现状态：MongoDB版，只改状态，不扣款 */
-app.post("/api/withdraw/status", async (req, res) => {
+/* 更新提现状态：拒绝时自动退款 */
+app.post(
+  "/api/withdraw/status",
+  verifyAdmin,
+  async (req, res) => {
   try {
+
     const { id, status } = req.body;
 
-    const item = await Withdrawal.findById(id);
+    const item =
+    await Withdrawal.findById(id);
 
     if (!item) {
+
       return res.json({
         success: false,
         message: "提现记录不存在"
@@ -1667,11 +1701,45 @@ app.post("/api/withdraw/status", async (req, res) => {
       item.status === "Approved" ||
       item.status === "Rejected"
     ) {
+
       return res.json({
         success: false,
         message: "该提现已审核"
       });
     }
+
+    /* 如果拒绝提现 -> 自动退款 */
+
+    if (status === "Rejected") {
+
+      const user =
+      await User.findById(item.userId);
+
+      if (user) {
+
+        const refundAmount =
+        Number(item.amount || 0);
+
+        user.asset =
+        Number(user.asset || 0)
+        + refundAmount;
+
+        user.balance =
+        user.asset;
+
+        if (!user.records) {
+          user.records = [];
+        }
+
+        user.records.push(
+          `Withdrawal rejected, refunded +${refundAmount} USDT`
+        );
+
+        await user.save();
+      }
+    }
+
+    /* 更新状态 */
 
     item.status = status;
 
@@ -1683,6 +1751,7 @@ app.post("/api/withdraw/status", async (req, res) => {
     });
 
   } catch (err) {
+
     console.log(err);
 
     res.json({
@@ -1691,7 +1760,6 @@ app.post("/api/withdraw/status", async (req, res) => {
     });
   }
 });
-
 
 /* Socket 客服 */
 

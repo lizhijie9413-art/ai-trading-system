@@ -600,9 +600,10 @@ async function loadAssistantOrders(){
   if(!localUser || !localUser.id) return;
 
   const res = await fetch(
-    "http://192.168.66.160:3000/api/ai/quant/orders/" +
-    localUser.id
-  );
+  "https://ai-trading-system-j5jf.onrender.com/api/ai/quant/orders/" +
+  localUser.id
+);
+
 
   const result = await res.json();
 
@@ -685,7 +686,7 @@ async function loadPortfolioBalance(){
   if(!localUser || !localUser.id) return;
 
   const response = await fetch(
-    "http://192.168.66.160:3000/api/users/" +
+    "https://ai-trading-system-j5jf.onrender.com/api/users/" + 
       localUser.id
   );
 

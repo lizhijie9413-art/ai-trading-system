@@ -306,6 +306,7 @@ body::before{
 </style>
 </head>
 
+
 <body>
 
 <div class="header">
@@ -471,8 +472,10 @@ async function saveProfile(){
     document.getElementById("phoneInput").value.trim();
 
   const res = await fetch(
-    "http://localhost:3000/api/users/" + user.id + "/profile",
-    {
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" +
+  user.id +
+  "/profile",
+  {
       method:"PUT",
       headers:{
         "Content-Type":"application/json"

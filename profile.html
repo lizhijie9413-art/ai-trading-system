@@ -748,10 +748,10 @@ async function loadProfile(){
   if(!localUser) return;
 
   const response =
-    await fetch(
-     "http://192.168.66.160:3000/api/users/" +
-      localUser.id
-    );
+await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" +
+  localUser.id
+);
 
   const result =
     await response.json();

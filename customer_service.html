@@ -101,6 +101,15 @@ body{
 </style>
 </head>
 
+<script>
+const adminAuth = JSON.parse(localStorage.getItem("adminAuth") || "null");
+
+if (!adminAuth || adminAuth.role !== "admin") {
+  alert("Please login as admin");
+  window.location.href = "admin_login.html";
+}
+</script>
+
 <body>
 <div class="container">
 
@@ -176,7 +185,8 @@ socket.on("connect", () => {
 /* 加载真实用户 */
 async function loadUsers(){
   try{
-    const res = await fetch("http://localhost:3000/api/users");
+    const socket =
+io("https://ai-trading-system-j5jf.onrender.com");
     const result = await res.json();
 
     users = result.data || [];
@@ -321,10 +331,12 @@ async function sendImage(){
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await fetch("http://localhost:3000/api/chat/upload", {
+  const res = await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/chat/upload",
+{
     method: "POST",
     body: formData
-  });
+});
 
   const result = await res.json();
 

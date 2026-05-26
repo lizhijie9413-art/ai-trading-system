@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Login</title>
+<style>
+body{
+  margin:0;
+  background:#050816;
+  color:white;
+  font-family:Arial,sans-serif;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.box{
+  width:360px;
+  padding:32px;
+  border-radius:22px;
+  background:#111827;
+  border:1px solid #7c3aed;
+}
+h1{
+  color:#a855f7;
+  text-align:center;
+}
+input{
+  width:100%;
+  height:48px;
+  margin-top:14px;
+  border:none;
+  border-radius:12px;
+  padding:0 14px;
+  background:#1f2937;
+  color:white;
+  font-size:16px;
+}
+button{
+  width:100%;
+  height:50px;
+  margin-top:20px;
+  border:none;
+  border-radius:14px;
+  background:#7c3aed;
+  color:white;
+  font-size:17px;
+  font-weight:bold;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h1>Admin Login</h1>
+
+  <input id="username" placeholder="Admin username">
+  <input id="password" type="password" placeholder="Password">
+
+  <button onclick="loginAdmin()">Login</button>
+</div>
+
+<script>
+function loginAdmin(){
+
+  const username =
+  document.getElementById("username").value.trim();
+
+  const password =
+  document.getElementById("password").value.trim();
+
+  if(username === "admin" && password === "Admin123456"){
+
+    localStorage.setItem(
+      "adminAuth",
+      JSON.stringify({
+        role:"admin",
+        loginTime:Date.now()
+      })
+    );
+
+    window.location.href = "dashboard.html";
+
+  }else{
+    alert("Wrong admin account or password");
+  }
+}
+</script>
+
+</body>
+</html>

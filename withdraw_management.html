@@ -202,6 +202,15 @@ td{
 </style>
 </head>
 
+<script>
+const adminAuth = JSON.parse(localStorage.getItem("adminAuth") || "null");
+
+if (!adminAuth || adminAuth.role !== "admin") {
+  alert("Please login as admin");
+  window.location.href = "admin_login.html";
+}
+</script>
+
 <body>
 
 <div class="sidebar">
@@ -277,9 +286,13 @@ let withdrawals = [];
 
 async function loadWithdrawals(){
 
+  async function loadWithdrawals(){
+
   try{
 
-    const res = await fetch("http://localhost:3000/api/withdrawals");
+    const res = await fetch(
+      "https://ai-trading-system-j5jf.onrender.com/api/withdrawals"
+    );
 
     withdrawals = await res.json();
 
@@ -386,16 +399,21 @@ function renderWithdrawals(){
 
 async function updateStatus(id, status){
 
-  const res = await fetch("http://localhost:3000/api/withdraw/status", {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({
-      id,
-      status
-    })
-  });
+  const res = await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/withdraw/status",
+{
+   method:"POST",
+
+headers:{
+  "Content-Type":"application/json",
+  "admin-token":"AI_ADMIN_2026"
+},
+
+body:JSON.stringify({
+  id,
+  status
+})
+});
 
   const data = await res.json();
 

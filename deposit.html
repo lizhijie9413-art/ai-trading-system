@@ -696,8 +696,9 @@ async function loadAssets(){
   if(!localUser || !localUser.id) return;
 
   const res = await fetch(
-    "http://localhost:3000/api/users/" + localUser.id
-  );
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" +
+  localUser.id
+);
 
   const result = await res.json();
 
