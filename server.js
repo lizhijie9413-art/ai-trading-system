@@ -423,6 +423,21 @@ const Withdrawal = mongoose.model("Withdrawal", new mongoose.Schema({
   }
 }));
 
+const ChatMessage = mongoose.model("ChatMessage", new mongoose.Schema({
+  user: String,
+  username: String,
+  uid: String,
+  serviceId: String,
+  sender: String,
+  type: String,
+  message: String,
+  imageUrl: String,
+  time: String,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}));
 
 let stats = {
   todayRecharge: 0,
@@ -467,6 +482,28 @@ app.post("/api/users", async (req, res) => {
   });
 
   res.json({ success: true, data: user });
+});
+
+app.get("/api/chat/history/:userId", async (req, res) => {
+
+  try {
+
+    const list = await ChatMessage.find({
+      user: req.params.userId
+    }).sort({ createdAt: 1 });
+
+    res.json({
+      success: true,
+      data: list
+    });
+
+  } catch (err) {
+
+    res.json({
+      success: false,
+      message: "Failed to load chat history"
+    });
+  }
 });
 
 app.put("/api/users/:id/recharge", async (req, res) => {
@@ -1152,10 +1189,27 @@ subTrades.sort((a,b)=>{
   - new Date(b.showTime);
 });
 
-    const selected =
-    aiMarkets[
-      Math.floor(Math.random() * aiMarkets.length)
-    ];
+const hour = new Date().getHours();
+
+let availableMarkets = aiMarkets;
+
+/* 晚上不交易股票和基金 */
+
+if(hour >= 18 || hour < 9){
+
+  availableMarkets =
+  aiMarkets.filter(item =>
+
+    item.market === "Crypto" ||
+
+    item.market === "Futures"
+  );
+}
+const selected =
+availableMarkets[
+  Math.floor(Math.random() * availableMarkets.length)
+];
+
 
     const order =
     await AIQuantOrder.create({
@@ -1215,10 +1269,11 @@ subTrades.sort((a,b)=>{
     await user.save();
 
     res.json({
-      success:true,
-      message:"AI Assistant started",
-      order
-    });
+  success:true,
+  message:"AI Assistant started",
+  order,
+  balance: user.asset
+  });
 
   } catch(err){
 
@@ -1319,8 +1374,28 @@ Number(
   .toFixed(2)
 );
 
-    const selected =
-      aiMarkets[Math.floor(Math.random() * aiMarkets.length)];
+   const hour = new Date().getHours();
+
+let availableMarkets = aiMarkets;
+
+/* 晚上不交易股票和基金 */
+
+if(hour >= 18 || hour < 9){
+
+  availableMarkets =
+  aiMarkets.filter(item =>
+
+    item.market === "Crypto" ||
+
+    item.market === "Futures"
+  );
+}
+
+const selected =
+availableMarkets[
+  Math.floor(Math.random() * availableMarkets.length)
+];
+
 
     const durationMinutes =
 Math.floor(Math.random() * 61) + 60;
@@ -1895,12 +1970,11 @@ let aiSupportEnabled = true;
 let serviceOnline = false;
 
 async function getAIReply(message) {
-  return "您好，AI客服已收到您的消息，人工客服会尽快处理。";
+
+  return "Hello, AI support has received your message. A customer service agent will assist you shortly.";
 }
 
 io.on("connection", (socket) => {
-
-
 
   console.log("客服系统用户已连接");
 
@@ -1929,29 +2003,67 @@ io.on("connection", (socket) => {
 
     console.log("收到消息:", data);
 
-   io.emit("receive_message", {
+    /* 保存用户消息 */
 
-     id: Date.now(),
+    const savedMessage =
+    await ChatMessage.create({
 
-     user: data.user,
+      user: data.user,
 
-     sender: data.sender,
+      username:
+      data.username ||
+      data.userName ||
+      "",
 
-     type: data.type || "text",
+      uid:
+      data.uid || "",
 
-     message: data.message || "",
+      serviceId:
+      data.serviceId || "",
 
-    imageUrl: data.imageUrl || "",
+      sender:
+      data.sender,
 
-     username: data.username || "",
+      type:
+      data.type || "text",
 
-     uid: data.uid || "",
+      message:
+      data.message || "",
 
-    serviceId: data.serviceId || "",
+      imageUrl:
+      data.imageUrl || "",
 
-     time: data.time || new Date().toLocaleTimeString()
+      time:
+     new Date().toLocaleTimeString()
+    });
 
-  });
+    /* 广播用户消息 */
+
+    io.emit("receive_message", {
+
+      id: savedMessage._id,
+
+      user: savedMessage.user,
+
+      sender: savedMessage.sender,
+
+      type: savedMessage.type,
+
+      message: savedMessage.message,
+
+      imageUrl: savedMessage.imageUrl,
+
+      username: savedMessage.username,
+
+      uid: savedMessage.uid,
+
+      serviceId: savedMessage.serviceId,
+
+      time: savedMessage.time
+
+    });
+
+    /* AI 自动回复 */
 
     if (
 
@@ -1968,17 +2080,59 @@ io.on("connection", (socket) => {
         const aiReply =
         await getAIReply(data.message);
 
-        io.emit("receive_message", {
+        /* 保存AI回复 */
 
-          id: Date.now() + 1,
+        const savedAIMessage =
+        await ChatMessage.create({
 
           user: data.user,
 
+          username:
+          data.username ||
+          data.userName ||
+          "",
+
+          uid:
+          data.uid || "",
+
+          serviceId: "",
+
           sender: "service",
+
+          type: "text",
 
           message: aiReply,
 
-          time: new Date().toLocaleTimeString()
+          imageUrl: "",
+
+          time:
+          data.time ||
+          new Date().toLocaleTimeString()
+        });
+
+        /* 广播AI回复 */
+
+        io.emit("receive_message", {
+
+          id: savedAIMessage._id,
+
+          user: savedAIMessage.user,
+
+          sender: savedAIMessage.sender,
+
+          type: savedAIMessage.type,
+
+          message: savedAIMessage.message,
+
+          imageUrl: savedAIMessage.imageUrl,
+
+          username: savedAIMessage.username,
+
+          uid: savedAIMessage.uid,
+
+          serviceId: savedAIMessage.serviceId,
+
+          time: savedAIMessage.time
 
         });
 

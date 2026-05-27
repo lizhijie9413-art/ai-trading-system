@@ -333,9 +333,9 @@ async function loadOrders(){
   try{
 
     const response = await fetch(
-      
-  "https://ai-trading-system-j5jf.onrender.com/api/users/" + localUser.id
-);
+  "https://ai-trading-system-j5jf.onrender.com/api/ai/quant/orders/" +
+  localUser.id
+   );
     
 
     const result = await response.json();

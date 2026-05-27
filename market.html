@@ -766,11 +766,32 @@ canvas{
 </div>
 
 <div class="bottom-nav">
-    <a href="index.html" class="nav-item"><div>⌂</div><span>Home</span></a>
-    <a href="market.html" class="nav-item active"><div>▥</div><span>Markets</span></a>
-    <a href="trade.html" class="nav-item"><div>↻</div><span>Trade</span></a>
-    <a href="portfolio.html" class="nav-item"><div>◔</div><span>Portfolio</span></a>
-    <a href="profile.html" class="nav-item"><div>○</div><span>Profile</span></a>
+
+  <a class="nav-item" href="index.html">
+    <i class="fa-solid fa-house"></i>
+    Home
+  </a>
+
+  <a class="nav-item active" href="market.html">
+    <i class="fa-solid fa-chart-column"></i>
+    Markets
+  </a>
+
+  <a class="nav-item" href="trade.html">
+    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+    Trade
+  </a>
+
+  <a class="nav-item" href="portfolio.html">
+    <i class="fa-regular fa-folder"></i>
+    Portfolio
+  </a>
+
+  <a class="nav-item" href="profile.html">
+    <i class="fa-regular fa-user"></i>
+    Profile
+  </a>
+
 </div>
 
 <script>
@@ -913,7 +934,7 @@ async function loadRealMarketData(){
 }
 
 loadRealMarketData();
-
+let chartCache = {};
 const indexes = [
     {name:'S&P 500', price:5284.65, change:0.82},
     {name:'NASDAQ', price:16745.30, change:1.25},
@@ -927,13 +948,27 @@ const newsList = [
     'Microsoft expands AI cloud services across global markets'
 ];
 
-function randomData(up=true){
+function randomData(key, up=true){
+
+    if(chartCache[key]){
+        return chartCache[key];
+    }
+
     let arr = [];
+
     let v = 20 + Math.random() * 10;
+
     for(let i=0;i<26;i++){
-        v += (Math.random() - 0.45) * 5 + (up ? .7 : -.25);
+
+        v +=
+        (Math.random() - 0.45) * 5 +
+        (up ? .7 : -.25);
+
         arr.push(v);
     }
+
+    chartCache[key] = arr;
+
     return arr;
 }
 
@@ -1052,7 +1087,7 @@ function render(){
     `).join('');
 
     stocks.slice(0,4).forEach((i,idx)=>{
-    drawLine(document.getElementById('indexChart'+idx), randomData(i.change>=0), i.change>=0);
+    drawLine(document.getElementById('indexChart'+idx), randomData("index_"+idx, i.change>=0), i.change>=0);
    });
 
     filtered.forEach((s,idx)=>{

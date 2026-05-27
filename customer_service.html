@@ -163,7 +163,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
 </div>
 
 <script>
-const socket = io("http://localhost:3000");
+const socket = io("https://ai-trading-system-j5jf.onrender.com");
 
 let users = [];
 let currentUserId = "";
@@ -185,8 +185,10 @@ socket.on("connect", () => {
 /* 加载真实用户 */
 async function loadUsers(){
   try{
-    const socket =
-io("https://ai-trading-system-j5jf.onrender.com");
+    const res = await fetch(
+      "https://ai-trading-system-j5jf.onrender.com/api/users"
+    );
+
     const result = await res.json();
 
     users = result.data || [];
@@ -202,7 +204,8 @@ io("https://ai-trading-system-j5jf.onrender.com");
 
   }catch(err){
     console.log(err);
-    userList.innerHTML = "<div style='padding:20px;color:#f87171'>用户加载失败</div>";
+    userList.innerHTML =
+    "<div style='padding:20px;color:#f87171'>用户加载失败</div>";
   }
 }
 
@@ -332,11 +335,12 @@ async function sendImage(){
   formData.append("image", file);
 
   const res = await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/chat/upload",
-{
-    method: "POST",
-    body: formData
-});
+    "https://ai-trading-system-j5jf.onrender.com/api/chat/upload",
+    {
+      method: "POST",
+      body: formData
+    }
+  );
 
   const result = await res.json();
 
@@ -351,7 +355,10 @@ async function sendImage(){
     serviceId,
     sender: "service",
     type: "image",
-    imageUrl: result.url,
+    imageUrl:
+      result.url.startsWith("http")
+      ? result.url
+      : "https://ai-trading-system-j5jf.onrender.com" + result.url,
     message: "[图片]"
   });
 

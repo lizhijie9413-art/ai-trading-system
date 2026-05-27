@@ -938,11 +938,11 @@ Connect Wallet
     <div class="buttons">
 
         <button class="main-btn"
-         onclick="location.href='register.html'">
+ onclick="exploreAI()">
 
-            Explore AI Universe →
+    Explore AI Universe →
 
-        </button>
+</button>
 
         <button class="secondary-btn"
         onclick="location.href='trade.html'">
@@ -1192,6 +1192,21 @@ for(let i=0;i<45;i++){
 
 }
 
+function exploreAI(){
+
+  const user =
+  JSON.parse(localStorage.getItem("user"));
+
+  if(user && user.id){
+
+    location.href = "market.html";
+
+  }else{
+
+    location.href = "register.html";
+  }
+}
+
 /* assets */
 
 const localUser = JSON.parse(localStorage.getItem("user"));
@@ -1245,7 +1260,7 @@ roiBase > 0
 }
 
 loadHomeBalance();
-setInterval(loadHomeBalance, 3000);
+setInterval(loadHomeBalance, 10000);
 
 async function connectWallet(){
 

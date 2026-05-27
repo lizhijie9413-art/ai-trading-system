@@ -281,7 +281,7 @@ body{
 
   <div class="code-box">
     <div class="code-label">Your Invitation Code</div>
-    <div class="code" id="inviteCode">AIX2048</div>
+    <div class="code" id="inviteCode"></div>
   </div>
 
   <button class="copy-btn" onclick="copyCode()">Copy Invite Code</button>
@@ -290,22 +290,22 @@ body{
 <div class="stats-grid">
   <div class="stat-card">
     <div class="stat-title">Total Invites</div>
-    <div class="stat-value">128</div>
+    <div class="stat-value">0</div>
   </div>
 
   <div class="stat-card">
     <div class="stat-title">Invite Rewards</div>
-    <div class="stat-value green">$2,486.50</div>
+    <div class="stat-value green">$0.00</div>
   </div>
 
   <div class="stat-card">
     <div class="stat-title">Active Team</div>
-    <div class="stat-value">76</div>
+    <div class="stat-value">0</div>
   </div>
 
   <div class="stat-card">
     <div class="stat-title">Team Level</div>
-    <div class="stat-value green">VIP 3</div>
+    <div class="stat-value green">VIP 0</div>
   </div>
 </div>
 
@@ -369,17 +369,11 @@ body{
 </div>
 
 <script>
-function copyCode(){
-  const code = document.getElementById("inviteCode").innerText;
-  navigator.clipboard.writeText(code);
+const user =
+JSON.parse(localStorage.getItem("user"));
 
-  const toast = document.getElementById("toast");
-  toast.classList.add("show");
-
-  setTimeout(()=>{
-    toast.classList.remove("show");
-  },1800);
-}
+document.getElementById("inviteCode").innerText =
+"AIX" + (user?.uid || "0000");
 </script>
 
 </body>

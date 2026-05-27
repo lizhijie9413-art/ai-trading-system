@@ -322,6 +322,8 @@ body::before{
 
 </div>
 
+<!-- Avatar Card -->
+
 <div class="card">
 
   <div class="avatar-section">
@@ -345,37 +347,36 @@ body::before{
 
 </div>
 
+<!-- Profile Form Card -->
+
 <div class="card">
 
   <div class="form-group">
     <label>Full Name</label>
 
     <input class="input"
-           id="nameInput"
-           value="Marjorie AI">
+           id="nameInput">
   </div>
 
   <div class="form-group">
     <label>Email</label>
 
     <input class="input"
-           id="emailInput"
-           value="marjorie@aiquantum.com">
+           id="emailInput">
   </div>
 
   <div class="form-group">
     <label>Phone Number</label>
 
     <input class="input"
-           id="phoneInput"
-           value="+1 202 888 2048">
+           id="phoneInput">
   </div>
 
   <div class="form-group">
     <label>Bio</label>
 
     <textarea class="textarea"
-              id="bioInput">AI investor focused on the future of intelligent finance and next generation technology.</textarea>
+              id="bioInput"></textarea>
   </div>
 
   <button class="save-btn"
@@ -416,7 +417,10 @@ body::before{
 
 <script>
 
-  if(localUser){
+const localUser =
+JSON.parse(localStorage.getItem("user"));
+
+if(localUser){
   document.getElementById("nameInput").value =
   localUser.name || "";
 
@@ -426,9 +430,6 @@ body::before{
   document.getElementById("phoneInput").value =
   localUser.phone || "";
 }
-
-  const localUser =
-JSON.parse(localStorage.getItem("user"));
 
 const avatarKey =
 "profile_avatar_" +
@@ -523,7 +524,7 @@ JSON.parse(localStorage.getItem("user"));
 
 const avatarKey =
 "profile_avatar_" +
-(localUser.uid || localUser.id);
+(localUser?.uid || localUser?.id || "guest");
 
 localStorage.setItem(
   avatarKey,
