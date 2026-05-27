@@ -959,7 +959,7 @@ onclick="openPlan('Advanced Yield',20000,10,'15 Days')">
 
         <button
        class="select-btn"
-       onclick="openPlan('Pro Yield',50000,14,'30 Days')">
+       onclick="openPlan('Pro Yield',50000,15,'30 Days')">
         Select Plan
         </button>
     </div>
@@ -1228,43 +1228,68 @@ async function confirmPlan(){
     }
 
     const localUser =
-    JSON.parse(localStorage.getItem("user"));
+    JSON.parse(localStorage.getItem("user") || "null");
 
-    const response =
-await fetch(
-    "https://ai-trading-system-j5jf.onrender.com/api/ai/assistant/start",
-    {
-        method:"POST",
-        headers:{
-            "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-            userId: localUser.id,
-            planName: currentPlan.planName,
-            amount: amount,
-            days: currentPlan.period,
-            rate: currentPlan.rate
-        })
-    }
-);
-
-    const result =
-    await response.json();
-
-    if(result.success){
-
-        closePlan();
-
-        showSuccess();
-
-    }else{
+    if(!localUser || !localUser.id){
 
         showError(
-            "Start Failed",
-            result.message || "Server Error"
+            "User Not Found",
+            "Please login again"
+        );
+
+        return;
+    }
+
+    try{
+
+        const response =
+        await fetch(
+            "https://ai-trading-system-j5jf.onrender.com/api/token-yield/start",
+            {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify({
+                    userId: localUser.id,
+                    planName: currentPlan.planName,
+                    amount: amount,
+                    days:
+                    currentPlan.period === "3 Months"
+                    ? 90
+                    : parseInt(currentPlan.period),
+                    rate: currentPlan.rate
+                })
+            }
+        );
+
+        const result =
+        await response.json();
+
+        if(result.success){
+
+            closePlan();
+            showSuccess();
+
+        }else{
+
+            showError(
+                "Start Failed",
+                result.message || "Server Error"
+            );
+        }
+
+    }catch(err){
+
+        console.log(err);
+
+        showError(
+            "Network Error",
+            "Please try again later"
         );
     }
 }
+
 
 </script>
 

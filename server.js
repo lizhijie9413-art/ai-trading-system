@@ -647,6 +647,7 @@ const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
   market: String,
   product: String,
   level: String,
+  strategy: String,
   amount: Number,
   profitRate: Number,
   profit: Number,
@@ -739,7 +740,11 @@ app.get("/api/admin/trade-orders", async (req, res) => {
         order.level === "AI Assistant"
         ? "AI Assistant"
         : "AI Quant",
-        coin: order.product || "",
+        coin:
+
+        order.strategy ||     
+           order.product ||
+           "",
 
         amount: order.amount || 0,
 
@@ -883,12 +888,43 @@ function getUserLevel(asset) {
 
 function randomBetween(min, max) {
   return Math.random() * (max - min) + min;
+
 }
 
-function generateSubTrades(finalRate) {
+function getAITradeCount(planName){
 
-  const count =
+  if(planName === "Short-Term AI Quant"){
+    return Math.floor(Math.random() * 3) + 4;
+  }
+
+  if(planName === "Mid-Term Smart Growth"){
+    return Math.floor(Math.random() * 6) + 10;
+  }
+
+  if(planName === "Long-Term AI Wealth Plan"){
+    return 30;
+  }
+
+  return Math.floor(Math.random() * 3) + 4;
+}
+
+function generateSubTrades(finalRate, strategy) {
+
+  let count = 5;
+
+if(strategy === "Short-Term AI Quant"){
+  count =
   Math.floor(Math.random() * 3) + 4;
+}
+
+if(strategy === "Mid-Term Smart Growth"){
+  count =
+  Math.floor(Math.random() * 6) + 10;
+}
+
+if(strategy === "Long-Term AI Wealth Plan"){
+  count = 30;
+}
 
   const list = [];
 
@@ -1011,6 +1047,47 @@ app.post("/api/ai/assistant/start", async (req, res) => {
 
     const now = new Date();
 
+    /* 只有方案1限制次数 */
+
+if(strategy === "Short-Term AI Quant"){
+
+  const level = getUserLevel(tradeAmount);
+
+  const setting = aiQuantRates[level];
+
+  const weekStart = new Date();
+
+  weekStart.setDate(
+    now.getDate() - now.getDay()
+  );
+
+  weekStart.setHours(0,0,0,0);
+
+  const weeklyCount =
+  await AIQuantOrder.countDocuments({
+
+    userId,
+
+    strategy: "Short-Term AI Quant",
+
+    level: "AI Assistant",
+
+    createdAt: {
+      $gte: weekStart
+    }
+
+  });
+
+  if(weeklyCount >= setting.weeklyLimit){
+
+    return res.json({
+      success:false,
+      message:
+      "Weekly Short-Term AI Quant limit reached"
+    });
+  }
+}
+
     const profitRate =
     Number(
       randomBetween(1.5, 6.5).toFixed(2)
@@ -1024,14 +1101,56 @@ app.post("/api/ai/assistant/start", async (req, res) => {
       ).toFixed(2)
     );
 
-    const durationMinutes =
-    Math.floor(Math.random() * 120) + 60;
+    let durationMinutes = 120;
+
+if(strategy === "Short-Term AI Quant"){
+
+  durationMinutes =
+  Math.floor(Math.random() * 61) + 60;
+}
+
+if(strategy === "Mid-Term Smart Growth"){
+
+  durationMinutes =
+  Math.floor(Math.random() * 4321) + 10080;
+}
+
+if(strategy === "Long-Term AI Wealth Plan"){
+
+  durationMinutes = 43200;
+}
 
     const endTime =
     new Date(
       now.getTime() +
       durationMinutes * 60 * 1000
     );
+
+    const subTrades =
+generateSubTrades(
+  profitRate,
+  strategy
+);
+
+subTrades.forEach(item => {
+
+  item.showAfterMinutes =
+  Math.floor(
+    Math.random() * (durationMinutes - 10)
+  ) + 5;
+
+  item.showTime =
+  new Date(
+    now.getTime() +
+    item.showAfterMinutes * 60 * 1000
+  );
+
+});
+
+subTrades.sort((a,b)=>{
+  return new Date(a.showTime)
+  - new Date(b.showTime);
+});
 
     const selected =
     aiMarkets[
@@ -1056,6 +1175,8 @@ app.post("/api/ai/assistant/start", async (req, res) => {
       level:
       "AI Assistant",
 
+      strategy,
+
       amount:
       tradeAmount,
 
@@ -1066,8 +1187,7 @@ app.post("/api/ai/assistant/start", async (req, res) => {
       finalRate:
       profitRate,
 
-      subTrades:
-      generateSubTrades(profitRate),
+       subTrades,
 
       status:
       "Running",
@@ -1088,9 +1208,9 @@ app.post("/api/ai/assistant/start", async (req, res) => {
       user.records = [];
     }
 
-    user.records.push(
-      `AI Assistant locked ${tradeAmount} USDT`
-    );
+   user.records.push(
+  `AI Assistant started: ${strategy}, locked ${tradeAmount} USDT`
+);
 
     await user.save();
 
@@ -1127,44 +1247,27 @@ app.post("/api/ai/quant/start", async (req, res) => {
       });
     }
 
-   const asset = Number(user.asset || 0);
-   const tradeAmount = Number(amount || 0);
+    const asset = Number(user.asset || 0);
+    const tradeAmount = Number(amount || 0);
 
-if (tradeAmount <= 0) {
+    if (tradeAmount <= 0) {
+      return res.json({
+        success: false,
+        message: "Please enter trade amount"
+      });
+    }
 
-  return res.json({
-    success: false,
-    message: "Please enter trade amount"
-  });
-}
+    if (tradeAmount > asset) {
+      return res.json({
+        success: false,
+        message: "Insufficient balance"
+      });
+    }
 
-if (tradeAmount > asset) {
-
-  return res.json({
-    success: false,
-    message: "Insufficient balance"
-  });
-}
-
-    const level = getUserLevel(asset);
+    const level = getUserLevel(tradeAmount);
     const setting = aiQuantRates[level];
 
     const now = new Date();
-
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    const todayOrder = await AIQuantOrder.findOne({
-      userId,
-      createdAt: { $gte: todayStart }
-    });
-
-    if (todayOrder) {
-      return res.json({
-        success: false,
-        message: "You can trade again tomorrow"
-      });
-    }
 
     const weekStart = new Date();
     weekStart.setDate(now.getDate() - now.getDay());
@@ -1172,6 +1275,7 @@ if (tradeAmount > asset) {
 
     const weeklyCount = await AIQuantOrder.countDocuments({
       userId,
+      level: { $ne: "AI Assistant" },
       createdAt: { $gte: weekStart }
     });
 
@@ -1182,7 +1286,10 @@ if (tradeAmount > asset) {
       });
     }
 
-    const userFirstOrder = await AIQuantOrder.findOne({ userId }).sort({ createdAt: 1 });
+    const userFirstOrder = await AIQuantOrder.findOne({
+      userId,
+      level: { $ne: "AI Assistant" }
+    }).sort({ createdAt: 1 });
 
     let rateRange = setting.week1;
 
@@ -1196,12 +1303,12 @@ if (tradeAmount > asset) {
     }
 
     const profitRate =
-Number(
-  randomBetween(
-    rateRange.min,
-    rateRange.max
-  ).toFixed(2)
-);
+    Number(
+      randomBetween(
+        rateRange.min,
+        rateRange.max
+      ).toFixed(2)
+    );
 
 const subTrades =
 generateSubTrades(profitRate);
@@ -1260,7 +1367,9 @@ subTrades.sort((a, b) => {
     });
 
 
+
 // 扣除交易本金
+
 user.asset = asset - tradeAmount;
 user.balance = user.asset;
 
@@ -1274,17 +1383,11 @@ user.records.push(
 
 await user.save();
 
-    user.records.push(
-      `AI Quant started: ${selected.product}, amount ${tradeAmount} USDT`
-    );
-
-    await user.save();
-
-    res.json({
-      success: true,
-      message: "AI Quant trade started",
-      order
-    });
+res.json({
+  success: true,
+  message: "AI Quant trade started",
+  order
+});
 
   } catch (error) {
     console.log(error);
@@ -1415,7 +1518,10 @@ app.post("/api/admin/ai-quant/set-rate/:id", async (req, res) => {
     profit;
 
     order.subTrades =
-    generateSubTrades(finalRate);
+generateSubTrades(
+  finalRate,
+  order.strategy
+);
 
     await order.save();
 
@@ -1966,8 +2072,10 @@ async function settleExpiredAIQuantOrders(){
       }
 
       user.records.push(
-        `AI Quant completed +${profit.toFixed(2)} USDT`
-      );
+  order.level === "AI Assistant"
+  ? `AI Assistant completed +${profit.toFixed(2)} USDT`
+  : `AI Quant completed +${profit.toFixed(2)} USDT`
+   );
 
       order.status = "Completed";
 

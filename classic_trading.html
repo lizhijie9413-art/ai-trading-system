@@ -414,6 +414,7 @@ function speakAI(text){
 let aiPlanStep = "";
 let aiPlanAmount = 0;
 let aiPlanOptions = {};
+let selectedAIPlanName = "";;
 
 function randomItem(list){
     return list[Math.floor(Math.random() * list.length)];
@@ -735,6 +736,9 @@ function buildPortfolio(balance, risk, confidence){
 }
 
 function buildSelectedPlan(plan){
+
+    selectedAIPlanName = plan.name;
+    
     return `
     Strategy Selected Successfully<br><br>
 
@@ -790,10 +794,15 @@ Start AI Execution
 async function startAITrade(){
 
     const localUser =
-    JSON.parse(localStorage.getItem("user"));
+    JSON.parse(localStorage.getItem("user") || "null");
 
     if(!localUser || !localUser.id){
-        alert("User not found");
+        addMessage("User not found. Please login again.","ai");
+        return;
+    }
+
+    if(!aiPlanAmount || aiPlanAmount <= 0){
+        addMessage("Invalid trading amount.","ai");
         return;
     }
 
@@ -801,8 +810,8 @@ async function startAITrade(){
 
         const response =
         await fetch(
-        "https://ai-trading-system-j5jf.onrender.com/api/users/",
-        {
+         "https://ai-trading-system-j5jf.onrender.com/api/ai/assistant/start",
+            {
                 method:"POST",
                 headers:{
                     "Content-Type":"application/json"
@@ -833,18 +842,20 @@ async function startAITrade(){
 
         }else{
 
-           ddMessage(
-        result.message || "AI execution failed. Please check your available balance.",
-         "ai"
-          );
-        
+            addMessage(
+                result.message || "AI execution failed. Please check your available balance.",
+                "ai"
+            );
+
         }
 
     }catch(err){
 
+        console.log(err);
+
         addMessage(
-        "Network connection failed.",
-        "ai"
+            "Network connection failed. Please try again later.",
+            "ai"
         );
     }
 }

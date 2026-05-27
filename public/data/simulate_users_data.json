@@ -1,0 +1,70 @@
+{
+  "kyc_users": [
+    {
+      "id": 1,
+      "name": "Alice",
+      "email": "alice@example.com",
+      "status": "Pending"
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "email": "bob@example.com",
+      "status": "Approved"
+    }
+  ],
+
+  "users": [
+    {
+      "id": 1,
+      "username": "Alice01",
+      "status": "Active",
+      "balance": 12500,
+      "wallet": "USDT-TRC20-Alice"
+    },
+    {
+      "id": 2,
+      "username": "Bob02",
+      "status": "Frozen",
+      "balance": 3100,
+      "wallet": "USDT-TRC20-Bob"
+    },
+    {
+      "id": 3,
+      "username": "Charlie03",
+      "status": "Active",
+      "balance": 8600,
+      "wallet": "USDT-TRC20-Charlie"
+    }
+  ],
+
+  "orders": [
+    {
+      "id": 1,
+      "userId": 1,
+      "symbol": "AAPL",
+      "amount": 100,
+      "price": 150,
+      "side": "BUY",
+      "risk": "正常"
+    },
+    {
+      "id": 2,
+      "userId": 2,
+      "symbol": "MSFT",
+      "amount": 50,
+      "price": 300,
+      "side": "SELL",
+      "risk": "警告"
+    },
+    {
+      "id": 3,
+      "userId": 3,
+      "symbol": "NVDA",
+      "amount": 200,
+      "price": 600,
+      "side": "BUY",
+      "risk": "高风险"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "userId": 1,
+    "symbol": "AAPL",
+    "type": "LIMIT",
+    "price": 155,
+    "amount": 10,
+    "status": "open"
+  },
+  {
+    "id": 2,
+    "userId": 2,
+    "symbol": "MSFT",
+    "type": "MARKET",
+    "price": 0,
+    "amount": 5,
+    "status": "filled"
+  }
+]

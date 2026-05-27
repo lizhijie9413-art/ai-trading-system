@@ -157,12 +157,7 @@ tr:hover{
   border-radius:8px;
   cursor:pointer;
   font-weight:bold;
-  margin:2px;
-}
-
-.complete-btn{
-  background:#00c853;
-  color:white;
+  margin-top:8px;
 }
 
 .refresh-btn{
@@ -288,9 +283,7 @@ async function loadTrades(){
 
     if(result.success){
 
-     trades = (result.data || []).filter(item => {
-  return item.status === "Running";
-    });
+      trades = result.data || [];
 
     }else{
 
@@ -302,8 +295,8 @@ async function loadTrades(){
   }catch(err){
 
     console.log(err);
-
     alert("交易数据加载失败");
+
   }
 }
 
@@ -329,7 +322,7 @@ async function setRate(id){
         "Content-Type":"application/json"
       },
       body:JSON.stringify({
-        rate
+        rate: rate
       })
     }
   );
@@ -338,10 +331,14 @@ async function setRate(id){
   await response.json();
 
   if(result.success){
+
     alert("收益率设置成功");
     loadTrades();
+
   }else{
+
     alert(result.message || "设置失败");
+
   }
 }
 
@@ -362,62 +359,50 @@ function formatRate(rate){
 
 function getStatusText(status){
 
-  if(status === "Running")
+  if(status === "Running"){
     return "运行中";
+  }
 
-  if(status === "Completed")
+  if(status === "Completed"){
     return "已完成";
+  }
 
   return status || "未知";
 }
 
 function getStatusClass(status){
 
-  if(status === "Completed")
+  if(status === "Completed"){
     return "completed";
+  }
 
   return "running";
 }
 
 function updateStats(){
 
-  document.getElementById(
-    "totalTrades"
-  ).innerText = trades.length;
+  document.getElementById("totalTrades").innerText =
+  trades.length;
 
-  document.getElementById(
-    "runningTrades"
-  ).innerText =
-  trades.filter(
-    item => item.status === "Running"
-  ).length;
+  document.getElementById("runningTrades").innerText =
+  trades.filter(item => item.status === "Running").length;
 
-  document.getElementById(
-    "completedTrades"
-  ).innerText =
-  trades.filter(
-    item => item.status === "Completed"
-  ).length;
+  document.getElementById("completedTrades").innerText =
+  trades.filter(item => item.status === "Completed").length;
 
   const totalVolume =
   trades.reduce((sum,item)=>{
-
     return sum + Number(item.amount || 0);
-
   },0);
 
-  document.getElementById(
-    "totalVolume"
-  ).innerText =
+  document.getElementById("totalVolume").innerText =
   formatUSDT(totalVolume);
 }
 
 function renderTrades(){
 
   const tbody =
-  document.getElementById(
-    "tradeTable"
-  );
+  document.getElementById("tradeTable");
 
   tbody.innerHTML = "";
 
@@ -432,7 +417,6 @@ function renderTrades(){
     `;
 
     updateStats();
-
     return;
   }
 
@@ -447,36 +431,40 @@ function renderTrades(){
     : "profit-negative";
 
     tr.innerHTML = `
-      <td>${item.id || ""}</td>
+      <td>${item.id || item._id || ""}</td>
 
       <td>${item.uid || ""}</td>
 
-      <td>${item.user || ""}</td>
+      <td>${item.user || item.username || item.name || ""}</td>
 
-      <td>${item.type || ""}</td>
+      <td>${item.type || "Token Yield"}</td>
 
-      <td>${item.coin || ""}</td>
-
-      <td>
-  <input
-    id="rate-${item.id}"
-    type="number"
-    step="0.01"
-    placeholder="收益率%"
-    style="width:90px;padding:6px;border-radius:6px;border:none;"
-  >
-
-  <button
-    class="action-btn refresh-btn"
-    onclick="setRate('${item.id}')"
-  >
-    设置
-  </button>
-</td>
+      <td>${item.coin || item.planName || item.product || ""}</td>
 
       <td>${formatUSDT(item.amount)}</td>
 
-      <td>${formatRate(item.rate)}</td>
+      <td>
+        ${formatRate(item.rate)}
+
+        <br><br>
+
+        <input
+          id="rate-${item.id || item._id}"
+          type="number"
+          step="0.01"
+          placeholder="收益率%"
+          style="width:90px;padding:6px;border-radius:6px;border:none;"
+        >
+
+        <br>
+
+        <button
+          class="action-btn refresh-btn"
+          onclick="setRate('${item.id || item._id}')"
+        >
+          设置
+        </button>
+      </td>
 
       <td class="${profitClass}">
         ${formatUSDT(item.profit)}
@@ -486,7 +474,7 @@ function renderTrades(){
         ${getStatusText(item.status)}
       </td>
 
-      <td>${item.time || ""}</td>
+      <td>${item.time || item.createdAt || ""}</td>
     `;
 
     tbody.appendChild(tr);
@@ -499,14 +487,10 @@ function renderTrades(){
 function searchTrades(){
 
   const keyword =
-  document.getElementById(
-    "searchInput"
-  ).value.toLowerCase();
+  document.getElementById("searchInput").value.toLowerCase();
 
   const rows =
-  document.querySelectorAll(
-    "#tradeTable tr"
-  );
+  document.querySelectorAll("#tradeTable tr");
 
   rows.forEach(row=>{
 

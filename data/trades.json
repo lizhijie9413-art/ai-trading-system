@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "userId": 1,
+    "symbol": "AAPL",
+    "amount": 10,
+    "price": 150,
+    "side": "BUY",
+    "timestamp": "2026-05-20T12:00:00Z"
+  },
+  {
+    "id": 2,
+    "userId": 2,
+    "symbol": "MSFT",
+    "amount": 5,
+    "price": 250,
+    "side": "SELL",
+    "timestamp": "2026-05-20T12:05:00Z"
+  },
+  {
+    "id": 3,
+    "userId": 3,
+    "symbol": "TSLA",
+    "amount": 2,
+    "price": 800,
+    "side": "BUY",
+    "timestamp": "2026-05-20T12:10:00Z"
+  }
+]
