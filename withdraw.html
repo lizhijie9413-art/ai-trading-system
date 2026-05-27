@@ -439,7 +439,12 @@ async function loadAssets(){
   }
 
   try{
-    const res = await fetch("http://localhost:3000/api/users/" + localUser.id);
+    const API_BASE =
+   "https://ai-trading-system-j5jf.onrender.com";
+
+   const res = await fetch(
+  API_BASE + "/api/users/" + localUser.id
+);
     const result = await res.json();
 
     if(result.success){
@@ -502,7 +507,10 @@ async function submitWithdrawal(){
   }
 
   try{
-    const res = await fetch("http://localhost:3000/api/withdraw",{
+    const API_BASE =
+"https://ai-trading-system-j5jf.onrender.com";
+
+const res = await fetch(API_BASE + "/api/withdraw",{
       method:"POST",
       headers:{
         "Content-Type":"application/json"
