@@ -287,7 +287,7 @@ body::before{
 
 <script>
 const socket =
-io("https://ai-trading-system-j5jf.onrender.com");
+io("https://www.quantai.fyi");
 
 const localUser =
   JSON.parse(localStorage.getItem("user")) || {};
@@ -353,14 +353,14 @@ function renderMessages(){
       ? "message support"
       : "message user";
 
-    const content =
+   const content =
         data.type === "image"
       ? `<img
         class="chat-img"
         src="${
           data.imageUrl.startsWith("http")
   ? data.imageUrl
-  : "https://ai-trading-system-j5jf.onrender.com" + data.imageUrl
+  : "https://www.quantai.fyi" + data.imageUrl
         }"
      >`
     : escapeHTML(data.message || "");
@@ -420,7 +420,7 @@ async function sendImage(){
   try{
 
     const res = await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/chat/upload",
+  "https://www.quantai.fyi/api/chat/upload",
   {
     method: "POST",
     body: formData

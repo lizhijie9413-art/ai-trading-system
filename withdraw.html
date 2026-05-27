@@ -440,7 +440,7 @@ async function loadAssets(){
 
   try{
     const API_BASE =
-   "https://ai-trading-system-j5jf.onrender.com";
+   "https://www.quantai.fyi";
 
    const res = await fetch(
   API_BASE + "/api/users/" + localUser.id
@@ -507,8 +507,7 @@ async function submitWithdrawal(){
   }
 
   try{
-    const API_BASE =
-"https://ai-trading-system-j5jf.onrender.com";
+const API_BASE = "https://www.quantai.fyi";
 
 const res = await fetch(API_BASE + "/api/withdraw",{
       method:"POST",

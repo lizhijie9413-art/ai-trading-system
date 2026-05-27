@@ -6,7 +6,6 @@
 <title>Asset Convert</title>
 
 <style>
-
 *{
     margin:0;
     padding:0;
@@ -22,8 +21,6 @@ body{
     margin:0 auto;
     overflow-x:hidden;
 }
-
-/* HEADER */
 
 .header{
     display:flex;
@@ -49,8 +46,6 @@ body{
     font-weight:800;
 }
 
-/* CARD */
-
 .transfer-card{
     background:linear-gradient(180deg,#11183c,#090d22);
     border:1px solid rgba(140,100,255,0.25);
@@ -59,16 +54,12 @@ body{
     box-shadow:0 0 18px rgba(140,100,255,0.12);
 }
 
-/* LABEL */
-
 .label{
     font-size:13px;
     color:#aeb6d8;
     margin-bottom:10px;
     margin-top:16px;
 }
-
-/* INPUT */
 
 .input-box{
     width:100%;
@@ -82,20 +73,6 @@ body{
     font-size:15px;
 }
 
-/* REMOVE NUMBER ARROWS */
-
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button{
-    -webkit-appearance:none;
-    margin:0;
-}
-
-input[type=number]{
-    -moz-appearance:textfield;
-}
-
-/* SWAP */
-
 .swap{
     width:58px;
     height:58px;
@@ -107,9 +84,8 @@ input[type=number]{
     margin:20px auto;
     font-size:28px;
     box-shadow:0 0 20px rgba(140,100,255,0.35);
+    cursor:pointer;
 }
-
-/* INFO */
 
 .info-box{
     margin-top:18px;
@@ -125,8 +101,6 @@ input[type=number]{
     font-size:13px;
     color:#c5c9e0;
 }
-
-/* BUTTON */
 
 .transfer-btn{
     width:100%;
@@ -146,89 +120,59 @@ input[type=number]{
     transform:scale(0.98);
 }
 
+.transfer-btn:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+}
+
+.message{
+    margin-top:16px;
+    text-align:center;
+    font-size:13px;
+    color:#aeb6d8;
+}
 </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
-
 <div class="header">
-
-    <div class="back-icon" onclick="window.history.back()">
-        ←
-    </div>
-
-    <div class="title">
-        Asset Convert
-    </div>
-
+    <div class="back-icon" onclick="window.history.back()">←</div>
+    <div class="title">Asset Convert</div>
 </div>
-
-<!-- CARD -->
 
 <div class="transfer-card">
 
-    <!-- FROM -->
-
-    <div class="label">
-        From Asset
-    </div>
-
-    <select class="input-box">
-
-        <option>USDT Wallet</option>
-        <option>BTC</option>
-        <option>ETH</option>
-        <option>NVDA Stock</option>
-        <option>AAPL Stock</option>
-        <option>AI Tech Fund</option>
-        <option>S&P 500 Fund</option>
-
+    <div class="label">From Asset</div>
+    <select class="input-box" id="fromAsset" onchange="updateInfo()">
+        <option value="USDT">USDT Wallet</option>
+        <option value="BTC">BTC</option>
+        <option value="ETH">ETH</option>
     </select>
 
-    <!-- SWAP -->
+    <div class="swap" onclick="swapAssets()">⇅</div>
 
-    <div class="swap">
-        ⇅
-    </div>
-
-    <!-- TO -->
-
-    <div class="label">
-        To Asset
-    </div>
-
-    <select class="input-box">
-
-        <option>BTC</option>
-        <option>ETH</option>
-        <option>USDT Wallet</option>
-        <option>AI Strategy Wallet</option>
-        <option>NVDA Stock</option>
-        <option>AAPL Stock</option>
-
+    <div class="label">To Asset</div>
+    <select class="input-box" id="toAsset" onchange="updateInfo()">
+        <option value="BTC">BTC</option>
+        <option value="ETH">ETH</option>
+        <option value="USDT">USDT Wallet</option>
     </select>
 
-    <!-- AMOUNT -->
-
-    <div class="label">
-        Convert Amount
-    </div>
-
+    <div class="label">Convert Amount</div>
     <input
-    type="number"
-    class="input-box"
-    placeholder="Enter amount"
+      type="number"
+      class="input-box"
+      id="amount"
+      placeholder="Enter amount"
+      oninput="updateInfo()"
     />
-
-    <!-- INFO -->
 
     <div class="info-box">
 
         <div class="info-row">
             <span>Available Balance</span>
-            <span>12,580 USDT</span>
+            <span id="availableBalance">Loading...</span>
         </div>
 
         <div class="info-row">
@@ -237,24 +181,226 @@ input[type=number]{
         </div>
 
         <div class="info-row">
-            <span>Estimated Rate</span>
-            <span>1 BTC ≈ 104,220 USDT</span>
+            <span>Estimated Receive</span>
+            <span id="estimatedReceive">--</span>
         </div>
 
         <div class="info-row" style="margin-bottom:0;">
             <span>Status</span>
-            <span style="color:#00ff9d;">Instant</span>
+            <span id="statusText" style="color:#00ff9d;">Ready</span>
         </div>
 
     </div>
 
-    <!-- BUTTON -->
-
-    <button class="transfer-btn">
+    <button class="transfer-btn" id="convertBtn" onclick="confirmConvert()">
         Confirm Convert
     </button>
 
+    <div class="message" id="message"></div>
+
 </div>
+
+<script>
+const API_BASE = "https://www.quantai.fyi";
+
+let wallets = {
+    USDT: 0,
+    BTC: 0,
+    ETH: 0
+};
+
+const rates = {
+    USDT: 1,
+    BTC: 104220,
+    ETH: 3600
+};
+
+function getLocalUser(){
+    return JSON.parse(localStorage.getItem("user") || "{}");
+}
+
+function showMessage(text, color = "#aeb6d8"){
+    const msg = document.getElementById("message");
+    msg.innerText = text;
+    msg.style.color = color;
+}
+
+async function loadWallets(){
+    const localUser = getLocalUser();
+
+    if(!localUser || !localUser.id){
+        showMessage("Please login again", "#ff6b6b");
+        return;
+    }
+
+    try{
+        const res = await fetch(API_BASE + "/api/users/" + localUser.id);
+        const result = await res.json();
+
+        if(result.success){
+            const user = result.user;
+
+            localStorage.setItem("user", JSON.stringify(user));
+
+            wallets.USDT = Number(
+                user.wallets?.USDT ??
+                user.asset ??
+                user.balance ??
+                0
+            );
+
+            wallets.BTC = Number(user.wallets?.BTC || 0);
+            wallets.ETH = Number(user.wallets?.ETH || 0);
+
+            updateInfo();
+
+        }else{
+            showMessage(result.message || "Failed to load wallet", "#ff6b6b");
+        }
+
+    }catch(err){
+        console.log(err);
+        showMessage("Server connection failed", "#ff6b6b");
+    }
+}
+
+function updateInfo(){
+    const fromAsset = document.getElementById("fromAsset").value;
+    const toAsset = document.getElementById("toAsset").value;
+    const amount = Number(document.getElementById("amount").value || 0);
+
+    const available = Number(wallets[fromAsset] || 0);
+
+    document.getElementById("availableBalance").innerText =
+        available.toLocaleString(undefined,{
+            minimumFractionDigits:2,
+            maximumFractionDigits:8
+        }) + " " + fromAsset;
+
+    if(fromAsset === toAsset){
+        document.getElementById("estimatedReceive").innerText = "--";
+        document.getElementById("statusText").innerText = "Invalid";
+        document.getElementById("statusText").style.color = "#ff6b6b";
+        return;
+    }
+
+    if(amount <= 0){
+        document.getElementById("estimatedReceive").innerText = "--";
+        document.getElementById("statusText").innerText = "Ready";
+        document.getElementById("statusText").style.color = "#00ff9d";
+        return;
+    }
+
+    if(amount > available){
+        document.getElementById("estimatedReceive").innerText = "--";
+        document.getElementById("statusText").innerText = "Insufficient";
+        document.getElementById("statusText").style.color = "#ff6b6b";
+        return;
+    }
+
+    const feeRate = 0.001;
+    const afterFee = amount * (1 - feeRate);
+
+    const usdtValue = afterFee * rates[fromAsset];
+    const receive = usdtValue / rates[toAsset];
+
+    document.getElementById("estimatedReceive").innerText =
+        receive.toLocaleString(undefined,{
+            minimumFractionDigits:2,
+            maximumFractionDigits:8
+        }) + " " + toAsset;
+
+    document.getElementById("statusText").innerText = "Ready";
+    document.getElementById("statusText").style.color = "#00ff9d";
+}
+
+function swapAssets(){
+    const from = document.getElementById("fromAsset");
+    const to = document.getElementById("toAsset");
+
+    const oldFrom = from.value;
+    from.value = to.value;
+    to.value = oldFrom;
+
+    updateInfo();
+}
+
+async function confirmConvert(){
+    const localUser = getLocalUser();
+
+    if(!localUser || !localUser.id){
+        showMessage("Please login again", "#ff6b6b");
+        return;
+    }
+
+    const fromAsset = document.getElementById("fromAsset").value;
+    const toAsset = document.getElementById("toAsset").value;
+    const amount = Number(document.getElementById("amount").value || 0);
+
+    if(fromAsset === toAsset){
+        showMessage("Cannot convert to same asset", "#ff6b6b");
+        return;
+    }
+
+    if(amount <= 0){
+        showMessage("Please enter amount", "#ff6b6b");
+        return;
+    }
+
+    if(amount > Number(wallets[fromAsset] || 0)){
+        showMessage("Insufficient balance", "#ff6b6b");
+        return;
+    }
+
+    const btn = document.getElementById("convertBtn");
+    btn.disabled = true;
+    btn.innerText = "Converting...";
+
+    try{
+        const res = await fetch(API_BASE + "/api/convert", {
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                userId: localUser.id,
+                fromAsset,
+                toAsset,
+                amount
+            })
+        });
+
+        const result = await res.json();
+
+        if(result.success){
+            wallets.USDT = Number(result.wallets.USDT || 0);
+            wallets.BTC = Number(result.wallets.BTC || 0);
+            wallets.ETH = Number(result.wallets.ETH || 0);
+
+            localUser.asset = result.asset;
+            localUser.wallets = result.wallets;
+            localStorage.setItem("user", JSON.stringify(localUser));
+
+            document.getElementById("amount").value = "";
+
+            showMessage("Convert successful", "#00ff9d");
+            updateInfo();
+
+        }else{
+            showMessage(result.message || "Convert failed", "#ff6b6b");
+        }
+
+    }catch(err){
+        console.log(err);
+        showMessage("Server connection failed", "#ff6b6b");
+    }
+
+    btn.disabled = false;
+    btn.innerText = "Confirm Convert";
+}
+
+loadWallets();
+</script>
 
 </body>
 </html>
