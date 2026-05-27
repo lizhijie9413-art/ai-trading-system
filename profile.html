@@ -464,12 +464,17 @@ body::before{
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:5px;
+  gap:6px;
+  transition:.25s ease;
 }
 
-.nav-item b{
+.nav-item i{
   font-size:22px;
-  font-weight:400;
+}
+
+.nav-item:active{
+  transform:scale(.84);
+  opacity:.75;
 }
 
 .nav-item.active{
@@ -681,7 +686,7 @@ onclick="location.href='notifications.html'">
     Home
   </a>
 
-  <a class="nav-item active" href="market.html">
+  <a class="nav-item" href="market.html">
     <i class="fa-solid fa-chart-column"></i>
     Markets
   </a>
@@ -696,7 +701,7 @@ onclick="location.href='notifications.html'">
     Portfolio
   </a>
 
-  <a class="nav-item" href="profile.html">
+  <a class="nav-item active" href="profile.html">
     <i class="fa-regular fa-user"></i>
     Profile
   </a>
