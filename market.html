@@ -800,337 +800,197 @@ canvas{
 </div>
 
 <script>
-
 const TWELVE_API_KEY = "ac927c37acc4412db76bd5b951a961b5";
 
-const marketData = {
-    Stocks: [
-        {name:'Apple Inc.', symbol:'AAPL', price:193.42, change:2.35, icon:'A'},
-        {name:'NVIDIA Corp.', symbol:'NVDA', price:1242.11, change:3.21, icon:'N'},
-        {name:'Microsoft Corp.', symbol:'MSFT', price:416.78, change:1.42, icon:'M'},
-        {name:'Tesla Inc.', symbol:'TSLA', price:178.35, change:-0.84, icon:'T'},
-        {name:'Alphabet Inc.', symbol:'GOOGL', price:162.18, change:1.18, icon:'G'}
-    ],
-    ETFs: [
-        {name:'SPDR S&P 500 ETF', symbol:'SPY', price:528.64, change:.82, icon:'S'},
-        {name:'Invesco QQQ Trust', symbol:'QQQ', price:458.21, change:1.15, icon:'Q'},
-        {name:'Vanguard Total Stock', symbol:'VTI', price:267.84, change:.61, icon:'V'},
-        {name:'iShares Semiconductor', symbol:'SOXX', price:234.92, change:1.94, icon:'X'}
-    ],
-    Crypto: [
-        {name:'Bitcoin', symbol:'BTC', price:68342.20, change:1.92, icon:'B'},
-        {name:'Ethereum', symbol:'ETH', price:3812.44, change:2.35, icon:'E'},
-        {name:'Solana', symbol:'SOL', price:167.83, change:-.42, icon:'S'},
-        {name:'BNB', symbol:'BNB', price:612.20, change:.76, icon:'B'}
-    ],
-    Indices: [
-        {name:'S&P 500', symbol:'SPX', price:5284.65, change:.82, icon:'S'},
-        {name:'NASDAQ', symbol:'NDX', price:16745.30, change:1.25, icon:'N'},
-        {name:'DOW JONES', symbol:'DJI', price:38886.27, change:.51, icon:'D'},
-        {name:'FTSE 100', symbol:'UKX', price:8232.54, change:-.23, icon:'F'}
-    ],
-    Commodities: [
-        {name:'Gold Futures', symbol:'XAU', price:2368.20, change:.48, icon:'G'},
-        {name:'Silver Futures', symbol:'XAG', price:30.82, change:.66, icon:'S'},
-        {name:'Crude Oil', symbol:'OIL', price:78.41, change:-.31, icon:'O'},
-        {name:'Natural Gas', symbol:'NG', price:2.91, change:1.22, icon:'N'}
-    ]
-};
+let activeTab = "Stocks";
 
-let activeTab = 'Stocks';
+const marketData = {
+  Stocks: [
+    { name:"Apple Inc.", symbol:"AAPL", api:"AAPL", price:0, change:0, icon:"A" },
+    { name:"NVIDIA Corp.", symbol:"NVDA", api:"NVDA", price:0, change:0, icon:"N" },
+    { name:"Microsoft Corp.", symbol:"MSFT", api:"MSFT", price:0, change:0, icon:"M" },
+    { name:"Tesla Inc.", symbol:"TSLA", api:"TSLA", price:0, change:0, icon:"T" },
+    { name:"Alphabet Inc.", symbol:"GOOGL", api:"GOOGL", price:0, change:0, icon:"G" }
+  ],
+  Crypto: [
+    { name:"Bitcoin", symbol:"BTC", api:"BTC/USD", price:0, change:0, icon:"B" },
+    { name:"Ethereum", symbol:"ETH", api:"ETH/USD", price:0, change:0, icon:"E" },
+    { name:"Solana", symbol:"SOL", api:"SOL/USD", price:0, change:0, icon:"S" },
+    { name:"BNB", symbol:"BNB", api:"BNB/USD", price:0, change:0, icon:"B" }
+  ],
+  ETFs: [
+    { name:"SPDR S&P 500 ETF", symbol:"SPY", api:"SPY", price:0, change:0, icon:"S" },
+    { name:"Invesco QQQ Trust", symbol:"QQQ", api:"QQQ", price:0, change:0, icon:"Q" },
+    { name:"Vanguard Total Stock", symbol:"VTI", api:"VTI", price:0, change:0, icon:"V" },
+    { name:"iShares Semiconductor", symbol:"SOXX", api:"SOXX", price:0, change:0, icon:"X" }
+  ],
+  Indices: [
+    { name:"S&P 500", symbol:"SPX", api:"SPX", price:0, change:0, icon:"S" },
+    { name:"NASDAQ", symbol:"NDX", api:"NDX", price:0, change:0, icon:"N" },
+    { name:"DOW JONES", symbol:"DJI", api:"DJI", price:0, change:0, icon:"D" }
+  ],
+  Commodities: [
+    { name:"Gold", symbol:"XAU", api:"XAU/USD", price:0, change:0, icon:"G" },
+    { name:"Silver", symbol:"XAG", api:"XAG/USD", price:0, change:0, icon:"S" },
+    { name:"Crude Oil", symbol:"OIL", api:"WTI/USD", price:0, change:0, icon:"O" }
+  ]
+};
 
 async function loadRealMarketData(){
 
-    try{
+  const allSymbols = Object.values(marketData)
+    .flat()
+    .map(item => item.api)
+    .join(",");
 
-        const symbols =
-        "AAPL,NVDA,MSFT,TSLA,GOOGL,BTC/USD,ETH/USD,SOL/USD,BNB/USD";
+  try{
+    const res = await fetch(
+      `https://api.twelvedata.com/quote?symbol=${allSymbols}&apikey=${TWELVE_API_KEY}`
+    );
 
-        const res = await fetch(
-        `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${TWELVE_API_KEY}`
-        );
+    const data = await res.json();
 
-        const data = await res.json();
+    Object.values(marketData).flat().forEach(item => {
+      const real = data[item.api];
 
-        console.log(data);
-
-        // ===== STOCKS =====
-
-        if(data.AAPL){
-
-            marketData.Stocks[0].price =
-            Number(data.AAPL.close);
-
-            marketData.Stocks[0].change =
-            Number(data.AAPL.percent_change);
-
-        }
-
-        if(data.NVDA){
-
-            marketData.Stocks[1].price =
-            Number(data.NVDA.close);
-
-            marketData.Stocks[1].change =
-            Number(data.NVDA.percent_change);
-
-        }
-
-        if(data.MSFT){
-
-            marketData.Stocks[2].price =
-            Number(data.MSFT.close);
-
-            marketData.Stocks[2].change =
-            Number(data.MSFT.percent_change);
-
-        }
-
-        // ===== CRYPTO =====
-
-        if(data["BTC/USD"]){
-
-            marketData.Crypto[0].price =
-            Number(data["BTC/USD"].close);
-
-            marketData.Crypto[0].change =
-            Number(data["BTC/USD"].percent_change);
-
-        }
-
-        if(data["ETH/USD"]){
-
-            marketData.Crypto[1].price =
-            Number(data["ETH/USD"].close);
-
-            marketData.Crypto[1].change =
-            Number(data["ETH/USD"].percent_change);
-
-        }
-
-        if(data["SOL/USD"]){
-
-            marketData.Crypto[2].price =
-            Number(data["SOL/USD"].close);
-
-            marketData.Crypto[2].change =
-            Number(data["SOL/USD"].percent_change);
-
-        }
-
-        if(data["BNB/USD"]){
-
-            marketData.Crypto[3].price =
-            Number(data["BNB/USD"].close);
-
-            marketData.Crypto[3].change =
-            Number(data["BNB/USD"].percent_change);
-
-        }
-
-        render();
-
-    }catch(err){
-
-        console.log("API Error", err);
-
-    }
-
-}
-
-loadRealMarketData();
-let chartCache = {};
-const indexes = [
-    {name:'S&P 500', price:5284.65, change:0.82},
-    {name:'NASDAQ', price:16745.30, change:1.25},
-    {name:'DOW JONES', price:38886.27, change:0.51},
-    {name:'FTSE 100', price:8232.54, change:-0.23}
-];
-
-const newsList = [
-    'NVIDIA hits new all-time high as AI demand accelerates',
-    'Apple announces new AI features for next generation devices',
-    'Microsoft expands AI cloud services across global markets'
-];
-
-function randomData(key, up=true){
-
-    if(chartCache[key]){
-        return chartCache[key];
-    }
-
-    let arr = [];
-
-    let v = 20 + Math.random() * 10;
-
-    for(let i=0;i<26;i++){
-
-        v +=
-        (Math.random() - 0.45) * 5 +
-        (up ? .7 : -.25);
-
-        arr.push(v);
-    }
-
-    chartCache[key] = arr;
-
-    return arr;
-}
-
-function drawLine(canvas, data, positive=true){
-    if(!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const ratio = window.devicePixelRatio || 2;
-    const w = canvas.width = canvas.offsetWidth * ratio;
-    const h = canvas.height = canvas.offsetHeight * ratio;
-
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = max - min || 1;
-
-    ctx.clearRect(0,0,w,h);
-    ctx.lineWidth = 2.8 * ratio;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = positive ? '#00ff9d' : '#ff3333';
-    ctx.shadowColor = ctx.strokeStyle;
-    ctx.shadowBlur = 9 * ratio;
-
-    const gradient = ctx.createLinearGradient(0,0,w,0);
-    gradient.addColorStop(0, positive ? 'rgba(0,255,157,.45)' : 'rgba(255,77,109,.45)');
-    gradient.addColorStop(1, positive ? '#00ff9d' : '#ff3333');
-    ctx.strokeStyle = gradient;
-
-    ctx.beginPath();
-    data.forEach((v,i)=>{
-        const x = i * (w / (data.length-1));
-        const y = h - ((v - min) / range) * (h * .78) - h * .11;
-        i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      if(real && real.close){
+        item.price = Number(real.close);
+        item.change = Number(real.percent_change || 0);
+      }
     });
-    ctx.stroke();
+
+    render();
+
+  }catch(err){
+    console.log("Market API Error:", err);
+  }
 }
 
 function money(value){
-    return Number(value).toLocaleString(undefined,{
-        minimumFractionDigits: value > 1000 ? 2 : 2,
-        maximumFractionDigits: 2
-    });
+  if(!value || value <= 0) return "Loading";
+  return Number(value).toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
 }
 
+function drawLine(canvas, positive=true){
+  if(!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const ratio = window.devicePixelRatio || 2;
+  const w = canvas.width = canvas.offsetWidth * ratio;
+  const h = canvas.height = canvas.offsetHeight * ratio;
+
+  ctx.clearRect(0,0,w,h);
+  ctx.lineWidth = 2.5 * ratio;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = positive ? "#00ff9d" : "#ff4d6d";
+
+  ctx.beginPath();
+
+  for(let i=0;i<18;i++){
+    const x = i * (w / 17);
+    const base = positive ? h * 0.65 : h * 0.35;
+    const y = base + Math.sin(i * 0.8) * h * 0.18;
+
+    if(i === 0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  }
+
+  ctx.stroke();
+}
 
 function render(){
 
-    document.querySelector('.index-grid').style.opacity = 0;
+  const stocks = marketData[activeTab];
 
-    document.querySelectorAll('.section').forEach(el=>{
-        el.style.opacity = 0;
-    });
+  const keyword = document.getElementById("searchInput")
+    .value.toLowerCase().trim();
 
-    setTimeout(()=>{
+  const filtered = stocks.filter(s =>
+    s.name.toLowerCase().includes(keyword) ||
+    s.symbol.toLowerCase().includes(keyword)
+  );
 
-        document.querySelector('.index-grid').style.opacity = 1;
+  document.getElementById("indexGrid").innerHTML = stocks.slice(0,4).map((i,idx)=>`
+    <div class="card">
+      <div class="index-name">${i.name}</div>
+      <div class="index-price">$${money(i.price)}</div>
+      <div class="change-badge ${i.change >= 0 ? "green" : "red"}">
+        ${i.change >= 0 ? "▲ +" : "▼ "}${i.change.toFixed(2)}%
+      </div>
+      <canvas id="indexChart${idx}"></canvas>
+    </div>
+  `).join("");
 
-        document.querySelectorAll('.section').forEach(el=>{
-            el.style.opacity = 1;
-        });
+  document.getElementById("movers").innerHTML = filtered.map(s=>`
+    <div class="mover">
+      <div class="icon">${s.icon}</div>
+      <div class="symbol">${s.symbol}</div>
+      <div class="price">$${money(s.price)}</div>
+      <div class="${s.change >= 0 ? "green" : "red"}">
+        ${s.change >= 0 ? "▲ +" : "▼ "}${s.change.toFixed(2)}%
+      </div>
+    </div>
+  `).join("");
 
-    },120);
-
-    const stocks = marketData[activeTab];
-
-    const keyword =
-    document.getElementById('searchInput')
-    .value
-    .toLowerCase()
-    .trim();
-
-    const filtered = stocks.filter(s =>
-        s.name.toLowerCase().includes(keyword) ||
-        s.symbol.toLowerCase().includes(keyword)
-    );
-
-    document.getElementById('indexGrid').innerHTML = stocks.slice(0,4).map((i,idx)=>`
-        <div class="card">
-            <div class="index-name">${i.name}</div>
-            <div class="index-price">${money(i.price)}</div>
-            <div class="change-badge ${i.change>=0?'green':'red'}">${i.change>=0?'▲':'▼'} ${i.change>=0?'+':''}${i.change.toFixed(2)}%</div>
-            <canvas id="indexChart${idx}"></canvas>
+  document.getElementById("stocks").innerHTML = filtered.map((s,idx)=>`
+    <div class="stock">
+      <div class="stock-left">
+        <div class="stock-icon">${s.icon}</div>
+        <div class="name">
+          <strong>${s.name}</strong>
+          <small>${s.symbol}</small>
         </div>
-    `).join('');
+      </div>
+      <div>$${money(s.price)}</div>
+      <div class="${s.change >= 0 ? "green" : "red"}">
+        ${s.change >= 0 ? "+" : ""}${s.change.toFixed(2)}%
+      </div>
+      <canvas class="mini-chart" id="stockChart${idx}"></canvas>
+      <div class="star">☆</div>
+    </div>
+  `).join("");
 
-    document.getElementById('movers').innerHTML = filtered.map(s=>`
-        <div class="mover">
-            <div class="icon">${s.icon}</div>
-            <div class="symbol">${s.symbol}</div>
-            <div class="price">$${money(s.price)}</div>
-            <div class="${s.change>=0?'green':'red'}">${s.change>=0?'▲ +':'▼ '}${s.change.toFixed(2)}%</div>
-        </div>
-    `).join('');
+  document.getElementById("news").innerHTML = `
+    <div class="news-item">
+      <div class="stock-icon">AI</div>
+      <div class="news-text">
+        <strong>Real market data connected</strong>
+        <small>Updated every 60 seconds</small>
+      </div>
+    </div>
+  `;
 
-    document.getElementById('stocks').innerHTML = filtered.map((s,idx)=>`
-        <div class="stock">
-            <div class="stock-left">
-                <div class="stock-icon">${s.icon}</div>
-                <div class="name"><strong>${s.name}</strong><small>${s.symbol}</small></div>
-            </div>
-            <div>$${money(s.price)}</div>
-            <div class="${s.change>=0?'green':'red'}">${s.change>=0?'+':''}${s.change.toFixed(2)}%</div>
-            <canvas class="mini-chart" id="stockChart${idx}"></canvas>
-            <div class="star">☆</div>
-        </div>
-    `).join('');
+  stocks.slice(0,4).forEach((i,idx)=>{
+    drawLine(document.getElementById("indexChart"+idx), i.change >= 0);
+  });
 
-    document.getElementById('news').innerHTML = newsList.map(n=>`
-        <div class="news-item">
-            <div class="stock-icon">AI</div>
-            <div class="news-text">
-                <strong>${n}</strong>
-                <small>${Math.floor(Math.random()*50+2)} min ago</small>
-            </div>
-        </div>
-    `).join('');
-
-    stocks.slice(0,4).forEach((i,idx)=>{
-    drawLine(document.getElementById('indexChart'+idx), randomData("index_"+idx, i.change>=0), i.change>=0);
-   });
-
-    filtered.forEach((s,idx)=>{
-        drawLine(document.getElementById('stockChart'+idx), randomData(s.change>=0), s.change>=0);
-    });
+  filtered.forEach((s,idx)=>{
+    drawLine(document.getElementById("stockChart"+idx), s.change >= 0);
+  });
 }
 
-function updateData(){
-    indexes.forEach(i=>{
-        i.price += (Math.random() - .5) * 12;
-        i.change += (Math.random() - .5) * .08;
-    });
-
-    Object.values(marketData).flat().forEach(s=>{
-        s.price += (Math.random() - .5) * (s.price > 1000 ? 18 : 3);
-        s.change += (Math.random() - .5) * .15;
-    });
-
-    const sentiment = 68 + Math.floor(Math.random()*10);
-    document.getElementById('sentiment').innerText = sentiment + '%';
-
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    activeTab = tab.dataset.tab;
     render();
-}
-
-document.querySelectorAll('.tab').forEach(tab=>{
-    tab.addEventListener('click',()=>{
-        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-        tab.classList.add('active');
-        activeTab = tab.dataset.tab;
-        render();
-    });
+    loadRealMarketData();
+  });
 });
 
-document.getElementById('searchInput').addEventListener('input',render);
+document.getElementById("searchInput").addEventListener("input",render);
 
 render();
+loadRealMarketData();
+
 setInterval(loadRealMarketData,60000);
 </script>
+
+
 
 </body>
 </html>

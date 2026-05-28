@@ -352,10 +352,10 @@ async function loadOrders(){
     }
 
 const response =
-    await fetch(
-        "https://www.quantai.fyi/api/ai/quant/orders/" +
-        localUser.id
-    );
+await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/ai/quant/orders/" +
+  localUser.id
+);
 
     const result =
     await response.json();
@@ -464,14 +464,14 @@ const response =
 
 async function settleOrder(orderId){
 
-   const response =
-    await fetch(
-        "https://www.quantai.fyi/api/ai/quant/settle/" +
-        orderId,
-        {
-            method:"POST"
-        }
-    );
+  const response =
+await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/ai/quant/settle/" +
+  orderId,
+  {
+    method:"POST"
+  }
+);
 
     const result =
     await response.json();

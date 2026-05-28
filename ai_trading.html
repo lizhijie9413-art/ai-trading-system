@@ -815,10 +815,11 @@ async function loadBalance(){
         return;
     }
 
-    const response =
-    await fetch(
-       "https://www.quantai.fyi/api/users/" + localUser.id
-    );
+   const response =
+await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" +
+  localUser.id
+);
 
     const result =
     await response.json();
@@ -892,20 +893,20 @@ async function runQuantTrade(amount){
 
     
 
-    const response =
-    await fetch(
-         "https://www.quantai.fyi/api/ai/assistant/start",
-        {
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                userId: localUser.id,
-                amount: amount
-            })
-        }
-    );
+  const response =
+await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/ai/assistant/start",
+  {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      userId: localUser.id,
+      amount: amount
+    })
+  }
+);
 
     const result =
     await response.json();

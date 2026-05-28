@@ -184,11 +184,12 @@ socket.on("connect", () => {
 
 /* 加载真实用户 */
 async function loadUsers(){
-  try{
-    const res = await fetch(
-      "https://www.quantai.fyi/api/users"
-    );
 
+  try{
+
+    const res = await fetch(
+      "https://ai-trading-system-j5jf.onrender.com/api/users"
+    );
     const result = await res.json();
 
     users = result.data || [];
@@ -334,13 +335,13 @@ async function sendImage(){
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await fetch(
-    "https://www.quantai.fyi/api/chat/upload",
-    {
-      method: "POST",
-      body: formData
-    }
-  );
+ const res = await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/chat/upload",
+  {
+    method: "POST",
+    body: formData
+  }
+);
 
   const result = await res.json();
 

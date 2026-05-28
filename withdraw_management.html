@@ -290,8 +290,8 @@ let withdrawals = [];
   try{
 
     const res = await fetch(
-      "https://www.quantai.fyi/api/withdrawals"
-    );
+  "https://ai-trading-system-j5jf.onrender.com/api/withdrawals"
+);
 
     withdrawals = await res.json();
 
@@ -399,14 +399,14 @@ function renderWithdrawals(){
 async function updateStatus(id, status){
 
   const res = await fetch(
-  "https://www.quantai.fyi/api/withdraw/status",
-{
-   method:"POST",
+    "https://ai-trading-system-j5jf.onrender.com/api/withdraw/status",
+    {
+      method:"POST",
 
-headers:{
-  "Content-Type":"application/json",
-  "admin-token":"AI_ADMIN_2026"
-},
+      headers:{
+        "Content-Type":"application/json",
+        "admin-token":"AI_ADMIN_2026"
+      },
 
 body:JSON.stringify({
   id,

@@ -287,7 +287,7 @@ body::before{
 
 <script>
 const socket =
-io("https://www.quantai.fyi");
+io("https://ai-trading-system-j5jf.onrender.com");
 
 const localUser =
   JSON.parse(localStorage.getItem("user")) || {};
@@ -419,8 +419,8 @@ async function sendImage(){
 
   try{
 
-    const res = await fetch(
-  "https://www.quantai.fyi/api/chat/upload",
+ const res = await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/chat/upload",
   {
     method: "POST",
     body: formData

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forgot Password</title>
+<style>
+body { background:#050816; color:white; font-family:Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; }
+.box { width:350px; padding:30px; background:rgba(255,255,255,0.05); border-radius:20px; text-align:center; }
+input { width:100%; padding:12px; margin:12px 0; border:none; border-radius:10px; }
+button { width:100%; padding:12px; background:#00f0ff; border:none; border-radius:10px; color:white; font-weight:bold; cursor:pointer; }
+.message { margin-top:15px; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="box">
+    <h2>Forgot Password</h2>
+    <input type="email" id="email" placeholder="Enter your registered email">
+    <button onclick="sendReset()">Send Reset Link</button>
+    <div class="message" id="message"></div>
+    <div style="margin-top:10px;"><a href="login.html" style="color:#00f0ff;">Back to Login</a></div>
+</div>
+
+<script>
+const API_BASE =
+"https://ai-trading-system-j5jf.onrender.com";
+
+async function sendReset(){
+    const email = document.getElementById("email").value.trim();
+    const msg = document.getElementById("message");
+    if(!email){
+        msg.innerText = "Please enter your email";
+        msg.style.color = "#ff5c7a";
+        return;
+    }
+
+    try{
+        const res = await fetch(API_BASE + "/api/forgot-password", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if(data.success){
+            msg.innerText = "Reset link sent! Check your email.";
+            msg.style.color = "#00ff99";
+        } else {
+            msg.innerText = data.message || "Failed to send reset link";
+            msg.style.color = "#ff5c7a";
+        }
+    }catch(err){
+        console.log(err);
+        msg.innerText = "Server Error";
+        msg.style.color = "#ff5c7a";
+    }
+}
+</script>
+</body>
+</html>
