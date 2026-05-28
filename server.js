@@ -465,10 +465,6 @@ let tickets = [
 let withdrawals = [];
 
 app.get("/", (req, res) => {
-  res.redirect("/user_management.html");
-});
-
-app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
