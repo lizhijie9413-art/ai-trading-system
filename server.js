@@ -139,6 +139,23 @@ app.post("/api/register", async (req, res) => {
 });
 
 
+app.put("/api/users/:id/restore", verifyAdmin, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId);
+        if (!user) return res.json({ success:false, message:"User not found" });
+
+        user.status = "active";  
+        await user.save();
+
+        res.json({ success:true, message:"User restored successfully" });
+    } catch(err){
+        console.log(err);
+        res.json({ success:false, message:"Restore failed" });
+    }
+});
+
+
 app.put(
   "/api/users/:id/restore",
   verifyAdmin,
