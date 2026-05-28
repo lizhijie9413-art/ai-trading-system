@@ -21,6 +21,11 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+
+});
+
+app.get("/test-server", (req, res) => {
+  res.send("THIS IS MY CURRENT SERVER JS");
 });
 
 app.get("/api/users/:id", async (req, res) => {
