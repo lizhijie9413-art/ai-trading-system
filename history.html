@@ -171,27 +171,55 @@ async function loadHistory(){
 
   let history = [];
 
-  try{
-    const res = await fetch(API + "/api/withdrawals");
-    const withdrawals = await res.json();
+try{
 
-    withdrawals
-      .filter(item => String(item.userId) === String(user.id))
-      .forEach(item => {
-        history.push({
-          type:"Withdraw",
-          amount:item.amount,
-          sign:"-",
-          color:"red",
-          desc:(item.network || "TRC20") + " Wallet",
-          status:item.status || "Pending",
-          time:item.time || "-"
-        });
+  const res =
+  await fetch(API + "/api/withdrawals");
+
+  const result =
+  await res.json();
+
+  const withdrawals =
+  Array.isArray(result)
+  ? result
+  : (result.data ||
+     result.withdrawals ||
+     []);
+
+  withdrawals
+    .filter(item =>
+      String(item.userId) ===
+      String(user.id)
+    )
+    .forEach(item => {
+
+      history.push({
+        type:"Withdraw",
+        amount:item.amount,
+        sign:"-",
+        color:"red",
+        desc:
+        (item.network || "TRC20")
+        + " Wallet",
+
+        status:
+        item.status || "Pending",
+
+        time:item.time || "-"
       });
 
-  }catch(err){
-    console.log(err);
-  }
+    });
+
+}catch(err){
+
+  console.log(
+    "Withdraw history error:",
+    err
+  );
+
+}
+
+ 
 
   try{
     const res = await fetch(API + "/api/users/" + user.id);
