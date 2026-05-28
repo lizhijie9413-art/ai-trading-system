@@ -186,7 +186,7 @@ socket.on("connect", () => {
 async function loadUsers(){
   try{
     const res = await fetch(
-      "https://www.quantai.fyiapi/users"
+      "https://www.quantai.fyi/api/users"
     );
 
     const result = await res.json();
@@ -335,7 +335,7 @@ async function sendImage(){
   formData.append("image", file);
 
   const res = await fetch(
-    "https://www.quantai.fyiapi/chat/upload",
+    "https://www.quantai.fyi/api/chat/upload",
     {
       method: "POST",
       body: formData
