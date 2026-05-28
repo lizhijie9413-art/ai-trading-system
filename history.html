@@ -7,30 +7,11 @@
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-body{
-  background:#050816;
-  color:white;
-  padding:16px;
-  max-width:430px;
-  margin:0 auto;
-  overflow-x:hidden;
-}
+body{background:#050816;color:white;padding:16px;max-width:430px;margin:0 auto;overflow-x:hidden;padding-bottom:90px;}
 .header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
-.back-icon{
-  width:36px;height:36px;border-radius:12px;
-  background:rgba(140,100,255,.16);
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;cursor:pointer;
-}
+.back-icon{width:36px;height:36px;border-radius:12px;background:rgba(140,100,255,.16);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;}
 .title{font-size:22px;font-weight:800;}
-.history-box{
-  background:linear-gradient(180deg,#11183c,#090d22);
-  border:1px solid rgba(140,100,255,.25);
-  border-radius:20px;
-  padding:14px;
-  margin-bottom:14px;
-  box-shadow:0 0 18px rgba(140,100,255,.12);
-}
+.history-box{background:linear-gradient(180deg,#11183c,#090d22);border:1px solid rgba(140,100,255,.25);border-radius:20px;padding:14px;margin-bottom:14px;box-shadow:0 0 18px rgba(140,100,255,.12);}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
 .left{display:flex;flex-direction:column;gap:6px;}
 .right{text-align:right;}
@@ -41,52 +22,9 @@ body{
 .red{color:#ff5f7a;}
 .purple{color:#9d7bff;text-shadow:0 0 10px #7b4dff;}
 .desc{margin-top:6px;font-size:12px;color:#aeb6d8;}
-.status{
-  margin-top:12px;
-  display:inline-block;
-  padding:6px 12px;
-  border-radius:12px;
-  font-size:12px;
-  font-weight:600;
-}
-.empty{
-  text-align:center;
-  color:#94a3b8;
-  margin-top:80px;
-}
-.back-btn{
-
-  position:fixed;
-
-  left:50%;
-  transform:translateX(-50%);
-
-  bottom:20px;
-
-  width:calc(100% - 32px);
-  max-width:398px;
-
-  height:56px;
-
-  border:none;
-
-  border-radius:18px;
-
-  font-size:16px;
-  font-weight:800;
-
-  color:white;
-
-  cursor:pointer;
-
-  background:
-    linear-gradient(90deg,#7b4dff,#a855f7);
-
-  box-shadow:
-    0 0 20px rgba(140,100,255,.35);
-
-  z-index:999;
-}
+.status{margin-top:12px;display:inline-block;padding:6px 12px;border-radius:12px;font-size:12px;font-weight:600;}
+.empty{text-align:center;color:#94a3b8;margin-top:80px;}
+.back-btn{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;width:calc(100% - 32px);max-width:398px;height:56px;border:none;border-radius:18px;font-size:16px;font-weight:800;color:white;cursor:pointer;background:linear-gradient(90deg,#7b4dff,#a855f7);box-shadow:0 0 20px rgba(140,100,255,.35);z-index:999;}
 </style>
 </head>
 
@@ -104,8 +42,7 @@ body{
 <button class="back-btn" onclick="window.history.back()">Back</button>
 
 <script>
-const API_BASE =
-"https://ai-trading-system-j5jf.onrender.com";
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
 function getLocalUser(){
   return JSON.parse(localStorage.getItem("user") || "{}");
@@ -118,20 +55,13 @@ function formatAmount(amount){
   });
 }
 
-function formatDate(time){
-  if(!time) return "-";
-  return String(time);
-}
-
 function statusStyle(status){
-  if(status === "Approved" || status === "Completed"){
+  if(status === "Approved" || status === "Completed" || status === "Auto Settled"){
     return "background:rgba(0,255,157,.12);color:#00ff9d;";
   }
-
   if(status === "Rejected"){
     return "background:rgba(255,95,122,.12);color:#ff5f7a;";
   }
-
   return "background:rgba(255,170,0,.12);color:#ffb347;";
 }
 
@@ -141,9 +71,8 @@ function renderItem(item){
       <div class="top">
         <div class="left">
           <div class="type">${item.type}</div>
-          <div class="date">${formatDate(item.time)}</div>
+          <div class="date">${item.time || "-"}</div>
         </div>
-
         <div class="right">
           <div class="amount ${item.color}">
             ${item.sign} ${formatAmount(item.amount)} USDT
@@ -151,7 +80,6 @@ function renderItem(item){
           <div class="desc">${item.desc}</div>
         </div>
       </div>
-
       <div class="status" style="${statusStyle(item.status)}">
         ${item.status}
       </div>
@@ -165,74 +93,51 @@ async function loadHistory(){
 
   if(!user || !user.id){
     document.getElementById("historyList").innerHTML =
-      `<div class="empty">Please login again</div>`;
+    `<div class="empty">Please login again</div>`;
     return;
   }
 
   let history = [];
 
-try{
+  try{
+    const res = await fetch(API_BASE + "/api/withdrawals");
+    const result = await res.json();
 
-  const res =
-  fetch(API_BASE + "/api/withdrawals");
+    const withdrawals =
+    Array.isArray(result)
+    ? result
+    : (result.data || result.withdrawals || []);
 
-  const result =
-  await res.json();
-
-  const withdrawals =
-  Array.isArray(result)
-  ? result
-  : (result.data ||
-     result.withdrawals ||
-     []);
-
-  withdrawals
-    .filter(item =>
-      String(item.userId) ===
-      String(user.id)
-    )
+    withdrawals
+    .filter(item => String(item.userId) === String(user.id))
     .forEach(item => {
-
       history.push({
         type:"Withdraw",
         amount:item.amount,
         sign:"-",
         color:"red",
-        desc:
-        (item.network || "TRC20")
-        + " Wallet",
-
-        status:
-        item.status || "Pending",
-
+        desc:(item.network || "TRC20") + " Wallet",
+        status:item.status || "Pending",
         time:item.time || "-"
       });
-
     });
 
-}catch(err){
-
-  console.log(
-    "Withdraw history error:",
-    err
-  );
-
-}
-
- 
+  }catch(err){
+    console.log("Withdraw history error:", err);
+  }
 
   try{
     const res = await fetch(API_BASE + "/api/users/" + user.id);
     const result = await res.json();
 
-    if(result.success && result.user.records){
+    if(result.success && result.user && result.user.records){
 
       result.user.records.forEach(record => {
 
-        if(record.includes("充值") || record.includes("Recharge")){
-          const amount =
-            Number(String(record).match(/\d+(\.\d+)?/)?.[0] || 0);
+        const text = String(record);
+        const amount = Number(text.match(/\d+(\.\d+)?/)?.[0] || 0);
 
+        if(text.includes("充值") || text.includes("Recharge")){
           history.push({
             type:"Deposit",
             amount,
@@ -244,10 +149,31 @@ try{
           });
         }
 
-        if(record.includes("AI Quant completed")){
-          const amount =
-            Number(String(record).match(/\d+(\.\d+)?/)?.[0] || 0);
+        if(text.includes("Withdrawal submitted")){
+          history.push({
+            type:"Withdraw Submitted",
+            amount,
+            sign:"-",
+            color:"red",
+            desc:"Withdrawal Request",
+            status:"Pending",
+            time:"Account Record"
+          });
+        }
 
+        if(text.includes("Withdrawal rejected")){
+          history.push({
+            type:"Withdraw Refund",
+            amount,
+            sign:"+",
+            color:"green",
+            desc:"Withdrawal Rejected Refund",
+            status:"Completed",
+            time:"Account Record"
+          });
+        }
+
+        if(text.includes("AI Quant completed")){
           history.push({
             type:"AI Profit",
             amount,
@@ -259,10 +185,19 @@ try{
           });
         }
 
-        if(record.includes("Token Yield completed")){
-          const amount =
-            Number(String(record).match(/\d+(\.\d+)?/)?.[0] || 0);
+        if(text.includes("AI Assistant completed")){
+          history.push({
+            type:"AI Assistant Profit",
+            amount,
+            sign:"+",
+            color:"purple",
+            desc:"AI Assistant Strategy",
+            status:"Auto Settled",
+            time:"Account Record"
+          });
+        }
 
+        if(text.includes("Token Yield completed")){
           history.push({
             type:"Token Profit",
             amount,
@@ -278,17 +213,17 @@ try{
     }
 
   }catch(err){
-    console.log(err);
+    console.log("User records error:", err);
   }
 
   if(history.length === 0){
     document.getElementById("historyList").innerHTML =
-      `<div class="empty">No transaction history</div>`;
+    `<div class="empty">No transaction history</div>`;
     return;
   }
 
   document.getElementById("historyList").innerHTML =
-    history.map(renderItem).join("");
+  history.map(renderItem).join("");
 }
 
 loadHistory();
