@@ -420,24 +420,23 @@ let users = [];
 
 async function loadUsers() {
 
-  const response =
-    await fetch(
-      "https://www.quantai.fyi/api/users"
-    
-    );
+  const response = await fetch(
+    "https://www.quantai.fyi/api/users",
+    {
+      method: "GET",
+      headers: {
+        "admin-token": "AI_ADMIN_2026"
+      }
+    }
+  );
 
-  const result =
-    await response.json();
+  const result = await response.json();
 
   if(result.success){
-
     users = result.data || [];
-
     renderTable();
-
   }else{
-
-    alert("加载用户失败");
+    alert(result.message || "加载用户失败");
   }
 }
 
