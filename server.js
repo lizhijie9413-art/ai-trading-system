@@ -8,6 +8,7 @@ const app = express();
 const ADMIN_TOKEN = "AI_ADMIN_2026";
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 const OpenAI = require("openai").default;
 const bcrypt = require("bcryptjs");
@@ -466,6 +467,10 @@ app.get("/", (req, res) => {
   res.redirect("/user_management.html");
 });
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 /* 用户 */
 app.get("/api/users", async (req, res) => {
   const users = await User.find();
@@ -684,6 +689,7 @@ const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
   market: String,
   product: String,
   level: String,
+  assistantType: String,
   strategy: String,
   amount: Number,
   profitRate: Number,
@@ -774,14 +780,14 @@ app.get("/api/admin/trade-orders", async (req, res) => {
         email: user.email || "",
 
         type:
-        order.level === "AI Assistant"
+        order.assistantType === "AI Assistant"
         ? "AI Assistant"
-        : "AI Quant",
-        coin:
+       : "AI Quant",
 
-        order.strategy ||     
-           order.product ||
-           "",
+        coin:
+         order.strategy ||
+         order.product ||
+         "",
 
         amount: order.amount || 0,
 
@@ -866,30 +872,33 @@ app.get("/api/admin/trade-orders", async (req, res) => {
 /* AI Quant 收益配置 */
 
 const aiQuantRates = {
+
   "Basic Quant": {
-    week1: { min: 2, max: 5 },
-    afterWeek1: { min: 0.5, max: 1.5 },
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 3, max: 5 },
     weeklyLimit: 2,
     minBalance: 100,
     maxBalance: 9999
   },
 
   "Advanced Quant": {
-    week1: { min: 3, max: 6 },
-    afterWeek1: { min: 1, max: 2.5 },
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 4, max: 6 },
     weeklyLimit: 3,
     minBalance: 10000,
     maxBalance: 49999
   },
 
   "Quantum Quant": {
-    week1: { min: 4, max: 8 },
-    afterWeek1: { min: 1.5, max: 3.5 },
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 5, max: 7 },
     weeklyLimit: 4,
     minBalance: 50000,
     maxBalance: 99999
   }
+
 };
+
 
 const aiMarkets = [
   { market: "Crypto", product: "BTC/USDT" },
@@ -1083,14 +1092,18 @@ app.post("/api/ai/assistant/start", async (req, res) => {
     }
 
     const now = new Date();
+    const totalAsset =
+    Number(user.asset || 0)
+     +
+    Number(user.lockedAsset || 0);
+
+const level =
+getUserLevel(totalAsset);
+    const setting = aiQuantRates[level];
 
     /* 只有方案1限制次数 */
 
 if(strategy === "Short-Term AI Quant"){
-
-  const level = getUserLevel(tradeAmount);
-
-  const setting = aiQuantRates[level];
 
   const weekStart = new Date();
 
@@ -1100,20 +1113,22 @@ if(strategy === "Short-Term AI Quant"){
 
   weekStart.setHours(0,0,0,0);
 
-  const weeklyCount =
-  await AIQuantOrder.countDocuments({
+ const weeklyCount =
+await AIQuantOrder.countDocuments({
 
-    userId,
+  userId,
 
-    strategy: "Short-Term AI Quant",
+  strategy: "Short-Term AI Quant",
 
-    level: "AI Assistant",
+  level: level,
 
-    createdAt: {
-      $gte: weekStart
-    }
+  assistantType: "AI Assistant",
 
-  });
+  createdAt: {
+    $gte: weekStart
+  }
+
+});
 
   if(weeklyCount >= setting.weeklyLimit){
 
@@ -1125,10 +1140,55 @@ if(strategy === "Short-Term AI Quant"){
   }
 }
 
-    const profitRate =
-    Number(
-      randomBetween(1.5, 6.5).toFixed(2)
-    );
+const firstOrder = await AIQuantOrder.findOne({
+  userId,
+  strategy: "Short-Term AI Quant",
+  level: level,
+assistantType: "AI Assistant"
+}).sort({ createdAt: 1 });
+
+let rateRange = setting.week1;
+
+if(firstOrder){
+
+  const firstTime = new Date(firstOrder.createdAt);
+
+  const daysPassed =
+  (now - firstTime) / (1000 * 60 * 60 * 24);
+
+  if(daysPassed >= 7){
+    rateRange = setting.afterWeek1;
+  }
+}
+
+   let profitRate = 0;
+
+if(strategy === "Short-Term AI Quant"){
+
+  profitRate =
+  Number(
+    randomBetween(
+      rateRange.min,
+      rateRange.max
+    ).toFixed(2)
+  );
+}
+
+if(strategy === "Mid-Term Smart Growth"){
+
+  profitRate =
+  Number(
+    randomBetween(12, 18).toFixed(2)
+  );
+}
+
+if(strategy === "Long-Term AI Wealth Plan"){
+
+  profitRate =
+  Number(
+    randomBetween(25, 40).toFixed(2)
+  );
+}
 
     const profit =
     Number(
@@ -1226,8 +1286,8 @@ availableMarkets[
       product:
       selected.product,
 
-      level:
-      "AI Assistant",
+      level: level,
+       assistantType: "AI Assistant",
 
       strategy,
 
@@ -1319,7 +1379,13 @@ app.post("/api/ai/quant/start", async (req, res) => {
       });
     }
 
-    const level = getUserLevel(tradeAmount);
+    const totalAsset =
+    Number(user.asset || 0)
+      +
+    Number(user.lockedAsset || 0);
+
+    const level =
+    getUserLevel(totalAsset);
     const setting = aiQuantRates[level];
 
     const now = new Date();
@@ -1342,10 +1408,9 @@ app.post("/api/ai/quant/start", async (req, res) => {
     }
 
     const userFirstOrder = await AIQuantOrder.findOne({
-      userId,
-      level: { $ne: "AI Assistant" }
-    }).sort({ createdAt: 1 });
-
+    userId,
+  level: level
+   }).sort({ createdAt: 1 });
     let rateRange = setting.week1;
 
     if (userFirstOrder) {
@@ -1357,13 +1422,13 @@ app.post("/api/ai/quant/start", async (req, res) => {
       }
     }
 
-    const profitRate =
-    Number(
-      randomBetween(
-        rateRange.min,
-        rateRange.max
-      ).toFixed(2)
-    );
+   const profitRate =
+Number(
+  randomBetween(
+    rateRange.min,
+    rateRange.max
+  ).toFixed(2)
+);
 
 const subTrades =
 generateSubTrades(profitRate);
@@ -2226,11 +2291,11 @@ async function settleExpiredAIQuantOrders(){
       }
 
       user.records.push(
-  order.level === "AI Assistant"
-  ? `AI Assistant completed +${profit.toFixed(2)} USDT`
-  : `AI Quant completed +${profit.toFixed(2)} USDT`
-   );
+  order.assistantType === "AI Assistant"
+? `AI Assistant completed +${profit.toFixed(2)} USDT`
+: `AI Quant completed +${profit.toFixed(2)} USDT`
 
+);
       order.status = "Completed";
 
       await user.save();
