@@ -421,14 +421,14 @@ let users = [];
 async function loadUsers() {
 
   const response = await fetch(
-    "https://www.quantai.fyi/api/users",
+    "https://ai-trading-system-j5jf.onrender.com/api/users",
     {
       method: "GET",
       headers: {
         "admin-token": "AI_ADMIN_2026"
       }
     }
-  );
+);
 
   const result = await response.json();
 
@@ -752,20 +752,17 @@ async function recharge(id, btn) {
     return;
   }
 
-  const response =
-    await fetch(
-  "https://www.quantai.fyi/api/users/" + id + "/recharge",
+ const response = await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/recharge",
   {
-        method: "PUT",
-        headers: {
-        "Content-Type": "application/json",
-     "admin-token":"AI_ADMIN_2026"
-      },
-        body: JSON.stringify({
-          amount: amount
-        })
-      }
-    );
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "admin-token": "AI_ADMIN_2026"
+    },
+    body: JSON.stringify({ amount: amount })
+  }
+);
 
   const result =
     await response.json();
@@ -796,17 +793,17 @@ async function withdraw(id, btn) {
     return;
   }
 
-  const response = await fetch(
-    "https://www.quantai.fyi/api/users/" + id + "/withdraw",
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "admin-token": "AI_ADMIN_2026"
-      },
-      body: JSON.stringify({ amount })
-    }
-  );
+ const response = await fetch(
+  "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/withdraw",
+  {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "admin-token": "AI_ADMIN_2026"
+    },
+    body: JSON.stringify({ amount })
+  }
+);
 
   const result = await response.json();
 
@@ -824,10 +821,9 @@ async function withdraw(id, btn) {
 async function freezeUser(id) {
 
   const response = await fetch(
-    "https://www.quantai.fyi/api/users/" + id + "/freeze",
+    "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/freeze",
     {
       method: "PUT",
-
       headers:{
         "admin-token":"AI_ADMIN_2026"
       }
@@ -844,15 +840,16 @@ async function freezeUser(id) {
   }
 }
 
+ 
+
 /* 拉黑 */
 
 async function blacklistUser(id) {
 
   const response = await fetch(
-    "https://www.quantai.fyi/api/users/" + id + "/blacklist",
+    "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/blacklist",
     {
       method: "PUT",
-
       headers:{
         "admin-token":"AI_ADMIN_2026"
       }
@@ -872,10 +869,9 @@ async function blacklistUser(id) {
 async function restoreUser(id) {
 
   const response = await fetch(
-    "https://www.quantai.fyi/api/users/" + id + "/restore",
+    "https://ai-trading-system-j5jf.onrender.com/api/users/" + id + "/restore",
     {
       method: "PUT",
-
       headers:{
         "admin-token":"AI_ADMIN_2026"
       }
