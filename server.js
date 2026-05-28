@@ -3,19 +3,20 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-
-const app = express();
-const ADMIN_TOKEN = "AI_ADMIN_2026";
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+const path = require("path");
 
 const OpenAI = require("openai").default;
 const bcrypt = require("bcryptjs");
 const http = require("http");
 const { Server } = require("socket.io");
 const multer = require("multer");
-const path = require("path");
+
+const app = express();
+const ADMIN_TOKEN = "AI_ADMIN_2026";
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 
 const openai = new OpenAI({
