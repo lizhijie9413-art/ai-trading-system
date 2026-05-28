@@ -395,7 +395,7 @@ await fetch(
             settleButton = `
                 <button
                 class="settle-btn"
-                onclick="settleOrder('${order.id}')">
+                onclick="settleOrder('${order._id || order.id}')"
                     Settle Profit
                 </button>
             `;

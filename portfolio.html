@@ -644,8 +644,8 @@ async function loadAssistantOrders(){
   }
 
 const assistantOrders = result.data.filter(order =>
-
- order.assistantType === "AI Assistant"
+  order.assistantType === "AI Assistant" ||
+  order.level === "AI Assistant"
 );
 
   if(assistantOrders.length === 0){

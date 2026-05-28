@@ -817,9 +817,10 @@ await fetch(
       "Content-Type":"application/json"
     },
     body:JSON.stringify({
-      userId: localUser.id,
-      amount: aiPlanAmount
-    })
+  userId: localUser.id,
+  amount: aiPlanAmount,
+  strategy: selectedAIPlanName
+})
   }
 );
 

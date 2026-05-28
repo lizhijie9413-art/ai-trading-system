@@ -350,8 +350,9 @@ async function loadOrders(){
     }
 
     allOrders = (result.data || []).filter(order =>
-      order.level === "AI Assistant"
-    );
+  order.assistantType === "AI Assistant" ||
+  order.level === "AI Assistant"
+);
 
     renderOrders();
 
