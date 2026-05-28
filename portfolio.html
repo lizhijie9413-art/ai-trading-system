@@ -643,10 +643,11 @@ async function loadAssistantOrders(){
     return;
   }
 
-  const assistantOrders = result.data.filter(order =>
-    order.level === "AI Assistant"
-  );
-  
+const assistantOrders = result.data.filter(order =>
+
+ order.assistantType === "AI Assistant"
+);
+
   if(assistantOrders.length === 0){
   box.innerHTML = `
     <div class="ai-card">
