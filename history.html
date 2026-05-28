@@ -174,7 +174,7 @@ async function loadHistory(){
 try{
 
   const res =
-  await fetch(API + "/api/withdrawals");
+  fetch(API_BASE + "/api/withdrawals");
 
   const result =
   await res.json();
@@ -222,7 +222,7 @@ try{
  
 
   try{
-    const res = await fetch(API + "/api/users/" + user.id);
+    const res = await fetch(API_BASE + "/api/users/" + user.id);
     const result = await res.json();
 
     if(result.success && result.user.records){
