@@ -617,10 +617,10 @@ async function loadAssistantOrders(){
 
   if(!localUser || !localUser.id) return;
 
-  const res = await fetch(
-    "https://ai-trading-system-j5jf.onrender.com/api/ai/quant/orders/" +
-    localUser.id
-  );
+ const res = await fetch(
+  "https://www.quantai.fyi/api/ai/quant/orders/" +
+  localUser.id
+);
 
 
   const result = await res.json();
@@ -704,10 +704,9 @@ async function loadPortfolioBalance(){
   const localUser = JSON.parse(localStorage.getItem("user"));
   if(!localUser || !localUser.id) return;
 
-  const response = await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/users/" + localUser.id
+ const response = await fetch(
+  "https://www.quantai.fyi/api/users/" + localUser.id
 );
-
   const result = await response.json();
   if(!result.success) return;
 
