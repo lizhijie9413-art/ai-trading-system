@@ -844,20 +844,19 @@ async function loadRealMarketData(){
     .join(",");
 
   try{
-    const res = await fetch(
-      `https://api.twelvedata.com/quote?symbol=${allSymbols}&apikey=${TWELVE_API_KEY}`
-    );
+   const res = await fetch(
+  "https://www.quantai.fyi/api/market/quotes?symbols=" +
+  encodeURIComponent(allSymbols)
+);
 
-    const data = await res.json();
+    const result = await res.json();
 
-    Object.values(marketData).flat().forEach(item => {
-      const real = data[item.api];
+if(!result.success) return;
 
-      if(real && real.close){
-        item.price = Number(real.close);
-        item.change = Number(real.percent_change || 0);
-      }
-    });
+const data = result.data;
+
+Object.values(marketData).flat().forEach(item => {
+  const real = data[item.api];
 
     render();
 

@@ -28,6 +28,32 @@ app.get("/test-server", (req, res) => {
   res.send("THIS IS MY CURRENT SERVER JS");
 });
 
+app.get("/api/market/quotes", async (req, res) => {
+  try {
+    const symbols = req.query.symbols;
+
+    const url =
+      "https://api.twelvedata.com/quote?symbol=" +
+      encodeURIComponent(symbols) +
+      "&apikey=" +
+      process.env.TWELVE_API_KEY;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    res.json({
+      success: true,
+      data
+    });
+
+  } catch (err) {
+    res.json({
+      success: false,
+      message: "Market data failed"
+    });
+  }
+});
+
 app.get("/api/users/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
