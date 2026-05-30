@@ -893,12 +893,9 @@ async function runQuantTrade(amount){
 
     
 
-const response =
-
-  await fetch(
-  "https://www.quantai.fyi/api/users/" +
-  localUser.id
-);
+const response = await fetch(
+  "https://www.quantai.fyi/api/ai/quant/start",
+  {
     method:"POST",
     headers:{
       "Content-Type":"application/json"
