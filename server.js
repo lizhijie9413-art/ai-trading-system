@@ -159,6 +159,7 @@ app.post("/api/register", async (req, res) => {
       password: hashedPassword,
       asset: 0,
       balance: 0,
+      vipAsset: 0,
       totalProfit: 0,
       status: "active",
       kyc: "未审核",
@@ -411,6 +412,11 @@ const UserSchema = new mongoose.Schema({
     default: []
   },
 
+  vipAsset: {
+  type: Number,
+  default: 0
+},
+
   createdAt: {
     type: Date,
     default: Date.now
@@ -581,17 +587,35 @@ app.put("/api/users/:id/recharge", async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
-    return res.status(404).json({ success: false, message: "用户不存在" });
+    return res.status(404).json({
+      success: false,
+      message: "用户不存在"
+    });
   }
 
-  user.asset += amount;
+  user.asset = Number(user.asset || 0) + amount;
+  user.balance = user.asset;
+
+  const totalAsset =
+    Number(user.asset || 0) +
+    Number(user.lockedAsset || 0);
+
+  if (totalAsset > Number(user.vipAsset || 0)) {
+    user.vipAsset = totalAsset;
+  }
+
   user.records.push(`充值 ${amount} USDT`);
 
   stats.todayRecharge += amount;
   stats.monthRecharge += amount;
 
   await user.save();
-  res.json({ success: true, data: user, stats });
+
+  res.json({
+    success: true,
+    data: user,
+    stats
+  });
 });
 
 app.put("/api/users/:id/profile", async (req, res) => {
@@ -936,7 +960,6 @@ app.get("/api/admin/trade-orders", async (req, res) => {
 /* AI Quant 收益配置 */
 
 const aiQuantRates = {
-
   "Basic Quant": {
     week1: { min: 8, max: 10 },
     afterWeek1: { min: 3, max: 5 },
@@ -959,8 +982,39 @@ const aiQuantRates = {
     weeklyLimit: 4,
     minBalance: 50000,
     maxBalance: 99999
-  }
+  },
 
+  "Pro Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 6, max: 8 },
+    weeklyLimit: 20,
+    minBalance: 100000,
+    maxBalance: 299999
+  },
+
+  "Institutional Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 7, max: 9 },
+    weeklyLimit: 25,
+    minBalance: 300000,
+    maxBalance: 799999
+  },
+
+  "Elite Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 8, max: 10 },
+    weeklyLimit: 30,
+    minBalance: 800000,
+    maxBalance: 999999
+  },
+
+  "Daily Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 8, max: 10 },
+    weeklyLimit: 7,   // 或者按天1次也可改逻辑
+    minBalance: 1000000,
+    maxBalance: Infinity
+  }
 };
 
 
@@ -991,6 +1045,10 @@ function verifyAdmin(req, res, next){
 }
 
 function getUserLevel(asset) {
+  if (asset >= 1000000) return "Daily Quant";
+  if (asset >= 800000) return "Elite Quant";
+  if (asset >= 300000) return "Institutional Quant";
+  if (asset >= 100000) return "Pro Quant";
   if (asset >= 50000) return "Quantum Quant";
   if (asset >= 10000) return "Advanced Quant";
   return "Basic Quant";
@@ -1157,13 +1215,20 @@ app.post("/api/ai/assistant/start", async (req, res) => {
 
     const now = new Date();
     const totalAsset =
-    Number(user.asset || 0)
-     +
-    Number(user.lockedAsset || 0);
+Number(user.asset || 0)
++
+Number(user.lockedAsset || 0);
+
+const levelAsset =
+Math.max(
+  totalAsset,
+  Number(user.vipAsset || 0)
+);
 
 const level =
-getUserLevel(totalAsset);
-    const setting = aiQuantRates[level];
+getUserLevel(levelAsset);
+
+const setting = aiQuantRates[level];
 
     /* 只有方案1限制次数 */
 
@@ -1443,33 +1508,58 @@ app.post("/api/ai/quant/start", async (req, res) => {
       });
     }
 
-    const totalAsset =
-    Number(user.asset || 0)
-      +
-    Number(user.lockedAsset || 0);
+   const totalAsset =
+  Number(user.asset || 0)
+  +
+  Number(user.lockedAsset || 0);
 
-    const level =
-    getUserLevel(totalAsset);
-    const setting = aiQuantRates[level];
+const levelAsset =
+  Math.max(
+    totalAsset,
+    Number(user.vipAsset || 0)
+  );
 
-    const now = new Date();
+const level =
+  getUserLevel(levelAsset);
 
-    const weekStart = new Date();
-    weekStart.setDate(now.getDate() - now.getDay());
-    weekStart.setHours(0, 0, 0, 0);
+const setting =
+  aiQuantRates[level];
 
-    const weeklyCount = await AIQuantOrder.countDocuments({
-      userId,
-      level: { $ne: "AI Assistant" },
-      createdAt: { $gte: weekStart }
-    });
+const now = new Date();
 
-    if (weeklyCount >= setting.weeklyLimit) {
-      return res.json({
-        success: false,
-        message: "Weekly AI Quant trade limit reached"
-      });
-    }
+const weekStart = new Date();
+
+weekStart.setDate(
+  now.getDate() - now.getDay()
+);
+
+weekStart.setHours(0, 0, 0, 0);
+
+const weeklyCount =
+await AIQuantOrder.countDocuments({
+
+  userId,
+
+  level: { $ne: "AI Assistant" },
+
+  createdAt: {
+    $gte: weekStart
+  }
+
+});
+
+if (
+  weeklyCount >=
+  setting.weeklyLimit
+) {
+
+  return res.json({
+    success: false,
+    message:
+    "Weekly AI Quant trade limit reached"
+  });
+
+}
 
     const userFirstOrder = await AIQuantOrder.findOne({
     userId,
