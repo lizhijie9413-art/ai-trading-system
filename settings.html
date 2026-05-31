@@ -34,6 +34,9 @@ h1{font-size:30px;font-weight:900;background:linear-gradient(90deg,#fff,#c084fc,
 </div>
 
 <div class="card">
+
+
+  
   <div class="item">
     <div class="left"><strong>Account Security</strong><p>Password, 2FA and device protection</p></div>
     <div onclick="location.href='security.html'">›</div>
@@ -54,6 +57,25 @@ h1{font-size:30px;font-weight:900;background:linear-gradient(90deg,#fff,#c084fc,
     <div>USD ›</div>
   </div>
 </div>
+
+<div class="card" style="margin-top:20px;">
+  <div class="item" onclick="logout()" style="cursor:pointer;">
+    <div class="left">
+      <strong>Logout</strong>
+      <p>Sign out of your account</p>
+    </div>
+    <div>›</div>
+  </div>
+</div>
+
+<script>
+function logout(){
+    localStorage.removeItem("user");
+    localStorage.removeItem("username");
+    localStorage.removeItem("walletAddress");
+    window.location.href = "login.html";
+}
+</script>
 
 <div class="bottom-nav">
   <a class="nav-item" href="index.html"><b>⌂</b>Home</a>
