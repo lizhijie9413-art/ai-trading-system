@@ -124,79 +124,68 @@ app.get("/api/users/:id", async (req, res) => {
 
 
 app.post("/api/register", async (req, res) => {
-    try {
-        const { username, email, password } = req.body;
+  try {
+    const { username, email, password } = req.body;
 
-        if (!username || !email || !password) {
-            return res.json({
-                success: false,
-                message: "Please fill in all fields."
-            });
-        }
-
-        const existingUser = await User.findOne({ email });
-
-        if (existingUser) {
-            return res.json({
-                success: false,
-                message: "Email already registered."
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const lastUser =
-         await User.findOne().sort({ uid: -1 });
-
-          const nextUid =
-          lastUser && lastUser.uid
-          ? lastUser.uid + 1
-          : 20160;
-
-        const newUser = await User.create({
-
-         uid: nextUid,
-
-         name: username,
-
-          email,
-
-          password: hashedPassword,
-
-           asset: 0,
-
-            balance: 0,
-
-           totalProfit: 0,
-
-          status: "active",
-
-          kyc: "未审核",
-
-          records: []
-
-          });
-
-        res.json({
-            success: true,
-            message: "Registration successful.",
-            user: {
-                id: newUser._id,
-                name: newUser.name,
-                email: newUser.email,
-                balance: newUser.asset || 0,
-                status: newUser.status
-            }
-        });
-
-    } catch (error) {
-        console.log(error);
-
-        res.json({
-            success: false,
-            message: "Registration failed."
-        });
+    if (!username || !email || !password) {
+      return res.json({
+        success: false,
+        message: "Please fill in all fields."
+      });
     }
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.json({
+        success: false,
+        message: "Email already registered."
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const lastUser = await User.findOne().sort({ uid: -1 });
+
+    const nextUid =
+      lastUser && lastUser.uid
+        ? lastUser.uid + 1
+        : 20160;
+
+    const newUser = await User.create({
+      uid: nextUid,
+      name: username,
+      email,
+      password: hashedPassword,
+      asset: 0,
+      balance: 0,
+      totalProfit: 0,
+      status: "active",
+      kyc: "未审核",
+      records: []
+    });
+
+    res.json({
+      success: true,
+      message: "Registration successful.",
+      user: {
+        id: newUser._id,
+        uid: newUser.uid,
+        name: newUser.name,
+        email: newUser.email,
+        balance: newUser.asset || 0,
+        status: newUser.status
+      }
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.json({
+      success: false,
+      message: "Registration failed."
+    });
+  }
 });
 
 
