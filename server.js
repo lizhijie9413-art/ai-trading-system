@@ -32,14 +32,39 @@ app.get("/api/market/quotes", async (req, res) => {
   try {
     const symbols = req.query.symbols;
 
+    if (!symbols) {
+      return res.json({
+        success: false,
+        message: "Symbols missing"
+      });
+    }
+
+    if (!process.env.TWELVE_API_KEY) {
+      return res.json({
+        success: false,
+        message: "TWELVE_API_KEY missing on server"
+      });
+    }
+
     const url =
       "https://api.twelvedata.com/quote?symbol=" +
       encodeURIComponent(symbols) +
       "&apikey=" +
       process.env.TWELVE_API_KEY;
 
+    console.log("TwelveData symbols:", symbols);
+    console.log("TwelveData key exists:", !!process.env.TWELVE_API_KEY);
+
     const response = await fetch(url);
     const data = await response.json();
+
+    if (data && data.code === 401) {
+      return res.json({
+        success: false,
+        message: "TwelveData API key invalid or missing",
+        data
+      });
+    }
 
     res.json({
       success: true,
@@ -47,6 +72,8 @@ app.get("/api/market/quotes", async (req, res) => {
     });
 
   } catch (err) {
+    console.log("Market data error:", err);
+
     res.json({
       success: false,
       message: "Market data failed"
@@ -92,6 +119,9 @@ app.get("/api/users/:id", async (req, res) => {
     });
   }
 });
+
+
+
 
 app.post("/api/register", async (req, res) => {
     try {
