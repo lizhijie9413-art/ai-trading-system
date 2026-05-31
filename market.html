@@ -867,11 +867,9 @@ function getRealData(data, api){
 
 async function loadRealMarketData(){
 
-  const allSymbols = Object.values(marketData)
-    .flat()
-    .map(item => item.api)
-    .join(",");
-
+  const allSymbols =
+"AAPL,NVDA,MSFT,TSLA,GOOGL";
+    
   try{
 
    const res = await fetch(
@@ -1058,7 +1056,7 @@ document
 render();
 loadRealMarketData();
 
-setInterval(loadRealMarketData,60000);
+setInterval(loadRealMarketData,300000);
 </script>
 </body>
 </html>
