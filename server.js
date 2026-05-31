@@ -57,7 +57,7 @@ app.get("/api/market/quotes", async (req, res) => {
 
     const response = await fetch(url);
     const data = await response.json();
-
+    console.log(JSON.stringify(data, null, 2));
     if (data && data.code === 401) {
       return res.json({
         success: false,
