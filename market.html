@@ -800,8 +800,6 @@ canvas{
 </div>
 
 <script>
-
-
 let activeTab = "Stocks";
 
 const marketData = {
@@ -836,6 +834,37 @@ const marketData = {
   ]
 };
 
+function money(value){
+  if(!value || value <= 0) return "Loading";
+  return Number(value).toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
+}
+
+function getRealData(data, api){
+  if(!data) return null;
+
+  if(data[api]) return data[api];
+
+  const altKey = api.replace("/", "_");
+  if(data[altKey]) return data[altKey];
+
+  if(data.symbol && data.symbol === api) return data;
+
+  const list = Object.values(data);
+
+  return list.find(item =>
+    item &&
+    item.symbol &&
+    (
+      item.symbol === api ||
+      item.symbol === api.replace("/", "_") ||
+      item.symbol === api.replace("/USD", "")
+    )
+  );
+}
+
 async function loadRealMarketData(){
 
   const allSymbols = Object.values(marketData)
@@ -845,64 +874,55 @@ async function loadRealMarketData(){
 
   try{
 
-  const res = await fetch(
-  "https://www.quantai.fyi/api/market/quotes?symbols=" +
-  encodeURIComponent(allSymbols)
-);
+    const res = await fetch(
+      "https://www.quantai.fyi/api/market/quotes?symbols=" +
+      encodeURIComponent(allSymbols)
+    );
 
     const result = await res.json();
 
-    if(!result.success){
-      console.log("API Error");
+    console.log("Market result:", result);
+
+    if(!result.success || !result.data){
+      render();
       return;
     }
 
     const data = result.data;
 
-    Object.values(marketData)
-      .flat()
-      .forEach(item => {
-        
+    Object.values(marketData).flat().forEach(item => {
 
-        const real = data[item.api];
+      const real = getRealData(data, item.api);
 
-        if(real){
+      if(real){
 
-          item.price = Number(
-            real.close ||
-            real.price ||
-            real.previous_close ||
-            0
-          );
+        item.price = Number(
+          real.close ||
+          real.price ||
+          real.previous_close ||
+          real.open ||
+          0
+        );
 
-          item.change = Number(
-            real.percent_change ||
-            real.change ||
-            0
-          );
+        item.change = Number(
+          real.percent_change ||
+          real.change_percent ||
+          real.change ||
+          0
+        );
 
-        }
+      }
 
-      });
+    });
 
     render();
 
   }catch(err){
 
-    console.log(
-      "Market API Error:",
-      err
-    );
+    console.log("Market API Error:", err);
+    render();
 
   }
-}
-
-function money(value){
-  if(!value || value <= 0) return "Loading";
-  return Number(value).toLocaleString(undefined,{
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-  });
 }
 
 function drawLine(canvas, positive=true){
@@ -933,11 +953,14 @@ function drawLine(canvas, positive=true){
 }
 
 function render(){
+
   const stocks = marketData[activeTab] || [];
 
   const keyword =
   document.getElementById("searchInput")
-  .value.toLowerCase().trim();
+  .value
+  .toLowerCase()
+  .trim();
 
   const filtered = stocks.filter(s =>
     s.name.toLowerCase().includes(keyword) ||
@@ -998,24 +1021,33 @@ function render(){
   `;
 
   stocks.slice(0,4).forEach((i,idx)=>{
-    drawLine(document.getElementById("indexChart"+idx), i.change >= 0);
+    drawLine(
+      document.getElementById("indexChart"+idx),
+      i.change >= 0
+    );
   });
 
   filtered.forEach((s,idx)=>{
-    drawLine(document.getElementById("stockChart"+idx), s.change >= 0);
+    drawLine(
+      document.getElementById("stockChart"+idx),
+      s.change >= 0
+    );
   });
 }
 
 document.querySelectorAll(".tab").forEach(tab=>{
   tab.addEventListener("click",()=>{
+
     document.querySelectorAll(".tab")
     .forEach(t=>t.classList.remove("active"));
 
     tab.classList.add("active");
+
     activeTab = tab.dataset.tab;
 
     render();
     loadRealMarketData();
+
   });
 });
 
@@ -1027,8 +1059,6 @@ render();
 loadRealMarketData();
 
 setInterval(loadRealMarketData,60000);
-
 </script>
-
 </body>
 </html>
