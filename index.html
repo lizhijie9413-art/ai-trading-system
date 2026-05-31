@@ -1172,6 +1172,11 @@ if(user && user.id){
 
     </a>
 
+    <a href="javascript:void(0)" class="nav-item" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Logout</span>
+    </a>
+
 </div>
 
 <script>
@@ -1308,7 +1313,25 @@ async function connectWallet(){
   }
 }
 
+
 </script>
+
+<script>
+function logout(){
+  localStorage.removeItem("user");
+  localStorage.removeItem("username");
+  localStorage.removeItem("walletAddress");
+  window.location.href = "login.html";
+}
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
+</script>
+
 
 </body>
 </html>
