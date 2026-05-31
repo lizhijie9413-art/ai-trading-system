@@ -800,7 +800,7 @@ canvas{
 </div>
 
 <script>
-const TWELVE_API_KEY = "ac927c37acc4412db76bd5b951a961b5";
+
 
 let activeTab = "Stocks";
 
@@ -844,24 +844,56 @@ async function loadRealMarketData(){
     .join(",");
 
   try{
-   const res = await fetch(
+
+  const res = await fetch(
   "https://www.quantai.fyi/api/market/quotes?symbols=" +
   encodeURIComponent(allSymbols)
 );
 
     const result = await res.json();
 
-if(!result.success) return;
+    if(!result.success){
+      console.log("API Error");
+      return;
+    }
 
-const data = result.data;
+    const data = result.data;
 
-Object.values(marketData).flat().forEach(item => {
-  const real = data[item.api];
+    Object.values(marketData)
+      .flat()
+      .forEach(item => {
+        
+
+        const real = data[item.api];
+
+        if(real){
+
+          item.price = Number(
+            real.close ||
+            real.price ||
+            real.previous_close ||
+            0
+          );
+
+          item.change = Number(
+            real.percent_change ||
+            real.change ||
+            0
+          );
+
+        }
+
+      });
 
     render();
 
   }catch(err){
-    console.log("Market API Error:", err);
+
+    console.log(
+      "Market API Error:",
+      err
+    );
+
   }
 }
 
@@ -901,40 +933,43 @@ function drawLine(canvas, positive=true){
 }
 
 function render(){
+  const stocks = marketData[activeTab] || [];
 
-  const stocks = marketData[activeTab];
-
-  const keyword = document.getElementById("searchInput")
-    .value.toLowerCase().trim();
+  const keyword =
+  document.getElementById("searchInput")
+  .value.toLowerCase().trim();
 
   const filtered = stocks.filter(s =>
     s.name.toLowerCase().includes(keyword) ||
     s.symbol.toLowerCase().includes(keyword)
   );
 
-  document.getElementById("indexGrid").innerHTML = stocks.slice(0,4).map((i,idx)=>`
+  document.getElementById("indexGrid").innerHTML =
+  stocks.slice(0,4).map((i,idx)=>`
     <div class="card">
       <div class="index-name">${i.name}</div>
       <div class="index-price">$${money(i.price)}</div>
       <div class="change-badge ${i.change >= 0 ? "green" : "red"}">
-        ${i.change >= 0 ? "▲ +" : "▼ "}${i.change.toFixed(2)}%
+        ${i.change >= 0 ? "▲ +" : "▼ "}${Number(i.change || 0).toFixed(2)}%
       </div>
       <canvas id="indexChart${idx}"></canvas>
     </div>
   `).join("");
 
-  document.getElementById("movers").innerHTML = filtered.map(s=>`
+  document.getElementById("movers").innerHTML =
+  filtered.map(s=>`
     <div class="mover">
       <div class="icon">${s.icon}</div>
       <div class="symbol">${s.symbol}</div>
       <div class="price">$${money(s.price)}</div>
       <div class="${s.change >= 0 ? "green" : "red"}">
-        ${s.change >= 0 ? "▲ +" : "▼ "}${s.change.toFixed(2)}%
+        ${s.change >= 0 ? "▲ +" : "▼ "}${Number(s.change || 0).toFixed(2)}%
       </div>
     </div>
   `).join("");
 
-  document.getElementById("stocks").innerHTML = filtered.map((s,idx)=>`
+  document.getElementById("stocks").innerHTML =
+  filtered.map((s,idx)=>`
     <div class="stock">
       <div class="stock-left">
         <div class="stock-icon">${s.icon}</div>
@@ -945,7 +980,7 @@ function render(){
       </div>
       <div>$${money(s.price)}</div>
       <div class="${s.change >= 0 ? "green" : "red"}">
-        ${s.change >= 0 ? "+" : ""}${s.change.toFixed(2)}%
+        ${s.change >= 0 ? "+" : ""}${Number(s.change || 0).toFixed(2)}%
       </div>
       <canvas class="mini-chart" id="stockChart${idx}"></canvas>
       <div class="star">☆</div>
@@ -973,23 +1008,27 @@ function render(){
 
 document.querySelectorAll(".tab").forEach(tab=>{
   tab.addEventListener("click",()=>{
-    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".tab")
+    .forEach(t=>t.classList.remove("active"));
+
     tab.classList.add("active");
     activeTab = tab.dataset.tab;
+
     render();
     loadRealMarketData();
   });
 });
 
-document.getElementById("searchInput").addEventListener("input",render);
+document
+.getElementById("searchInput")
+.addEventListener("input",render);
 
 render();
 loadRealMarketData();
 
 setInterval(loadRealMarketData,60000);
+
 </script>
-
-
 
 </body>
 </html>
