@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"/>
 
 <title>Notifications</title>
 
@@ -14,71 +14,82 @@
     margin:0;
     padding:0;
     box-sizing:border-box;
-    font-family:Arial,Helvetica,sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
 }
 
 body{
-    background:#050816;
+    background:
+    radial-gradient(circle at 20% 10%,rgba(124,58,237,.28),transparent 30%),
+    radial-gradient(circle at 85% 40%,rgba(0,212,255,.16),transparent 34%),
+    linear-gradient(180deg,#030712,#050816,#020617);
     color:white;
+    max-width:430px;
     min-height:100vh;
-    padding-bottom:120px;
+    margin:0 auto;
+    overflow-x:hidden;
+    padding:18px 16px 110px;
+}
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+    background-size:42px 42px;
+    pointer-events:none;
+    z-index:-1;
 }
 
 /* TOP */
-
 .topbar{
-    padding:22px 20px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-}
-
-.top-left{
-    display:flex;
-    align-items:center;
-    gap:14px;
+    margin-bottom:24px;
 }
 
 .back-btn{
-    width:42px;
-    height:42px;
-    border-radius:14px;
-    background:rgba(255,255,255,0.06);
+    width:44px;
+    height:44px;
+    border-radius:16px;
+    background:rgba(168,85,247,.14);
+    border:1px solid rgba(168,85,247,.28);
     display:flex;
     align-items:center;
     justify-content:center;
+    font-size:20px;
     cursor:pointer;
-    transition:0.3s;
-}
-
-.back-btn:hover{
-    background:#00e1ff;
-    color:black;
+    color:#c084fc;
 }
 
 .page-title{
     font-size:24px;
-    font-weight:700;
+    font-weight:900;
+    background:linear-gradient(90deg,#fff,#c084fc,#38bdf8);
+    -webkit-background-clip:text;
+    color:transparent;
 }
 
 .clear-btn{
     padding:10px 18px;
     border:none;
-    border-radius:12px;
+    border-radius:16px;
     background:linear-gradient(135deg,#00e1ff,#0066ff);
     color:white;
     font-weight:600;
     cursor:pointer;
+    font-size:13px;
 }
 
 /* HEADER CARD */
-
 .notify-header{
-    margin:0 20px;
-    padding:24px;
+    margin-bottom:20px;
+    padding:20px;
     border-radius:28px;
-    background:linear-gradient(145deg,#0b1228,#121d3d);
-    border:1px solid rgba(255,255,255,0.05);
+    background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+    border:1px solid rgba(168,85,247,.22);
     position:relative;
     overflow:hidden;
 }
@@ -88,7 +99,7 @@ body{
     position:absolute;
     width:180px;
     height:180px;
-    background:rgba(0,225,255,0.15);
+    background:rgba(0,225,255,0.08);
     border-radius:50%;
     top:-80px;
     right:-60px;
@@ -104,56 +115,62 @@ body{
 .header-left{
     display:flex;
     align-items:center;
-    gap:16px;
+    gap:14px;
 }
 
 .header-icon{
-    width:62px;
-    height:62px;
-    border-radius:20px;
+    width:52px;
+    height:52px;
+    border-radius:18px;
     background:linear-gradient(135deg,#00e1ff,#0066ff);
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:28px;
+    font-size:24px;
 }
 
 .header-text h2{
-    font-size:24px;
-    margin-bottom:6px;
+    font-size:20px;
+    margin-bottom:4px;
 }
 
 .header-text p{
-    color:#9fb0d0;
-    font-size:14px;
+    color:#94a3b8;
+    font-size:12px;
 }
 
 .unread-badge{
-    padding:10px 18px;
-    border-radius:16px;
+    padding:8px 14px;
+    border-radius:30px;
     background:rgba(0,225,255,0.15);
     color:#00e1ff;
     font-weight:700;
+    font-size:12px;
 }
 
 /* FILTER */
-
 .filter-tabs{
-    margin:24px 20px 0;
     display:flex;
-    gap:12px;
+    gap:10px;
     overflow-x:auto;
+    margin-bottom:20px;
+    padding-bottom:4px;
+}
+
+.filter-tabs::-webkit-scrollbar{
+    display:none;
 }
 
 .filter-btn{
-    padding:12px 20px;
-    border-radius:14px;
-    background:rgba(255,255,255,0.06);
-    color:#c7d2ea;
+    padding:10px 18px;
+    border-radius:30px;
+    background:rgba(255,255,255,.05);
+    color:#94a3b8;
     white-space:nowrap;
     cursor:pointer;
-    transition:0.3s;
-    font-size:14px;
+    transition:0.2s;
+    font-size:13px;
+    font-weight:500;
 }
 
 .filter-btn.active{
@@ -162,74 +179,57 @@ body{
 }
 
 /* LIST */
-
 .notifications{
-    margin-top:24px;
-    padding:0 20px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
 }
 
 .notify-card{
-    background:linear-gradient(145deg,#0a1125,#121b37);
+    background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
     border-radius:24px;
-    padding:18px;
-    margin-bottom:18px;
-    border:1px solid rgba(255,255,255,0.05);
+    padding:16px;
+    border:1px solid rgba(168,85,247,.18);
     display:flex;
-    gap:16px;
+    gap:14px;
     position:relative;
-    overflow:hidden;
-    transition:0.3s;
+    transition:0.2s;
 }
 
-.notify-card:hover{
-    transform:translateY(-4px);
+.notify-card:active{
+    transform:scale(0.98);
 }
 
 .notify-card.unread{
-    border:1px solid rgba(0,225,255,0.3);
+    border-left:3px solid #00e1ff;
 }
 
 .notify-dot{
     position:absolute;
-    top:20px;
-    right:20px;
-    width:10px;
-    height:10px;
+    top:16px;
+    right:16px;
+    width:8px;
+    height:8px;
     border-radius:50%;
     background:#00e1ff;
-    box-shadow:0 0 10px #00e1ff;
+    box-shadow:0 0 8px #00e1ff;
 }
 
 .notify-icon{
-    width:58px;
-    height:58px;
-    border-radius:18px;
+    width:48px;
+    height:48px;
+    border-radius:16px;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:24px;
+    font-size:20px;
     flex-shrink:0;
 }
 
-.ai{
-    background:rgba(0,225,255,0.15);
-    color:#00e1ff;
-}
-
-.trade{
-    background:rgba(0,255,140,0.15);
-    color:#00ff8c;
-}
-
-.warning{
-    background:rgba(255,170,0,0.15);
-    color:#ffaa00;
-}
-
-.system{
-    background:rgba(255,255,255,0.08);
-    color:white;
-}
+.ai{ background:rgba(0,225,255,0.12); color:#00e1ff; }
+.trade{ background:rgba(0,255,140,0.12); color:#00ff8c; }
+.warning{ background:rgba(255,170,0,0.12); color:#ffaa00; }
+.system{ background:rgba(168,85,247,0.12); color:#c084fc; }
 
 .notify-content{
     flex:1;
@@ -239,37 +239,37 @@ body{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    margin-bottom:8px;
+    margin-bottom:6px;
 }
 
 .notify-title{
-    font-size:17px;
+    font-size:15px;
     font-weight:700;
 }
 
 .notify-time{
-    font-size:12px;
-    color:#7f8db0;
+    font-size:11px;
+    color:#64748b;
 }
 
 .notify-message{
-    color:#a7b5d3;
-    font-size:14px;
-    line-height:1.6;
-    margin-bottom:14px;
+    color:#94a3b8;
+    font-size:13px;
+    line-height:1.5;
+    margin-bottom:12px;
 }
 
 .notify-actions{
     display:flex;
-    gap:12px;
+    gap:10px;
 }
 
 .action-btn{
-    padding:10px 16px;
+    padding:8px 14px;
     border:none;
-    border-radius:12px;
+    border-radius:30px;
     cursor:pointer;
-    font-size:13px;
+    font-size:12px;
     font-weight:600;
 }
 
@@ -280,356 +280,285 @@ body{
 
 .secondary-btn{
     background:rgba(255,255,255,0.06);
-    color:#c7d2ea;
+    color:#94a3b8;
+}
+
+.empty-state{
+    text-align:center;
+    padding:60px 20px;
+    color:#64748b;
+}
+
+.empty-state i{
+    font-size:50px;
+    color:#c084fc;
+    margin-bottom:16px;
+    display:block;
 }
 
 /* BOTTOM NAV */
-
 .bottom-nav{
     position:fixed;
     bottom:0;
-    left:0;
+    left:50%;
+    transform:translateX(-50%);
     width:100%;
-    background:#0b1020;
-    border-top:1px solid rgba(255,255,255,0.06);
+    max-width:430px;
+    height:70px;
+    background:rgba(5,8,22,.96);
+    backdrop-filter:blur(22px);
+    border-top:1px solid rgba(168,85,247,.22);
     display:flex;
     justify-content:space-around;
-    padding:14px 0;
+    align-items:center;
     z-index:999;
 }
 
 .nav-item{
+    width:20%;
+    text-decoration:none;
+    color:#64748b;
+    font-size:11px;
     display:flex;
     flex-direction:column;
     align-items:center;
-    gap:6px;
-    color:#7e8aa8;
-    text-decoration:none;
-    font-size:12px;
-}
-
-.nav-item.active{
-    color:#00e1ff;
+    gap:4px;
 }
 
 .nav-item i{
     font-size:20px;
 }
 
+.nav-item.active{
+    color:#c084fc;
+    text-shadow:0 0 16px rgba(168,85,247,.9);
+}
+
+.nav-item span{
+    font-size:10px;
+}
 </style>
 </head>
-
 <body>
 
-<!-- TOP -->
-
 <div class="topbar">
-
-    <div class="top-left">
-
-        <div class="back-btn" onclick="history.back()">
-            <i class="fa-solid fa-arrow-left"></i>
-        </div>
-
-        <div class="page-title">
-            Notifications
-        </div>
-
+    <div class="back-btn" onclick="history.back()">
+        <i class="fa-solid fa-arrow-left"></i>
     </div>
-
-    <button class="clear-btn" onclick="clearNotifications()">
-        Clear All
-    </button>
-
+    <div class="page-title">Notifications</div>
+    <button class="clear-btn" onclick="clearAllNotifications()">Clear All</button>
 </div>
 
-<!-- HEADER -->
-
 <div class="notify-header">
-
     <div class="header-row">
-
         <div class="header-left">
-
-            <div class="header-icon">
-                <i class="fa-solid fa-bell"></i>
-            </div>
-
+            <div class="header-icon"><i class="fa-solid fa-bell"></i></div>
             <div class="header-text">
                 <h2>Message Center</h2>
                 <p>AI strategy updates & system alerts</p>
             </div>
-
         </div>
-
-        <div class="unread-badge">
-            6 New
-        </div>
-
+        <div class="unread-badge" id="unreadCount">0 New</div>
     </div>
-
 </div>
-
-<!-- FILTER -->
 
 <div class="filter-tabs">
-
-    <div class="filter-btn active">
-        All
-    </div>
-
-    <div class="filter-btn">
-        AI Signals
-    </div>
-
-    <div class="filter-btn">
-        Trading
-    </div>
-
-    <div class="filter-btn">
-        Security
-    </div>
-
-    <div class="filter-btn">
-        System
-    </div>
-
+    <div class="filter-btn active" data-filter="all">All</div>
+    <div class="filter-btn" data-filter="ai">AI Signals</div>
+    <div class="filter-btn" data-filter="trade">Trading</div>
+    <div class="filter-btn" data-filter="security">Security</div>
+    <div class="filter-btn" data-filter="system">System</div>
 </div>
 
-<!-- LIST -->
-
-<div class="notifications">
-
-    <!-- ITEM -->
-
-    <div class="notify-card unread">
-
-        <div class="notify-dot"></div>
-
-        <div class="notify-icon ai">
-            <i class="fa-solid fa-robot"></i>
-        </div>
-
-        <div class="notify-content">
-
-            <div class="notify-top">
-
-                <div class="notify-title">
-                    AI Strategy Activated
-                </div>
-
-                <div class="notify-time">
-                    2 min ago
-                </div>
-
-            </div>
-
-            <div class="notify-message">
-                Quantum Neural AI has entered a new market cycle and generated a +12.8% predicted trend opportunity.
-            </div>
-
-            <div class="notify-actions">
-
-                <button class="action-btn primary-btn">
-                    View Strategy
-                </button>
-
-                <button class="action-btn secondary-btn">
-                    Ignore
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- ITEM -->
-
-    <div class="notify-card unread">
-
-        <div class="notify-dot"></div>
-
-        <div class="notify-icon trade">
-            <i class="fa-solid fa-chart-line"></i>
-        </div>
-
-        <div class="notify-content">
-
-            <div class="notify-top">
-
-                <div class="notify-title">
-                    Profit Received
-                </div>
-
-                <div class="notify-time">
-                    18 min ago
-                </div>
-
-            </div>
-
-            <div class="notify-message">
-                Your AI Auto Trading account generated a daily return of +$286.42 from active market positions.
-            </div>
-
-            <div class="notify-actions">
-
-                <button class="action-btn primary-btn">
-                    Open Wallet
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- ITEM -->
-
-    <div class="notify-card">
-
-        <div class="notify-icon warning">
-            <i class="fa-solid fa-shield-halved"></i>
-        </div>
-
-        <div class="notify-content">
-
-            <div class="notify-top">
-
-                <div class="notify-title">
-                    Security Alert
-                </div>
-
-                <div class="notify-time">
-                    Today
-                </div>
-
-            </div>
-
-            <div class="notify-message">
-                New login detected from Windows Chrome device. If this wasn't you, please secure your account immediately.
-            </div>
-
-            <div class="notify-actions">
-
-                <button class="action-btn primary-btn">
-                    Secure Account
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- ITEM -->
-
-    <div class="notify-card">
-
-        <div class="notify-icon system">
-            <i class="fa-solid fa-server"></i>
-        </div>
-
-        <div class="notify-content">
-
-            <div class="notify-top">
-
-                <div class="notify-title">
-                    System Upgrade
-                </div>
-
-                <div class="notify-time">
-                    Yesterday
-                </div>
-
-            </div>
-
-            <div class="notify-message">
-                AI Trading Engine V4.2 has been successfully deployed with enhanced execution speed and neural prediction.
-            </div>
-
-            <div class="notify-actions">
-
-                <button class="action-btn secondary-btn">
-                    Details
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<!-- BOTTOM NAV -->
+<div class="notifications" id="notificationsList"></div>
 
 <div class="bottom-nav">
-
-    <a href="index.html" class="nav-item">
-        <i class="fa-solid fa-house"></i>
-        <span>Home</span>
-    </a>
-
-    <a href="market.html" class="nav-item">
-        <i class="fa-solid fa-chart-simple"></i>
-        <span>Market</span>
-    </a>
-
-    <a href="trade.html" class="nav-item">
-        <i class="fa-solid fa-arrow-right-arrow-left"></i>
-        <span>Trade</span>
-    </a>
-
-    <a href="notifications.html" class="nav-item active">
-        <i class="fa-solid fa-bell"></i>
-        <span>Alerts</span>
-    </a>
-
-    <a href="profile.html" class="nav-item">
-        <i class="fa-solid fa-user"></i>
-        <span>Profile</span>
-    </a>
-
+    <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i><span>Home</span></a>
+    <a href="market.html" class="nav-item"><i class="fa-solid fa-chart-simple"></i><span>Market</span></a>
+    <a href="trade.html" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Trade</span></a>
+    <a href="notifications.html" class="nav-item active"><i class="fa-solid fa-bell"></i><span>Alerts</span></a>
+    <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i><span>Profile</span></a>
 </div>
 
+<script src="config.js"></script>
 <script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-function clearNotifications(){
-
-    const cards = document.querySelector('.notifications');
-
-    cards.innerHTML = `
-    
-        <div style="
-            text-align:center;
-            padding:80px 20px;
-            color:#7f8db0;
-        ">
-
-            <i class="fa-regular fa-bell-slash"
-               style="
-                    font-size:60px;
-                    margin-bottom:20px;
-                    color:#00e1ff;
-               ">
-            </i>
-
-            <h2 style="margin-bottom:10px;">
-                No Notifications
-            </h2>
-
-            <p>
-                Your message center is currently empty.
-            </p>
-
-        </div>
-    
-    `;
-
+// ==================== 获取当前用户 ====================
+function getCurrentUser() {
+    try {
+        const user = localStorage.getItem("user");
+        return user ? JSON.parse(user) : null;
+    } catch (e) {
+        return null;
+    }
 }
 
-</script>
+// ==================== 显示提示 ====================
+function showToast(message, type = "info") {
+    const existingToast = document.querySelector(".global-toast");
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement("div");
+    toast.className = "global-toast";
+    toast.textContent = message;
+    
+    const colors = { success: "#00f5a0", error: "#ff4d6d", info: "#c084fc" };
+    toast.style.cssText = `
+        position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+        background: rgba(10,20,40,0.95); border: 1px solid ${colors[type] || colors.info};
+        color: ${colors[type] || colors.info}; padding: 12px 24px; border-radius: 50px;
+        font-size: 14px; z-index: 10000; backdrop-filter: blur(10px);
+    `;
+    
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300); }, 2500);
+}
 
+// ==================== 通知数据 ====================
+let notifications = [
+    { id: 1, title: "AI Strategy Activated", message: "Quantum Neural AI has entered a new market cycle and generated a +12.8% predicted trend opportunity.", time: "2 min ago", type: "ai", read: false, action: "View Strategy" },
+    { id: 2, title: "Profit Received", message: "Your AI Auto Trading account generated a daily return of +$286.42 from active market positions.", time: "18 min ago", type: "trade", read: false, action: "Open Wallet" },
+    { id: 3, title: "Security Alert", message: "New login detected from Windows Chrome device. If this wasn't you, please secure your account immediately.", time: "Today", type: "security", read: true, action: "Secure Account" },
+    { id: 4, title: "System Upgrade", message: "AI Trading Engine V4.2 has been successfully deployed with enhanced execution speed and neural prediction.", time: "Yesterday", type: "system", read: true, action: "Details" }
+];
+
+let currentFilter = "all";
+
+// ==================== 获取图标样式 ====================
+function getIconStyle(type) {
+    switch(type) {
+        case 'ai': return { class: 'ai', icon: 'fa-solid fa-robot' };
+        case 'trade': return { class: 'trade', icon: 'fa-solid fa-chart-line' };
+        case 'security': return { class: 'warning', icon: 'fa-solid fa-shield-halved' };
+        case 'system': return { class: 'system', icon: 'fa-solid fa-server' };
+        default: return { class: 'ai', icon: 'fa-solid fa-bell' };
+    }
+}
+
+// ==================== 渲染通知列表 ====================
+function renderNotifications() {
+    const container = document.getElementById("notificationsList");
+    let filtered = notifications;
+    
+    if (currentFilter !== "all") {
+        filtered = notifications.filter(n => n.type === currentFilter);
+    }
+    
+    const unreadCount = notifications.filter(n => !n.read).length;
+    document.getElementById("unreadCount").innerText = unreadCount + " New";
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-regular fa-bell-slash"></i>
+                <h3>No Notifications</h3>
+                <p>Your message center is currently empty.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = filtered.map(notif => {
+        const iconStyle = getIconStyle(notif.type);
+        const unreadClass = !notif.read ? 'unread' : '';
+        
+        return `
+            <div class="notify-card ${unreadClass}" data-id="${notif.id}">
+                ${!notif.read ? '<div class="notify-dot"></div>' : ''}
+                <div class="notify-icon ${iconStyle.class}">
+                    <i class="${iconStyle.icon}"></i>
+                </div>
+                <div class="notify-content">
+                    <div class="notify-top">
+                        <div class="notify-title">${escapeHtml(notif.title)}</div>
+                        <div class="notify-time">${escapeHtml(notif.time)}</div>
+                    </div>
+                    <div class="notify-message">${escapeHtml(notif.message)}</div>
+                    <div class="notify-actions">
+                        <button class="action-btn primary-btn" onclick="handleAction(${notif.id})">${escapeHtml(notif.action)}</button>
+                        <button class="action-btn secondary-btn" onclick="markAsRead(${notif.id})">Mark Read</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ==================== 标记为已读 ====================
+function markAsRead(id) {
+    const index = notifications.findIndex(n => n.id === id);
+    if (index !== -1 && !notifications[index].read) {
+        notifications[index].read = true;
+        renderNotifications();
+        showToast("Marked as read", "success");
+    }
+}
+
+// ==================== 处理操作按钮点击 ====================
+function handleAction(id) {
+    const notif = notifications.find(n => n.id === id);
+    if (notif) {
+        if (!notif.read) {
+            markAsRead(id);
+        }
+        showToast(`Opening: ${notif.title}`, "info");
+        // 根据不同类型跳转
+        if (notif.type === 'trade') {
+            window.location.href = 'trade.html';
+        } else if (notif.type === 'ai') {
+            window.location.href = 'ai_assistant.html';
+        }
+    }
+}
+
+// ==================== 清除所有通知 ====================
+function clearAllNotifications() {
+    if (notifications.length === 0) return;
+    
+    if (confirm("Clear all notifications?")) {
+        notifications = [];
+        renderNotifications();
+        showToast("All notifications cleared", "success");
+    }
+}
+
+// ==================== 切换筛选 ====================
+function setFilter(filter) {
+    currentFilter = filter;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === filter) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    renderNotifications();
+}
+
+// ==================== XSS防护 ====================
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+// ==================== 初始化 ====================
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        setFilter(btn.dataset.filter);
+    });
+});
+
+// 页面启动
+renderNotifications();
+</script>
 </body>
 </html>

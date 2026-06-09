@@ -109,8 +109,16 @@ th{
   background:#202020;
 }
 
-.status{
+.status-pending{
   color:#ffc107;
+  font-weight:800;
+}
+.status-approved{
+  color:#00ff88;
+  font-weight:800;
+}
+.status-rejected{
+  color:#ff4d6d;
   font-weight:800;
 }
 
@@ -123,14 +131,23 @@ th{
   margin:2px;
   font-weight:700;
 }
-
 .view-btn{background:#2563eb;}
 .approve-btn{background:#00b894;}
 .reject-btn{background:#e11d48;}
+.view-btn:disabled,.approve-btn:disabled,.reject-btn:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+}
 
 .empty{
   text-align:center;
   color:#888;
+  padding:40px;
+}
+
+.loading{
+  text-align:center;
+  color:#c084fc;
   padding:40px;
 }
 
@@ -159,7 +176,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
   <div class="logo">人工智能贸易</div>
 
   <div class="nav">
-    <a href="index.html">仪表板</a>
+    <a href="dashboard.html">仪表板</a>
     <a href="trade_management.html">交易管理</a>
     <a href="user_management.html">用户管理</a>
     <a href="kyc.html" class="active">KYC审核</a>
@@ -195,14 +212,14 @@ if (!adminAuth || adminAuth.role !== "admin") {
     </div>
   </div>
 
-  <input class="search" id="searchInput" placeholder="搜索姓名 / 证件类型 / 状态">
+  <input class="search" id="searchInput" placeholder="搜索姓名 / 邮箱 / UID / 状态">
 
   <table>
     <thead>
       <tr>
-        <th>ID</th>
+        <th>UID</th>
         <th>姓名</th>
-        <th>证件类型</th>
+        <th>邮箱</th>
         <th>提交时间</th>
         <th>状态</th>
         <th>查看资料</th>
@@ -212,7 +229,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
 
     <tbody id="kycTable">
       <tr>
-        <td colspan="7" class="empty">正在加载 KYC 数据...</td>
+        <td colspan="7" class="loading">正在加载 KYC 数据...</td>
       </tr>
     </tbody>
   </table>
@@ -220,94 +237,228 @@ if (!adminAuth || adminAuth.role !== "admin") {
 </div>
 
 <script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
+const ADMIN_TOKEN = "AI_ADMIN_2026";
+
 let kycData = [];
 
-async function loadKYC(){
-  try{
-    const res = await fetch("/api/kyc/list");
-    kycData = await res.json();
+// ==================== 获取状态样式 ====================
+function getStatusClass(status) {
+    if (status === "已通过" || status === "Approved") return "status-approved";
+    if (status === "已驳回" || status === "Rejected") return "status-rejected";
+    return "status-pending";
+}
 
-    renderTable(kycData);
-    updateStats();
+function getStatusText(status) {
+    if (status === "Approved") return "已通过";
+    if (status === "Rejected") return "已驳回";
+    return "待审核";
+}
 
-  }catch(error){
-    console.error(error);
-    document.getElementById("kycTable").innerHTML = `
-      <tr>
-        <td colspan="7" class="empty">无法读取 KYC 数据，请确认 server.js 已启动</td>
-      </tr>
+// ==================== 加载KYC数据 ====================
+async function loadKYC() {
+    const tbody = document.getElementById("kycTable");
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">加载中...</td></tr>';
+    
+    try {
+        // 修复：使用正确的API地址和admin-token
+        const response = await fetch(`${API_BASE}/api/kyc`, {
+            headers: {
+                "admin-token": ADMIN_TOKEN
+            }
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            kycData = result.data;
+            renderTable(kycData);
+            updateStats();
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty">暂无KYC申请</td></tr>';
+        }
+    } catch (error) {
+        console.error("Load KYC error:", error);
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">加载失败，请检查网络</td></tr>';
+    }
+}
+
+// ==================== 渲染表格 ====================
+function renderTable(data) {
+    const table = document.getElementById("kycTable");
+    
+    if (!data || data.length === 0) {
+        table.innerHTML = '<tr><td colspan="7" class="empty">暂无KYC申请</td></tr>';
+        return;
+    }
+    
+    table.innerHTML = "";
+    
+    data.forEach(item => {
+        const statusClass = getStatusClass(item.status);
+        const statusText = getStatusText(item.status);
+        const createdAt = item.createdAt ? new Date(item.createdAt).toLocaleString() : "-";
+        
+        // 构建图片查看链接
+        let frontImageHtml = "-";
+        let backImageHtml = "-";
+        
+        if (item.frontImage) {
+            frontImageHtml = `<a href="${API_BASE}${item.frontImage}" target="_blank" class="view-btn" style="background:#2563eb;text-decoration:none;display:inline-block;">正面</a>`;
+        }
+        if (item.backImage) {
+            backImageHtml = `<a href="${API_BASE}${item.backImage}" target="_blank" class="view-btn" style="background:#2563eb;text-decoration:none;display:inline-block;">反面</a>`;
+        }
+        
+        // 操作按钮（只有待审核状态才显示）
+        let actionButtons = "";
+        if (item.status === "未审核" || item.status === "Pending") {
+            actionButtons = `
+                <button class="approve-btn" onclick="approveKYC('${item._id}')">通过</button>
+                <button class="reject-btn" onclick="rejectKYC('${item._id}')">驳回</button>
+            `;
+        } else {
+            actionButtons = '<span style="color:#666;">已处理</span>';
+        }
+        
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${item.uid || "-"}</td>
+            <td>${escapeHtml(item.name || "-")}</td>
+            <td>${escapeHtml(item.email || "-")}</td>
+            <td>${createdAt}</td>
+            <td class="${statusClass}">${statusText}</td>
+            <td>${frontImageHtml} ${backImageHtml}</td>
+            <td>${actionButtons}</td>
+        `;
+        table.appendChild(row);
+    });
+}
+
+// ==================== 更新统计 ====================
+function updateStats() {
+    const total = kycData.length;
+    const pending = kycData.filter(x => x.status === "未审核" || x.status === "Pending").length;
+    const approved = kycData.filter(x => x.status === "已通过" || x.status === "Approved").length;
+    const rejected = kycData.filter(x => x.status === "已驳回" || x.status === "Rejected").length;
+    
+    document.getElementById("totalCount").innerText = total;
+    document.getElementById("pendingCount").innerText = pending;
+    document.getElementById("approvedCount").innerText = approved;
+    document.getElementById("rejectedCount").innerText = rejected;
+}
+
+// ==================== 通过KYC ====================
+async function approveKYC(id) {
+    if (!confirm("确定要通过该用户的KYC申请吗？")) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/kyc/${id}/approve`, {
+            method: "PUT",
+            headers: {
+                "admin-token": ADMIN_TOKEN
+            }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast("KYC已通过", "success");
+            loadKYC(); // 重新加载
+        } else {
+            showToast(result.message || "操作失败", "error");
+        }
+    } catch (error) {
+        console.error("Approve KYC error:", error);
+        showToast("网络错误，请重试", "error");
+    }
+}
+
+// ==================== 驳回KYC ====================
+async function rejectKYC(id) {
+    if (!confirm("确定要驳回该用户的KYC申请吗？")) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/kyc/${id}/reject`, {
+            method: "PUT",
+            headers: {
+                "admin-token": ADMIN_TOKEN
+            }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast("KYC已驳回", "success");
+            loadKYC(); // 重新加载
+        } else {
+            showToast(result.message || "操作失败", "error");
+        }
+    } catch (error) {
+        console.error("Reject KYC error:", error);
+        showToast("网络错误，请重试", "error");
+    }
+}
+
+// ==================== 搜索过滤 ====================
+function searchKYC() {
+    const keyword = document.getElementById("searchInput").value.toLowerCase();
+    
+    const filtered = kycData.filter(item => {
+        const name = (item.name || "").toLowerCase();
+        const email = (item.email || "").toLowerCase();
+        const uid = (item.uid || "").toString();
+        const status = (item.status || "").toLowerCase();
+        
+        return name.includes(keyword) || email.includes(keyword) || uid.includes(keyword) || status.includes(keyword);
+    });
+    
+    renderTable(filtered);
+    // 搜索时不更新统计，只更新表格显示
+}
+
+// ==================== XSS防护 ====================
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+// ==================== 显示提示 ====================
+function showToast(message, type = "info") {
+    const existingToast = document.querySelector(".global-toast");
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement("div");
+    toast.className = "global-toast";
+    toast.textContent = message;
+    
+    const colors = { success: "#00f5a0", error: "#ff4d6d", info: "#c084fc" };
+    toast.style.cssText = `
+        position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+        background: rgba(10,20,40,0.95); border: 1px solid ${colors[type] || colors.info};
+        color: ${colors[type] || colors.info}; padding: 12px 24px; border-radius: 50px;
+        font-size: 14px; z-index: 10000; backdrop-filter: blur(10px); white-space: nowrap;
     `;
-  }
+    
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300); }, 2500);
 }
 
-function renderTable(data){
-  const table = document.getElementById("kycTable");
-
-  if(!data || data.length === 0){
-    table.innerHTML = `
-      <tr>
-        <td colspan="7" class="empty">暂无用户上传 KYC 资料</td>
-      </tr>
-    `;
-    return;
-  }
-
-  table.innerHTML = "";
-
-  data.forEach(item => {
-    table.innerHTML += `
-      <tr>
-        <td>${item.id}</td>
-        <td>${item.username || "Marjorie AI"}</td>
-        <td>${item.type || "KYC Document"}</td>
-        <td>${item.time || "-"}</td>
-        <td class="status">${item.status || "Pending"}</td>
-        <td>
-          <a href="${item.fileUrl}" target="_blank">
-            <button class="view-btn">查看</button>
-          </a>
-        </td>
-        <td>
-          <button class="approve-btn" onclick="changeStatus(${item.id}, 'Approved')">通过</button>
-          <button class="reject-btn" onclick="changeStatus(${item.id}, 'Rejected')">驳回</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-function updateStats(){
-  document.getElementById("totalCount").innerText = kycData.length;
-  document.getElementById("pendingCount").innerText = kycData.filter(x => x.status === "Pending").length;
-  document.getElementById("approvedCount").innerText = kycData.filter(x => x.status === "Approved").length;
-  document.getElementById("rejectedCount").innerText = kycData.filter(x => x.status === "Rejected").length;
-}
-
-function changeStatus(id,status){
-  const item = kycData.find(x => x.id === id);
-
-  if(item){
-    item.status = status;
-    renderTable(kycData);
-    updateStats();
-  }
-}
-
-document.getElementById("searchInput").addEventListener("input",function(){
-  const keyword = this.value.toLowerCase();
-
-  const filtered = kycData.filter(item =>
-    String(item.username || "").toLowerCase().includes(keyword) ||
-    String(item.type || "").toLowerCase().includes(keyword) ||
-    String(item.status || "").toLowerCase().includes(keyword)
-  );
-
-  renderTable(filtered);
+// ==================== 搜索框事件 ====================
+document.getElementById("searchInput").addEventListener("input", function() {
+    if (this.value.trim() === "") {
+        renderTable(kycData);
+    } else {
+        searchKYC();
+    }
 });
 
+// ==================== 页面启动 ====================
 loadKYC();
 </script>
 
 </body>
 </html>
-

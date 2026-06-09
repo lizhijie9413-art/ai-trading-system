@@ -330,160 +330,167 @@ body::before{
 </div>
 
 <script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-const localUser =
-JSON.parse(localStorage.getItem("user"));
+// ==================== 获取用户信息 ====================
+function getCurrentUser() {
+    try {
+        const user = localStorage.getItem("user");
+        return user ? JSON.parse(user) : null;
+    } catch (e) {
+        return null;
+    }
+}
 
+// ==================== 格式化金额 ====================
 function formatMoney(value){
-
-    return "$" + Number(value || 0).toLocaleString(
-        undefined,
-        {
-            minimumFractionDigits:2,
-            maximumFractionDigits:2
-        }
-    );
-}
-
-async function loadOrders(){
-
-    if(!localUser || !localUser.id){
-        return;
-    }
-
-const response =
-await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/ai/quant/orders/" +
-  localUser.id
-);
-
-    const result =
-    await response.json();
-
-    if(!result.success){
-        return;
-    }
-
-    const orders =
-   result.data || [];
-   
-    let totalProfit = 0;
-
-    const container =
-    document.getElementById("ordersContainer");
-
-    container.innerHTML = "";
-
-    orders.reverse().forEach(order => {
-
-        totalProfit += Number(order.profit || 0);
-
-        const card =
-        document.createElement("div");
-
-        card.className = "statement-card";
-
-        const statusClass =
-        order.status === "Completed"
-        ? "completed"
-        : "running";
-
-        let settleButton = "";
-
-        if(order.status !== "Completed"){
-
-            settleButton = `
-                <button
-                class="settle-btn"
-                onclick="settleOrder('${order._id || order.id}')"
-                    Settle Profit
-                </button>
-            `;
-        }
-
-        card.innerHTML = `
-        
-        <div class="statement-top">
-
-            <div class="statement-date">
-                ${order.market}
-            </div>
-
-            <div class="statement-status ${statusClass}">
-                ${order.status}
-            </div>
-
-        </div>
-
-        <div class="statement-grid">
-
-            <div class="statement-box">
-                <span>Product</span>
-                <strong>
-                    ${order.product}
-                </strong>
-            </div>
-
-            <div class="statement-box">
-                <span>Amount</span>
-                <strong class="blue">
-                    ${formatMoney(order.amount)}
-                </strong>
-            </div>
-
-            <div class="statement-box">
-                <span>Profit</span>
-                <strong class="green">
-                    +${formatMoney(order.profit)}
-                </strong>
-            </div>
-
-            <div class="statement-box">
-                <span>AI Confidence</span>
-                <strong class="purple">
-                    ${order.confidence || 92}%
-                </strong>
-            </div>
-
-        </div>
-
-        ${settleButton}
-        
-        `;
-
-        container.appendChild(card);
-
+    return "$" + Number(value || 0).toLocaleString(undefined, {
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
     });
-
-    document.getElementById("totalProfit").innerText =
-    formatMoney(totalProfit);
-
-    document.getElementById("todayProfit").innerText =
-    "+" + formatMoney(totalProfit) + " Today";
 }
 
-async function settleOrder(orderId){
+// ==================== 显示提示 ====================
+function showToast(message, type = "info") {
+    const existingToast = document.querySelector(".global-toast");
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement("div");
+    toast.className = "global-toast";
+    toast.textContent = message;
+    
+    const colors = { success: "#00f5a0", error: "#ff4d6d", info: "#c084fc" };
+    toast.style.cssText = `
+        position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+        background: rgba(10,20,40,0.95); border: 1px solid ${colors[type] || colors.info};
+        color: ${colors[type] || colors.info}; padding: 12px 24px; border-radius: 50px;
+        font-size: 14px; z-index: 10000; backdrop-filter: blur(10px); white-space: nowrap;
+    `;
+    
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300); }, 2500);
+}
 
-  const response =
-await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/ai/quant/settle/" +
-  orderId,
-  {
-    method:"POST"
-  }
-);
+// ==================== 加载订单列表 ====================
+async function loadOrders() {
+    const user = getCurrentUser();
+    
+    if (!user || !user.id) {
+        document.getElementById("ordersContainer").innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">Please login to view orders</div>';
+        return;
+    }
 
-    const result =
-    await response.json();
+    try {
+        const response = await fetch(`${API_BASE}/api/ai/quant/orders/${user.id}`, {
+            headers: {
+                "user-id": user.id
+            }
+        });
+        
+        const result = await response.json();
 
-    if(result.success){
+        if (!result.success || !result.data) {
+            document.getElementById("ordersContainer").innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">No orders found</div>';
+            return;
+        }
 
-        alert("Settlement Completed");
+        const orders = result.data || [];
+        let totalProfit = 0;
 
-        loadOrders();
+        const container = document.getElementById("ordersContainer");
+        container.innerHTML = "";
+
+        // 按时间倒序显示
+        orders.slice().reverse().forEach(order => {
+            totalProfit += Number(order.profit || 0);
+
+            const card = document.createElement("div");
+            card.className = "statement-card";
+
+            const statusClass = order.status === "Completed" ? "completed" : "running";
+            const statusText = order.status === "Completed" ? "Completed" : "Running";
+
+            let settleButton = "";
+            if (order.status !== "Completed") {
+                settleButton = `
+                    <button class="settle-btn" onclick="settleOrder('${order._id}')">
+                        Settle Profit
+                    </button>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="statement-top">
+                    <div class="statement-date">${order.market || "AI Market"}</div>
+                    <div class="statement-status ${statusClass}">${statusText}</div>
+                </div>
+                <div class="statement-grid">
+                    <div class="statement-box">
+                        <span>Product</span>
+                        <strong>${order.product || "-"}</strong>
+                    </div>
+                    <div class="statement-box">
+                        <span>Amount</span>
+                        <strong class="blue">${formatMoney(order.amount)}</strong>
+                    </div>
+                    <div class="statement-box">
+                        <span>Profit</span>
+                        <strong class="green">+${formatMoney(order.profit)}</strong>
+                    </div>
+                    <div class="statement-box">
+                        <span>AI Confidence</span>
+                        <strong class="purple">${order.confidence || 92}%</strong>
+                    </div>
+                </div>
+                ${settleButton}
+            `;
+
+            container.appendChild(card);
+        });
+
+        document.getElementById("totalProfit").innerText = formatMoney(totalProfit);
+        document.getElementById("todayProfit").innerText = "+" + formatMoney(totalProfit) + " Today";
+
+    } catch (err) {
+        console.error("Load orders error:", err);
+        document.getElementById("ordersContainer").innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">Failed to load orders</div>';
     }
 }
 
+// ==================== 结算订单 ====================
+async function settleOrder(orderId) {
+    const user = getCurrentUser();
+    
+    if (!user || !user.id) {
+        showToast("Please login first", "error");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/api/ai/quant/settle/${orderId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "user-id": user.id
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast("Settlement completed successfully!", "success");
+            loadOrders(); // 刷新列表
+        } else {
+            showToast(result.message || "Settlement failed", "error");
+        }
+    } catch (err) {
+        console.error("Settle order error:", err);
+        showToast("Network error, please try again", "error");
+    }
+}
+
+// ==================== 页面启动 ====================
 loadOrders();
 </script>
 

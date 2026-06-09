@@ -688,6 +688,8 @@ body::before{
 </div>
 
 <script>
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
+
 
 let currentLevel = "Basic Quant";
 let maxTrades = 2;
@@ -818,8 +820,12 @@ async function loadBalance(){
    
 const response =
 await fetch(
-  "https://www.quantai.fyi/api/users/" +
-  localUser.id
+  API_BASE + "/api/users/" + localUser.id,
+  {
+    headers: {
+      "user-id": localUser.id
+    }
+  }
 );
 
     const result =
@@ -829,8 +835,7 @@ await fetch(
 
      console.log("USER BALANCE =", result.user.balance);
 
-        const balance =
-        Number(result.user.balance || 0);
+        const balance = Number(result.user.availableBalance || result.user.balance || 0);
 
         document.getElementById("quantBalance").innerText =
         formatMoney(balance);
@@ -895,15 +900,15 @@ async function runQuantTrade(amount){
     
 
 const response = await fetch(
-  "https://www.quantai.fyi/api/ai/quant/start",
+  API_BASE + "/api/ai/quant/start",
   {
     method:"POST",
     headers:{
-      "Content-Type":"application/json"
+      "Content-Type":"application/json",
+      "user-id": localUser.id   // 添加认证头
     },
     body:JSON.stringify({
-      userId: localUser.id,
-      amount: amount
+      amount: amount            // 不需要传userId了
     })
   }
 );

@@ -2,234 +2,400 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"/>
 <title>Transaction History</title>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
-body{background:#050816;color:white;padding:16px;max-width:430px;margin:0 auto;overflow-x:hidden;padding-bottom:90px;}
-.header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
-.back-icon{width:36px;height:36px;border-radius:12px;background:rgba(140,100,255,.16);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;}
-.title{font-size:22px;font-weight:800;}
-.history-box{background:linear-gradient(180deg,#11183c,#090d22);border:1px solid rgba(140,100,255,.25);border-radius:20px;padding:14px;margin-bottom:14px;box-shadow:0 0 18px rgba(140,100,255,.12);}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-.left{display:flex;flex-direction:column;gap:6px;}
-.right{text-align:right;}
-.type{font-size:16px;font-weight:700;}
-.date{font-size:12px;color:#aeb6d8;}
-.amount{font-size:16px;font-weight:700;white-space:nowrap;}
-.green{color:#00ff9d;}
-.red{color:#ff5f7a;}
-.purple{color:#9d7bff;text-shadow:0 0 10px #7b4dff;}
-.desc{margin-top:6px;font-size:12px;color:#aeb6d8;}
-.status{margin-top:12px;display:inline-block;padding:6px 12px;border-radius:12px;font-size:12px;font-weight:600;}
-.empty{text-align:center;color:#94a3b8;margin-top:80px;}
-.back-btn{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;width:calc(100% - 32px);max-width:398px;height:56px;border:none;border-radius:18px;font-size:16px;font-weight:800;color:white;cursor:pointer;background:linear-gradient(90deg,#7b4dff,#a855f7);box-shadow:0 0 20px rgba(140,100,255,.35);z-index:999;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;}
+body{
+  background:radial-gradient(circle at 20% 10%,rgba(124,58,237,.28),transparent 30%),radial-gradient(circle at 85% 40%,rgba(0,212,255,.16),transparent 34%),linear-gradient(180deg,#030712,#050816,#020617);
+  color:white;
+  max-width:430px;
+  margin:0 auto;
+  padding:18px 16px 100px;
+  overflow-x:hidden;
+  position:relative;
+  min-height:100vh;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:42px 42px;
+  pointer-events:none;
+  z-index:-1;
+}
+
+/* 浮动光晕 */
+.glow-ball{position:fixed;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,0.15),transparent 70%);top:10%;left:-100px;filter:blur(50px);animation:floatGlow1 10s ease-in-out infinite;z-index:-1;}
+.glow-ball2{position:fixed;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(0,213,255,0.1),transparent 70%);bottom:5%;right:-100px;filter:blur(60px);animation:floatGlow2 12s ease-in-out infinite;z-index:-1;}
+@keyframes floatGlow1{0%,100%{transform:translate(0,0);}50%{transform:translate(60px,40px);}}
+@keyframes floatGlow2{0%,100%{transform:translate(0,0);}50%{transform:translate(-50px,-50px);}}
+
+/* 粒子效果 */
+.particles{position:fixed;inset:0;overflow:hidden;z-index:-1;}
+.particle{position:absolute;width:2px;height:2px;background:rgba(139,92,246,0.5);border-radius:50%;animation:floatParticle 8s linear infinite;}
+@keyframes floatParticle{0%{transform:translateY(0);opacity:0;}50%{opacity:0.8;}100%{transform:translateY(-100px);opacity:0;}}
+
+.header{display:flex;align-items:center;gap:12px;margin-bottom:22px;animation:fadeInDown 0.6s ease;}
+.back-icon{width:44px;height:44px;border-radius:16px;background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.28);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:all 0.3s ease;}
+.back-icon:hover{transform:scale(1.05);border-color:#c084fc;}
+.title{font-size:28px;font-weight:900;background:linear-gradient(90deg,#fff,#c084fc,#38bdf8);-webkit-background-clip:text;color:transparent;}
+
+/* 统计卡片 */
+.stats-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;}
+.stat-card{background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));border:1px solid rgba(139,92,246,.2);border-radius:20px;padding:14px;text-align:center;transition:all 0.3s ease;}
+.stat-card:hover{transform:translateY(-3px);border-color:#c084fc;}
+.stat-label{font-size:12px;color:#94a3b8;margin-bottom:6px;}
+.stat-value{font-size:22px;font-weight:800;color:#00ff9d;}
+
+/* 筛选标签 */
+.filter-tabs{display:flex;gap:10px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;}
+.filter-tabs::-webkit-scrollbar{display:none;}
+.filter-btn{padding:10px 18px;border-radius:30px;background:rgba(255,255,255,.05);color:#94a3b8;font-size:13px;cursor:pointer;transition:all 0.3s ease;white-space:nowrap;}
+.filter-btn.active{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:white;box-shadow:0 0 15px rgba(139,92,246,.4);}
+.filter-btn:hover{transform:translateY(-2px);}
+
+/* 历史记录卡片 */
+.history-list{display:flex;flex-direction:column;gap:12px;}
+.history-card{
+  background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+  border:1px solid rgba(139,92,246,.18);
+  border-radius:24px;
+  padding:16px;
+  transition:all 0.3s ease;
+  animation:fadeInUp 0.5s ease backwards;
+}
+.history-card:hover{transform:translateX(5px);border-color:#c084fc;}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.card-left{display:flex;flex-direction:column;gap:6px;}
+.type{font-size:16px;font-weight:800;}
+.type-icon{width:36px;height:36px;border-radius:12px;background:rgba(139,92,246,.15);display:inline-flex;align-items:center;justify-content:center;margin-right:10px;}
+.date{font-size:12px;color:#94a3b8;}
+.amount{font-size:20px;font-weight:800;white-space:nowrap;}
+.green{color:#00ff9d;text-shadow:0 0 5px rgba(0,255,157,.3);}
+.red{color:#ff4d6d;}
+.purple{color:#c084fc;}
+.desc{margin-top:8px;font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:8px;}
+.status-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;margin-top:8px;}
+.status-completed{background:rgba(0,255,157,.12);color:#00ff9d;}
+.status-pending{background:rgba(255,170,0,.12);color:#ffaa00;}
+.status-rejected{background:rgba(255,77,109,.12);color:#ff4d6d;}
+.empty-state{text-align:center;padding:60px 20px;color:#94a3b8;}
+.empty-state i{font-size:50px;color:#c084fc;margin-bottom:16px;display:block;}
+
+/* 入场动画 */
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-30px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:430px;
+  height:70px;
+  background:rgba(5,8,22,.96);
+  backdrop-filter:blur(22px);
+  border-top:1px solid rgba(168,85,247,.22);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:999;
+}
+.nav-item{
+  width:20%;
+  text-decoration:none;
+  color:#64748b;
+  font-size:11px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  transition:all 0.3s ease;
+}
+.nav-item i{font-size:20px;transition:all 0.3s ease;}
+.nav-item:hover{color:#c084fc;transform:translateY(-3px);}
+.nav-item:hover i{transform:scale(1.1);}
+.nav-item.active{color:#c084fc;text-shadow:0 0 10px rgba(168,85,247,.5);}
+.nav-item span{font-size:10px;}
 </style>
 </head>
-
 <body>
 
+<div class="glow-ball"></div>
+<div class="glow-ball2"></div>
+<div class="particles" id="particles"></div>
+
 <div class="header">
-  <div class="back-icon" onclick="window.history.back()">←</div>
+  <div class="back-icon" onclick="window.history.back()"><i class="fa-solid fa-arrow-left"></i></div>
   <div class="title">Transaction History</div>
 </div>
 
-<div id="historyList">
-  <div class="empty">Loading history...</div>
+<!-- 统计摘要 -->
+<div class="stats-summary" id="statsSummary">
+  <div class="stat-card"><div class="stat-label">Total Deposit</div><div class="stat-value" id="totalDeposit">$0.00</div></div>
+  <div class="stat-card"><div class="stat-label">Total Withdraw</div><div class="stat-value" id="totalWithdraw">$0.00</div></div>
+  <div class="stat-card"><div class="stat-label">Total Profit</div><div class="stat-value" id="totalProfitHistory">$0.00</div></div>
 </div>
 
-<button class="back-btn" onclick="window.history.back()">Back</button>
+<!-- 筛选标签 -->
+<div class="filter-tabs">
+  <div class="filter-btn active" data-filter="all">All</div>
+  <div class="filter-btn" data-filter="deposit">Deposit</div>
+  <div class="filter-btn" data-filter="withdraw">Withdraw</div>
+  <div class="filter-btn" data-filter="profit">Profit</div>
+</div>
 
+<!-- 历史记录列表 -->
+<div class="history-list" id="historyList">
+  <div class="empty-state"><i class="fa-solid fa-hourglass-half"></i>Loading history...</div>
+</div>
+
+<div class="bottom-nav">
+  <a class="nav-item" href="index.html"><i class="fa-solid fa-house"></i><span>Home</span></a>
+  <a class="nav-item" href="market.html"><i class="fa-solid fa-chart-column"></i><span>Markets</span></a>
+  <a class="nav-item" href="trade.html"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Trade</span></a>
+  <a class="nav-item" href="portfolio.html"><i class="fa-regular fa-folder"></i><span>Portfolio</span></a>
+  <a class="nav-item active" href="profile.html"><i class="fa-regular fa-user"></i><span>Profile</span></a>
+</div>
+
+<script src="config.js"></script>
 <script>
-const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
-
-function getLocalUser(){
-  return JSON.parse(localStorage.getItem("user") || "{}");
+// ==================== 粒子效果 ====================
+const particlesContainer = document.getElementById('particles');
+for(let i=0;i<35;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDelay = Math.random() * 5 + 's';
+    p.style.animationDuration = (5 + Math.random() * 8) + 's';
+    particlesContainer.appendChild(p);
 }
 
-function formatAmount(amount){
-  return Number(amount || 0).toLocaleString(undefined,{
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-  });
+let currentFilter = "all";
+let allTransactions = [];
+
+// ==================== 格式化函数 ====================
+function formatMoney(amount){
+  return "$" + Number(amount || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
-function statusStyle(status){
-  if(status === "Approved" || status === "Completed" || status === "Auto Settled"){
-    return "background:rgba(0,255,157,.12);color:#00ff9d;";
+function getStatusClass(status){
+  if(status === "Completed" || status === "Approved" || status === "Auto Settled") return "status-completed";
+  if(status === "Rejected") return "status-rejected";
+  return "status-pending";
+}
+
+function getStatusText(status){
+  if(status === "Completed") return "Completed";
+  if(status === "Approved") return "Approved";
+  if(status === "Auto Settled") return "Auto Settled";
+  if(status === "Rejected") return "Rejected";
+  return "Pending";
+}
+
+// ==================== 获取图标 ====================
+function getTypeIcon(type){
+  if(type === "Deposit") return '<i class="fa-solid fa-arrow-down" style="color:#00ff9d;"></i>';
+  if(type === "Withdraw") return '<i class="fa-solid fa-arrow-up" style="color:#ff4d6d;"></i>';
+  if(type === "AI Profit" || type === "AI Assistant Profit" || type === "Token Profit") return '<i class="fa-solid fa-chart-line" style="color:#c084fc;"></i>';
+  return '<i class="fa-solid fa-receipt" style="color:#94a3b8;"></i>';
+}
+
+// ==================== 加载历史记录 ====================
+async function loadHistory(){
+  const user = getCurrentUser();
+  if(!user || !user.id){
+    document.getElementById("historyList").innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-exclamation"></i>Please login first</div>';
+    return;
   }
-  if(status === "Rejected"){
-    return "background:rgba(255,95,122,.12);color:#ff5f7a;";
+
+  allTransactions = [];
+  let totalDeposit = 0;
+  let totalWithdraw = 0;
+  let totalProfit = 0;
+
+  // 1. 获取用户记录
+  const userResult = await apiRequest(`/api/users/${user.id}`);
+  if(userResult.success && userResult.data && userResult.data.user){
+    const userData = userResult.data.user;
+    const records = userData.records || [];
+    
+    records.forEach(record => {
+      const text = typeof record === 'object' ? record.message || JSON.stringify(record) : String(record);
+      const amountMatch = text.match(/\d+(?:\.\d+)?/);
+      const amount = amountMatch ? parseFloat(amountMatch[0]) : 0;
+      
+      if(text.includes("充值") || text.includes("Deposit") || (text.includes("+") && text.includes("USDT") && !text.includes("Profit") && !text.includes("completed"))){
+        allTransactions.push({
+          type: "Deposit",
+          amount: amount,
+          sign: "+",
+          color: "green",
+          desc: "Wallet Funding",
+          status: "Completed",
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+        });
+        totalDeposit += amount;
+      }
+      else if(text.includes("Withdrawal submitted")){
+        allTransactions.push({
+          type: "Withdraw",
+          amount: amount,
+          sign: "-",
+          color: "red",
+          desc: "Withdrawal Request",
+          status: "Pending",
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+        });
+        totalWithdraw += amount;
+      }
+      else if(text.includes("Withdrawal rejected") || text.includes("refunded")){
+        allTransactions.push({
+          type: "Refund",
+          amount: amount,
+          sign: "+",
+          color: "green",
+          desc: "Withdrawal Refund",
+          status: "Completed",
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+        });
+      }
+      else if(text.includes("AI Quant completed") || text.includes("AI Assistant completed")){
+        allTransactions.push({
+          type: "AI Profit",
+          amount: amount,
+          sign: "+",
+          color: "purple",
+          desc: "AI Trading Profit",
+          status: "Auto Settled",
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+        });
+        totalProfit += amount;
+      }
+      else if(text.includes("Token Yield completed")){
+        allTransactions.push({
+          type: "Token Profit",
+          amount: amount,
+          sign: "+",
+          color: "purple",
+          desc: "Token Yield Profit",
+          status: "Auto Settled",
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+        });
+        totalProfit += amount;
+      }
+    });
   }
-  return "background:rgba(255,170,0,.12);color:#ffb347;";
+
+  // 2. 获取提现记录状态
+  const withdrawResult = await apiRequest("/api/withdrawals");
+  if(withdrawResult.success && Array.isArray(withdrawResult.data)){
+    withdrawResult.data.forEach(item => {
+      if(String(item.userId) === String(user.id)){
+        const existingIndex = allTransactions.findIndex(t => t.type === "Withdraw" && Math.abs(t.amount - (item.amount || 0)) < 0.01);
+        if(existingIndex !== -1){
+          allTransactions[existingIndex].status = item.status || "Pending";
+          allTransactions[existingIndex].desc = `${item.network || "Wallet"} - ${item.address ? item.address.substring(0,10)+"..." : ""}`;
+        } else {
+          allTransactions.push({
+            type: "Withdraw",
+            amount: item.amount || 0,
+            sign: "-",
+            color: "red",
+            desc: `${item.network || "Wallet"} Withdrawal`,
+            status: item.status || "Pending",
+            time: item.time || new Date(item.createdAt).toLocaleString()
+          });
+          totalWithdraw += (item.amount || 0);
+        }
+      }
+    });
+  }
+
+  // 更新统计
+  document.getElementById("totalDeposit").innerHTML = formatMoney(totalDeposit);
+  document.getElementById("totalWithdraw").innerHTML = formatMoney(totalWithdraw);
+  document.getElementById("totalProfitHistory").innerHTML = formatMoney(totalProfit);
+
+  // 按时间倒序排序
+  allTransactions.sort((a,b) => new Date(b.time) - new Date(a.time));
+  
+  renderTransactions();
 }
 
-function renderItem(item){
-  return `
-    <div class="history-box">
-      <div class="top">
-        <div class="left">
-          <div class="type">${item.type}</div>
-          <div class="date">${item.time || "-"}</div>
-        </div>
-        <div class="right">
-          <div class="amount ${item.color}">
-            ${item.sign} ${formatAmount(item.amount)} USDT
+// ==================== 渲染交易记录 ====================
+function renderTransactions(){
+  const container = document.getElementById("historyList");
+  let filtered = allTransactions;
+  
+  if(currentFilter === "deposit"){
+    filtered = allTransactions.filter(t => t.type === "Deposit");
+  } else if(currentFilter === "withdraw"){
+    filtered = allTransactions.filter(t => t.type === "Withdraw");
+  } else if(currentFilter === "profit"){
+    filtered = allTransactions.filter(t => t.type === "AI Profit" || t.type === "Token Profit");
+  }
+  
+  if(filtered.length === 0){
+    container.innerHTML = '<div class="empty-state"><i class="fa-regular fa-clock"></i>No transactions found</div>';
+    return;
+  }
+  
+  container.innerHTML = filtered.map((item, index) => `
+    <div class="history-card" style="animation-delay: ${index * 0.05}s">
+      <div class="card-top">
+        <div class="card-left">
+          <div class="type">
+            <span class="type-icon">${getTypeIcon(item.type)}</span>
+            ${item.type}
           </div>
-          <div class="desc">${item.desc}</div>
+          <div class="date">${item.time}</div>
+        </div>
+        <div class="amount ${item.color}">
+          ${item.sign} ${formatMoney(item.amount)}
         </div>
       </div>
-      <div class="status" style="${statusStyle(item.status)}">
-        ${item.status}
+      <div class="desc">
+        <i class="fa-regular fa-note-sticky"></i>
+        ${item.desc}
+      </div>
+      <div class="status-badge ${getStatusClass(item.status)}">
+        ${getStatusText(item.status)}
       </div>
     </div>
-  `;
+  `).join('');
 }
 
-async function loadHistory(){
-
-  const user = getLocalUser();
-
-  if(!user || !user.id){
-    document.getElementById("historyList").innerHTML =
-    `<div class="empty">Please login again</div>`;
-    return;
-  }
-
-  let history = [];
-
-  try{
-    const res = await fetch(API_BASE + "/api/withdrawals");
-    const result = await res.json();
-
-    const withdrawals =
-    Array.isArray(result)
-    ? result
-    : (result.data || result.withdrawals || []);
-
-    withdrawals
-    .filter(item => String(item.userId) === String(user.id))
-    .forEach(item => {
-      history.push({
-        type:"Withdraw",
-        amount:item.amount,
-        sign:"-",
-        color:"red",
-        desc:(item.network || "TRC20") + " Wallet",
-        status:item.status || "Pending",
-        time:item.time || "-"
-      });
-    });
-
-  }catch(err){
-    console.log("Withdraw history error:", err);
-  }
-
-  try{
-    const res = await fetch(API_BASE + "/api/users/" + user.id);
-    const result = await res.json();
-
-    if(result.success && result.user && result.user.records){
-
-      result.user.records.forEach(record => {
-
-        const text = String(record);
-        const amount = Number(text.match(/\d+(\.\d+)?/)?.[0] || 0);
-
-        if(text.includes("充值") || text.includes("Recharge")){
-          history.push({
-            type:"Deposit",
-            amount,
-            sign:"+",
-            color:"green",
-            desc:"Wallet Funding",
-            status:"Completed",
-            time:"Account Record"
-          });
-        }
-
-        if(text.includes("Withdrawal submitted")){
-          history.push({
-            type:"Withdraw Submitted",
-            amount,
-            sign:"-",
-            color:"red",
-            desc:"Withdrawal Request",
-            status:"Pending",
-            time:"Account Record"
-          });
-        }
-
-        if(text.includes("Withdrawal rejected")){
-          history.push({
-            type:"Withdraw Refund",
-            amount,
-            sign:"+",
-            color:"green",
-            desc:"Withdrawal Rejected Refund",
-            status:"Completed",
-            time:"Account Record"
-          });
-        }
-
-        if(text.includes("AI Quant completed")){
-          history.push({
-            type:"AI Profit",
-            amount,
-            sign:"+",
-            color:"purple",
-            desc:"AI Quant Strategy",
-            status:"Auto Settled",
-            time:"Account Record"
-          });
-        }
-
-        if(text.includes("AI Assistant completed")){
-          history.push({
-            type:"AI Assistant Profit",
-            amount,
-            sign:"+",
-            color:"purple",
-            desc:"AI Assistant Strategy",
-            status:"Auto Settled",
-            time:"Account Record"
-          });
-        }
-
-        if(text.includes("Token Yield completed")){
-          history.push({
-            type:"Token Profit",
-            amount,
-            sign:"+",
-            color:"purple",
-            desc:"Token Yield",
-            status:"Auto Settled",
-            time:"Account Record"
-          });
-        }
-
-      });
+// ==================== 筛选切换 ====================
+function setFilter(filter){
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    if(btn.dataset.filter === filter){
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
     }
-
-  }catch(err){
-    console.log("User records error:", err);
-  }
-
-  if(history.length === 0){
-    document.getElementById("historyList").innerHTML =
-    `<div class="empty">No transaction history</div>`;
-    return;
-  }
-
-  document.getElementById("historyList").innerHTML =
-  history.map(renderItem).join("");
+  });
+  renderTransactions();
 }
 
+// ==================== 事件绑定 ====================
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    setFilter(btn.dataset.filter);
+  });
+});
+
+// ==================== 初始化 ====================
 loadHistory();
+setInterval(loadHistory, 30000);
 </script>
-
-
-
 </body>
 </html>

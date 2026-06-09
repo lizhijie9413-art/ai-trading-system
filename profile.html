@@ -5,7 +5,7 @@
   <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"/>
 <title>AI Trade - Profile</title>
 
 <style>
@@ -27,8 +27,10 @@ body{
   margin:0 auto;
   overflow-x:hidden;
   padding:18px 16px 110px;
+  position:relative;
 }
 
+/* 动态背景光晕 */
 body::before{
   content:"";
   position:fixed;
@@ -37,14 +39,48 @@ body::before{
   background-size:38px 38px;
   opacity:.12;
   pointer-events:none;
+  z-index:-2;
+}
+
+/* 浮动光晕效果 */
+.glow-ball{
+  position:fixed;
+  width:280px;
+  height:280px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(139,92,246,0.15),transparent 70%);
+  top:10%;
+  left:-100px;
+  filter:blur(50px);
+  animation:floatGlow1 10s ease-in-out infinite;
   z-index:-1;
 }
+.glow-ball2{
+  position:fixed;
+  width:320px;
+  height:320px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(0,213,255,0.1),transparent 70%);
+  bottom:5%;
+  right:-100px;
+  filter:blur(60px);
+  animation:floatGlow2 12s ease-in-out infinite;
+  z-index:-1;
+}
+@keyframes floatGlow1{0%,100%{transform:translate(0,0);}50%{transform:translate(60px,40px);}}
+@keyframes floatGlow2{0%,100%{transform:translate(0,0);}50%{transform:translate(-50px,-50px);}}
+
+/* 粒子效果 */
+.particles{position:fixed;inset:0;overflow:hidden;z-index:-1;}
+.particle{position:absolute;width:2px;height:2px;background:rgba(139,92,246,0.5);border-radius:50%;animation:floatParticle 8s linear infinite;}
+@keyframes floatParticle{0%{transform:translateY(0);opacity:0;}50%{opacity:0.8;}100%{transform:translateY(-100px);opacity:0;}}
 
 .header{
   display:flex;
   justify-content:space-between;
   align-items:center;
   margin-bottom:18px;
+  animation:fadeInDown 0.6s ease;
 }
 
 .title h1{
@@ -54,7 +90,10 @@ body::before{
   -webkit-background-clip:text;
   background-clip:text;
   color:transparent;
+  background-size:200% auto;
+  animation:titleShine 3s ease infinite;
 }
+@keyframes titleShine{0%{background-position:0% center;}50%{background-position:100% center;}100%{background-position:0% center;}}
 
 .title p{
   color:#94a3b8;
@@ -62,21 +101,13 @@ body::before{
   margin-top:4px;
 }
 
-
 .top-icons{
-
   position:absolute;
-
   top:20px;
-
   right:20px;
-
   display:flex;
-
   gap:10px;
-
   z-index:100;
-
 }
 
 .icon-btn{
@@ -89,9 +120,12 @@ body::before{
   align-items:center;
   justify-content:center;
   color:#c084fc;
-  box-shadow:0 0 18px rgba(168,85,247,.22);
+  transition:all 0.3s ease;
+  cursor:pointer;
 }
+.icon-btn:hover{transform:scale(1.05);border-color:#c084fc;}
 
+/* 卡片通用样式 */
 .card{
   position:relative;
   overflow:hidden;
@@ -99,8 +133,9 @@ body::before{
   border:1px solid rgba(168,85,247,.22);
   border-radius:28px;
   margin-bottom:16px;
-  box-shadow:0 0 30px rgba(168,85,247,.12);
+  transition:all 0.3s ease;
 }
+.card:hover{transform:translateY(-3px);border-color:#c084fc;box-shadow:0 10px 30px rgba(139,92,246,.2);}
 
 .card::before{
   content:"";
@@ -110,20 +145,12 @@ body::before{
   right:-80px;
   top:-80px;
   background:radial-gradient(circle,rgba(56,189,248,.18),transparent 70%);
+  animation:pulseGlow 4s ease-in-out infinite;
 }
+@keyframes pulseGlow{0%,100%{opacity:0.5;transform:scale(1);}50%{opacity:1;transform:scale(1.1);}}
 
-.profile-card{
-  padding:26px 22px 22px;
-}
-
-.profile-top{
-  display:flex;
-  align-items:flex-start;
-  gap:18px;
-  padding-top:18px;
-  position:relative;
-  z-index:2;
-}
+.profile-card{padding:26px 22px 22px;}
+.profile-top{display:flex;align-items:flex-start;gap:18px;padding-top:18px;position:relative;z-index:2;}
 
 .avatar{
   width:98px;
@@ -136,30 +163,16 @@ body::before{
   font-size:34px;
   font-weight:900;
   box-shadow:0 0 34px rgba(168,85,247,.55);
-  animation:pulse 2.6s infinite ease-in-out;
+  animation:avatarPulse 2.6s infinite ease-in-out;
+  transition:all 0.3s ease;
+  cursor:pointer;
 }
+@keyframes avatarPulse{0%,100%{transform:scale(1);box-shadow:0 0 34px rgba(168,85,247,.55);}50%{transform:scale(1.02);box-shadow:0 0 50px rgba(168,85,247,.8);}}
+.avatar:hover{transform:scale(1.05);}
 
-@keyframes pulse{
-  0%,100%{transform:scale(1);}
-  50%{transform:scale(1.04);}
-}
-
-.profile-info h2{
-  font-size:30px;
-  font-weight:900;
-  margin-bottom:8px;
-}
-
-.vip{
-  color:#f0abfc;
-  font-weight:800;
-  margin-bottom:8px;
-}
-
-.uid{
-  color:#94a3b8;
-  font-size:14px;
-}
+.profile-info h2{font-size:30px;font-weight:900;margin-bottom:8px;}
+.vip{color:#f0abfc;font-weight:800;margin-bottom:8px;}
+.uid{color:#94a3b8;font-size:14px;}
 
 .edit-btn{
   margin-top:20px;
@@ -174,7 +187,9 @@ body::before{
   position:relative;
   z-index:2;
   cursor:pointer;
+  transition:all 0.3s ease;
 }
+.edit-btn:hover{background:linear-gradient(90deg,#7c3aed,#38bdf8);transform:translateY(-2px);}
 
 .level-row{
   display:grid;
@@ -186,78 +201,21 @@ body::before{
   position:relative;
   z-index:2;
 }
+.level-box span{color:#94a3b8;font-size:13px;}
+.level-box strong{display:block;margin-top:8px;font-size:24px;}
+.blue{color:#38bdf8;}
+.green{color:#00f5a0;}
 
-.level-box span{
-  color:#94a3b8;
-  font-size:13px;
-}
+.asset-card{padding:22px;}
+.asset-head{display:flex;justify-content:space-between;color:#cbd5e1;position:relative;z-index:2;}
+.balance{position:relative;z-index:2;font-size:42px;font-weight:900;letter-spacing:-1px;margin-top:18px;background:linear-gradient(135deg,#fff,#c084fc);-webkit-background-clip:text;color:transparent;display:inline-block;}
+.asset-profit{position:relative;z-index:2;color:#00f5a0;font-size:18px;font-weight:900;margin-top:8px;}
+.chart{height:92px;border-radius:22px;margin-top:18px;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(124,58,237,.45),rgba(56,189,248,.18));z-index:2;}
+.chart svg{width:100%;height:100%;}
+.chart path{stroke-dasharray:1000;stroke-dashoffset:1000;animation:drawLine 2s ease-out forwards;}
+@keyframes drawLine{to{stroke-dashoffset:0;}}
 
-.level-box strong{
-  display:block;
-  margin-top:8px;
-  font-size:24px;
-}
-
-.blue{
-  color:#38bdf8;
-}
-
-.green{
-  color:#00f5a0;
-}
-
-.asset-card{
-  padding:22px;
-}
-
-.asset-head{
-  display:flex;
-  justify-content:space-between;
-  color:#cbd5e1;
-  position:relative;
-  z-index:2;
-}
-
-.balance{
-  position:relative;
-  z-index:2;
-  font-size:42px;
-  font-weight:900;
-  letter-spacing:-1px;
-  margin-top:18px;
-}
-
-.asset-profit{
-  position:relative;
-  z-index:2;
-  color:#00f5a0;
-  font-size:18px;
-  font-weight:900;
-  margin-top:8px;
-}
-
-.chart{
-  height:92px;
-  border-radius:22px;
-  margin-top:18px;
-  position:relative;
-  overflow:hidden;
-  background:linear-gradient(135deg,rgba(124,58,237,.45),rgba(56,189,248,.18));
-  z-index:2;
-}
-
-.chart svg{
-  width:100%;
-  height:100%;
-}
-
-.quick-actions{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:12px;
-  margin-bottom:16px;
-}
-
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
 .action{
   text-decoration:none;
   color:white;
@@ -269,9 +227,9 @@ body::before{
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  box-shadow:0 0 22px rgba(168,85,247,.10);
+  transition:all 0.3s ease;
 }
-
+.action:hover{transform:translateY(-5px);border-color:#c084fc;box-shadow:0 10px 25px rgba(139,92,246,.2);}
 .action-icon{
   width:54px;
   height:54px;
@@ -282,53 +240,27 @@ body::before{
   justify-content:center;
   font-size:24px;
   margin-bottom:10px;
-  box-shadow:0 0 22px rgba(168,85,247,.35);
+  transition:all 0.3s ease;
 }
+.action:hover .action-icon{transform:scale(1.05);box-shadow:0 0 20px rgba(139,92,246,.5);}
+.action strong{font-size:14px;}
+.action span{color:#94a3b8;font-size:11px;margin-top:4px;}
 
-.action strong{
-  font-size:14px;
-}
-
-.action span{
-  color:#94a3b8;
-  font-size:11px;
-  margin-top:4px;
-}
-
-.level-card{
-  padding:22px;
-}
-
-.section-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  position:relative;
-  z-index:2;
-  margin-bottom:18px;
-}
-
-.section-head h3{
-  font-size:22px;
-}
-
+.level-card{padding:22px;}
+.section-head{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2;margin-bottom:18px;}
+.section-head h3{font-size:22px;}
 .view-btn{
   padding:9px 14px;
   border-radius:14px;
   background:rgba(168,85,247,.12);
   border:1px solid rgba(168,85,247,.22);
   color:white;
+  cursor:pointer;
+  transition:all 0.3s ease;
 }
+.view-btn:hover{background:rgba(168,85,247,.25);transform:translateX(3px);}
 
-.levels{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:12px;
-  text-align:center;
-  position:relative;
-  z-index:2;
-}
-
+.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;position:relative;z-index:2;}
 .level-badge{
   width:54px;
   height:54px;
@@ -338,23 +270,13 @@ body::before{
   align-items:center;
   justify-content:center;
   margin:0 auto 10px;
-  box-shadow:0 0 22px rgba(168,85,247,.35);
+  transition:all 0.3s ease;
 }
+.level-badge:hover{transform:scale(1.1);box-shadow:0 0 20px rgba(139,92,246,.5);}
+.levels strong{display:block;font-size:12px;}
+.levels span{color:#94a3b8;font-size:11px;}
 
-.levels strong{
-  display:block;
-  font-size:12px;
-}
-
-.levels span{
-  color:#94a3b8;
-  font-size:11px;
-}
-
-.menu-card{
-  overflow:hidden;
-}
-
+.menu-card{overflow:hidden;}
 .menu-item{
   display:flex;
   align-items:center;
@@ -365,18 +287,11 @@ body::before{
   cursor:pointer;
   position:relative;
   z-index:2;
+  transition:all 0.3s ease;
 }
-
-.menu-item:last-child{
-  border-bottom:none;
-}
-
-.menu-left{
-  display:flex;
-  align-items:center;
-  gap:16px;
-}
-
+.menu-item:hover{background:rgba(139,92,246,.08);transform:translateX(5px);}
+.menu-item:last-child{border-bottom:none;}
+.menu-left{display:flex;align-items:center;gap:16px;}
 .menu-icon{
   width:56px;
   height:56px;
@@ -387,21 +302,12 @@ body::before{
   justify-content:center;
   font-size:20px;
   font-weight:900;
-  box-shadow:0 0 22px rgba(168,85,247,.32);
   flex-shrink:0;
+  transition:all 0.3s ease;
 }
-
-.menu-text strong{
-  display:block;
-  font-size:18px;
-  margin-bottom:5px;
-}
-
-.menu-text p{
-  color:#94a3b8;
-  font-size:13px;
-}
-
+.menu-item:hover .menu-icon{transform:scale(1.05);}
+.menu-text strong{display:block;font-size:18px;margin-bottom:5px;}
+.menu-text p{color:#94a3b8;font-size:13px;}
 .menu-arrow{
   width:40px;
   height:40px;
@@ -413,12 +319,11 @@ body::before{
   justify-content:center;
   color:#c084fc;
   font-size:20px;
+  transition:all 0.3s ease;
 }
+.menu-item:hover .menu-arrow{transform:translateX(5px);background:rgba(168,85,247,.25);}
 
-.future-card{
-  padding:24px;
-}
-
+.future-card{padding:24px;}
 .future-card h2{
   position:relative;
   z-index:2;
@@ -429,15 +334,13 @@ body::before{
   background-clip:text;
   color:transparent;
   margin-bottom:12px;
+  background-size:200% auto;
+  animation:titleShine 3s ease infinite;
 }
+.future-card p{position:relative;z-index:2;color:#cbd5e1;line-height:1.7;width:78%;}
 
-.future-card p{
-  position:relative;
-  z-index:2;
-  color:#cbd5e1;
-  line-height:1.7;
-  width:78%;
-}
+/* 入场动画 */
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-30px);}to{opacity:1;transform:translateY(0);}}
 
 .bottom-nav{
   position:fixed;
@@ -467,211 +370,76 @@ body::before{
   gap:6px;
   transition:.25s ease;
 }
-
-.nav-item i{
-  font-size:22px;
-}
-
-.nav-item:active{
-  transform:scale(.84);
-  opacity:.75;
-}
-
-.nav-item.active{
-  color:#c084fc;
-  text-shadow:0 0 16px rgba(168,85,247,.9);
-}
+.nav-item i{font-size:22px;transition:all 0.3s ease;}
+.nav-item:hover{color:#c084fc;transform:translateY(-3px);}
+.nav-item:hover i{transform:scale(1.1);}
+.nav-item:active{transform:scale(.84);}
+.nav-item.active{color:#c084fc;text-shadow:0 0 16px rgba(168,85,247,.9);}
 </style>
 </head>
-
 <body>
 
+<div class="glow-ball"></div>
+<div class="glow-ball2"></div>
+<div class="particles" id="particles"></div>
+
 <div class="top-icons">
-
-  <div class="icon-btn"
-onclick="location.href='settings.html'">
-
-<i class="fa-solid fa-gear"></i>
-
+  <div class="icon-btn" onclick="location.href='settings.html'"><i class="fa-solid fa-gear"></i></div>
+  <div class="icon-btn" onclick="location.href='notifications.html'"><i class="fa-solid fa-bell"></i></div>
 </div>
-
-  <div class="icon-btn"
-onclick="location.href='notifications.html'">
-
-<i class="fa-solid fa-bell"></i>
-
- </div>
-
-</div>
-
-
 
 <div class="card profile-card">
   <div class="profile-top">
-    <div class="avatar" id="profileAvatar">AI</div>
+    <div class="avatar" id="profileAvatar" onclick="document.getElementById('avatarInput').click()">AI</div>
     <div class="profile-info">
-      <h1 id="profileName">User</h1>
-      <div class="vip" id="vipLevel">
-          ♛ VIP Member
-          </div>
-      <div id="profileUid">UID:0000</div>
+      <h2 id="profileName">User</h2>
+      <div class="vip" id="vipLevel">♛ VIP Member</div>
+      <div class="uid" id="profileUid">UID:0000</div>
     </div>
   </div>
-
-  <button class="edit-btn" onclick="location.href='edit_profile.html'">
-  Edit Profile
-</button>
-
+  <input type="file" id="avatarInput" style="display:none" accept="image/*" onchange="changeAvatar(this)">
+  <button class="edit-btn" onclick="location.href='edit_profile.html'">Edit Profile</button>
   <div class="level-row">
-    <div class="level-box">
-      <span>AI Credit Score</span>
-      <strong>98.7 <span class="green">↗</span></strong>
-    </div>
-    <div class="level-box">
-      <span>AI Strategy Level</span>
-      <strong class="blue">Quantum Trader</strong>
-    </div>
+    <div class="level-box"><span>AI Credit Score</span><strong>98.7 <span class="green">↗</span></strong></div>
+    <div class="level-box"><span>AI Strategy Level</span><strong class="blue">Quantum Trader</strong></div>
   </div>
 </div>
 
 <div class="card asset-card">
-  <div class="asset-head">
-    <span>Total Assets</span>
-    <span>USD⌄</span>
-  </div>
-
+  <div class="asset-head"><span>Total Assets</span><span>USD⌄</span></div>
   <div class="balance" id="totalAssets">$0.00</div>
-  
-  <div class="asset-profit" id="profileProfit">
-    +$0.00 (0%) Today
-  </div>
-
+  <div class="asset-profit" id="profileProfit">+$0.00 (0%) Today</div>
   <div class="chart">
     <svg viewBox="0 0 360 90" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="g" x1="0" x2="1">
-          <stop offset="0%" stop-color="#8b5cff"/>
-          <stop offset="50%" stop-color="#38bdf8"/>
-          <stop offset="100%" stop-color="#c084fc"/>
-        </linearGradient>
-      </defs>
-      <path d="M20 65 C70 58, 90 52, 125 48 C160 44, 170 28, 205 35 C240 42, 250 20, 285 25 C315 30, 325 18, 345 22"
-      fill="none" stroke="url(#g)" stroke-width="5" stroke-linecap="round"/>
+      <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0%" stop-color="#8b5cff"/><stop offset="50%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs>
+      <path d="M20 65 C70 58, 90 52, 125 48 C160 44, 170 28, 205 35 C240 42, 250 20, 285 25 C315 30, 325 18, 345 22" fill="none" stroke="url(#g)" stroke-width="5" stroke-linecap="round"/>
     </svg>
   </div>
 </div>
 
 <div class="quick-actions">
-  <a class="action" href="deposit.html">
-    <div class="action-icon">⇩</div>
-    <strong>Deposit</strong>
-    <span>Add funds</span>
-  </a>
-
-  <a class="action" href="withdraw.html">
-    <div class="action-icon">⇧</div>
-    <strong>Withdraw</strong>
-    <span>Cash out</span>
-  </a>
-
-  <a class="action" href="transfer.html">
-    <div class="action-icon">⇄</div>
-    <strong>Convert</strong>
-    <span>Assets</span>
-  </a>
-
- <a class="action" href="records.html">
-    <div class="action-icon">▤</div>
-    <strong>History</strong>
-    <span>Records</span>
-</a>
-
+  <a class="action" href="deposit.html"><div class="action-icon">⇩</div><strong>Deposit</strong><span>Add funds</span></a>
+  <a class="action" href="withdraw.html"><div class="action-icon">⇧</div><strong>Withdraw</strong><span>Cash out</span></a>
+  <a class="action" href="transfer.html"><div class="action-icon">⇄</div><strong>Convert</strong><span>Assets</span></a>
+  <a class="action" href="records.html"><div class="action-icon">▤</div><strong>History</strong><span>Records</span></a>
 </div>
-<div class="card level-card">
-  <div class="section-head">
-    <h3>My AI Level</h3>
-    <button class="view-btn">View Details</button>
-  </div>
 
+<div class="card level-card">
+  <div class="section-head"><h3>My AI Level</h3><button class="view-btn">View Details</button></div>
   <div class="levels">
-    <div>
-      <div class="level-badge">✦</div>
-      <strong>AI Beginner</strong>
-      <span>Level 1</span>
-    </div>
-    <div>
-      <div class="level-badge">✦</div>
-      <strong>AI Advanced</strong>
-      <span>Level 2</span>
-    </div>
-    <div>
-      <div class="level-badge">◆</div>
-      <strong>Quantum</strong>
-      <span>Level 3</span>
-    </div>
-    <div>
-      <div class="level-badge">★</div>
-      <strong>Institutional</strong>
-      <span>Level 4</span>
-    </div>
+    <div><div class="level-badge">✦</div><strong>AI Beginner</strong><span>Level 1</span></div>
+    <div><div class="level-badge">✦</div><strong>AI Advanced</strong><span>Level 2</span></div>
+    <div><div class="level-badge">◆</div><strong>Quantum</strong><span>Level 3</span></div>
+    <div><div class="level-badge">★</div><strong>Institutional</strong><span>Level 4</span></div>
   </div>
 </div>
 
 <div class="card menu-card">
-  <div class="menu-item" onclick="location.href='strategy.html'">
-    <div class="menu-left">
-      <div class="menu-icon">AI</div>
-      <div class="menu-text">
-        <strong>AI Strategy</strong>
-        <p>View and manage AI strategies</p>
-      </div>
-    </div>
-    <div class="menu-arrow">›</div>
-  </div>
-
-  <div class="menu-item" onclick="location.href='kyc_verify.html'">
-    <div class="menu-left">
-      <div class="menu-icon">ID</div>
-      <div class="menu-text">
-        <strong>KYC Verification</strong>
-        <p>Verify identity and account status</p>
-      </div>
-    </div>
-    <div class="menu-arrow">›</div>
-  </div>
-
-  <div class="menu-item" onclick="location.href='security.html'">
-    <div class="menu-left">
-      <div class="menu-icon">SC</div>
-      <div class="menu-text">
-        <strong>Security Center</strong>
-        <p>Password, 2FA and security settings</p>
-      </div>
-    </div>
-    <div class="menu-arrow">›</div>
-  </div>
-
-  <div class="menu-item" onclick="location.href='invite.html'">
-    <div class="menu-left">
-      <div class="menu-icon">IF</div>
-      <div class="menu-text">
-        <strong>Invite Friends</strong>
-        <p>Earn rewards by inviting friends</p>
-      </div>
-    </div>
-    <div class="menu-arrow">›</div>
-  </div>
-
-  <div class="menu-item" onclick="location.href='support_chat.html'">
-    <div class="menu-left">
-      <div class="menu-icon">CS</div>
-      <div class="menu-text">
-        <strong>Customer Support</strong>
-        <p>Get help and support</p>
-      </div>
-    </div>
-    <div class="menu-arrow">›</div>
-  </div>
+  <div class="menu-item" onclick="location.href='strategy.html'"><div class="menu-left"><div class="menu-icon">AI</div><div class="menu-text"><strong>AI Strategy</strong><p>View and manage AI strategies</p></div></div><div class="menu-arrow">›</div></div>
+  <div class="menu-item" onclick="location.href='kyc.html'"><div class="menu-left"><div class="menu-icon">ID</div><div class="menu-text"><strong>KYC Verification</strong><p>Verify identity and account status</p></div></div><div class="menu-arrow">›</div></div>
+  <div class="menu-item" onclick="location.href='security.html'"><div class="menu-left"><div class="menu-icon">SC</div><div class="menu-text"><strong>Security Center</strong><p>Password, 2FA and security settings</p></div></div><div class="menu-arrow">›</div></div>
+  <div class="menu-item" onclick="location.href='invite.html'"><div class="menu-left"><div class="menu-icon">IF</div><div class="menu-text"><strong>Invite Friends</strong><p>Earn rewards by inviting friends</p></div></div><div class="menu-arrow">›</div></div>
+  <div class="menu-item" onclick="location.href='support_chat.html'"><div class="menu-left"><div class="menu-icon">CS</div><div class="menu-text"><strong>Customer Support</strong><p>Get help and support</p></div></div><div class="menu-arrow">›</div></div>
 </div>
 
 <div class="card future-card">
@@ -680,195 +448,120 @@ onclick="location.href='notifications.html'">
 </div>
 
 <div class="bottom-nav">
-
-  <a class="nav-item" href="index.html">
-    <i class="fa-solid fa-house"></i>
-    Home
-  </a>
-
-  <a class="nav-item" href="market.html">
-    <i class="fa-solid fa-chart-column"></i>
-    Markets
-  </a>
-
-  <a class="nav-item" href="trade.html">
-    <i class="fa-solid fa-arrow-right-arrow-left"></i>
-    Trade
-  </a>
-
-  <a class="nav-item" href="portfolio.html">
-    <i class="fa-regular fa-folder"></i>
-    Portfolio
-  </a>
-
-  <a class="nav-item active" href="profile.html">
-    <i class="fa-regular fa-user"></i>
-    Profile
-  </a>
-
+  <a class="nav-item" href="index.html"><i class="fa-solid fa-house"></i>Home</a>
+  <a class="nav-item" href="market.html"><i class="fa-solid fa-chart-column"></i>Markets</a>
+  <a class="nav-item" href="trade.html"><i class="fa-solid fa-arrow-right-arrow-left"></i>Trade</a>
+  <a class="nav-item" href="portfolio.html"><i class="fa-regular fa-folder"></i>Portfolio</a>
+  <a class="nav-item active" href="profile.html"><i class="fa-regular fa-user"></i>Profile</a>
 </div>
 
+<script src="config.js"></script>
 <script>
-
-let avatarData = "";
-
-const localUser =
-JSON.parse(localStorage.getItem("user"));
-
-function changeAvatar(input){
-
-  if(input.files.length === 0) return;
-
-  const reader = new FileReader();
-
-  reader.onload = function(e){
-
-    avatarData = e.target.result;
-
-    const avatarKey =
-"profile_avatar_" +
-(localUser?.uid || localUser?.id || "guest");
-
-localStorage.setItem(
-  avatarKey,
-  avatarData
-);
-
-    document.getElementById(
-      "avatarPreview"
-    ).innerHTML = `
-      <img src="${avatarData}"
-      style="
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      border-radius:50%;
-      ">
-    `;
-  };
-
-  reader.readAsDataURL(input.files[0]);
+// ==================== 粒子效果 ====================
+const particlesContainer = document.getElementById('particles');
+for(let i=0;i<40;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDelay = Math.random() * 5 + 's';
+    p.style.animationDuration = (5 + Math.random() * 8) + 's';
+    particlesContainer.appendChild(p);
 }
 
-async function loadProfile(){
-
-  if(!localUser) return;
-
-  const response =
-await fetch(
-  "https://www.quantai.fyi/api/users/" +
-  localUser.id
-);
-  const result =
-    await response.json();
-
-   console.log(result);
-    
-  if(result.success){
-  
-    localStorage.setItem(
-  "user",
-  JSON.stringify(result.user)
-   );
-    const user = result.user;
-
-   const balance =
-    Number(user.balance || 0);
-
-   const totalProfit =
-   Number(result.user.totalProfit || 0);
-
-   document.getElementById("totalAssets").innerText =
-"$" +
-balance.toLocaleString(undefined,{
-  minimumFractionDigits:2,
-  maximumFractionDigits:2
-});
-
-document.getElementById("profileName").innerText =
-user.name || "User";
-
-document.getElementById("profileUid").innerText =
-"UID: " + (user.uid || "0000");
-
-let vip = "VIP Member";
-
-if(balance >= 100000){
-  vip = "♛ Diamond Elite";
-}
-else if(balance >= 50000){
-  vip = "♛ Platinum Member";
-}
-else if(balance >= 10000){
-  vip = "♛ Gold Member";
-}
-else{
-  vip = "♛ VIP Quantum Member";
+// ==================== 数字动画 ====================
+function animateNumber(elementId, targetValue) {
+  const element = document.getElementById(elementId);
+  if(!element) return;
+  const startValue = 0;
+  const duration = 800;
+  const startTime = performance.now();
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const currentValue = startValue + (targetValue - startValue) * progress;
+    element.innerHTML = "$" + currentValue.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+    if(progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
 }
 
-document.getElementById("vipLevel").innerText = vip;
-
-    const roiBase =
-     balance - totalProfit;
-
-     const roi =
-     roiBase > 0
-    ? ((totalProfit / roiBase) * 100).toFixed(2)
-     : "0.00";
-
-     document.getElementById("profileProfit").innerText =
-      "+$" +
-     totalProfit.toLocaleString(undefined,{
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-     })
-    +
-    " (+" + roi + "%) Today";
-
-   }
-
-}
-
+// ==================== 加载头像 ====================
 function loadAvatar(){
-
-  const avatarKey =
-"profile_avatar_" +
-(localUser?.uid || localUser?.id || "guest");
-
-const savedAvatar =
-localStorage.getItem(avatarKey);
-  if(savedAvatar){
-
-    const avatarBox =
-      document.getElementById("avatarPreview") ||
-      document.getElementById("profileAvatar");
-
-    if(avatarBox){
-
-      avatarBox.innerHTML = `
-        <img src="${savedAvatar}"
-        style="
-        width:100%;
-        height:100%;
-        object-fit:cover;
-        border-radius:50%;
-        ">
-      `;
-    }
+  const user = getCurrentUser();
+  const avatarKey = "profile_avatar_" + (user?.uid || user?.id || "guest");
+  const savedAvatar = localStorage.getItem(avatarKey);
+  const avatarBox = document.getElementById("profileAvatar");
+  if(savedAvatar && avatarBox){
+    avatarBox.innerHTML = `<img src="${savedAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
   }
 }
 
+// ==================== 更换头像 ====================
+function changeAvatar(input){
+  if(!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  if(file.size > 2 * 1024 * 1024){ alert("Image size should be less than 2MB"); return; }
+  if(!file.type.startsWith('image/')){ alert("Only image files are allowed"); return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const avatarData = e.target.result;
+    const user = getCurrentUser();
+    const avatarKey = "profile_avatar_" + (user?.uid || user?.id || "guest");
+    localStorage.setItem(avatarKey, avatarData);
+    const avatarBox = document.getElementById("profileAvatar");
+    if(avatarBox){ avatarBox.innerHTML = `<img src="${avatarData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`; }
+    showToast("Avatar updated", "success");
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==================== 显示提示 ====================
+function showToast(message, type){
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  const colors = {success:"#00f5a0",error:"#ff4d6d",info:"#c084fc"};
+  toast.style.cssText = `position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(10,20,40,0.95);border:1px solid ${colors[type]||colors.info};color:${colors[type]||colors.info};padding:12px 24px;border-radius:50px;font-size:14px;z-index:10000;backdrop-filter:blur(10px);`;
+  document.body.appendChild(toast);
+  setTimeout(()=>{toast.style.opacity="0";setTimeout(()=>toast.remove(),300);},2500);
+}
+
+// ==================== 加载个人资料 ====================
+async function loadProfile(){
+  const user = getCurrentUser();
+  if(!user || !user.id) return;
+  
+  const result = await apiRequest(`/api/users/${user.id}`);
+  if(!result.success) return;
+  
+  const userData = result.data.user;
+  const balance = Number(userData.availableBalance || userData.balance || userData.asset || 0);
+  const totalProfit = Number(userData.totalProfit || 0);
+  
+  animateNumber('totalAssets', balance);
+  document.getElementById("profileName").innerText = userData.name || "User";
+  document.getElementById("profileUid").innerText = "UID: " + (userData.uid || "0000");
+  
+  let vip = "♛ VIP Member";
+  if(balance >= 100000) vip = "♛ Diamond Elite";
+  else if(balance >= 50000) vip = "♛ Platinum Member";
+  else if(balance >= 10000) vip = "♛ Gold Member";
+  document.getElementById("vipLevel").innerHTML = vip;
+  
+  const roiBase = balance - totalProfit;
+  const roi = roiBase > 0 ? ((totalProfit / roiBase) * 100).toFixed(2) : "0.00";
+  document.getElementById("profileProfit").innerHTML = "+$" + totalProfit.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + " (+" + roi + "%) Today";
+  
+  // 保存最新用户信息到本地
+  const updatedUser = { ...user, ...userData };
+  localStorage.setItem("user", JSON.stringify(updatedUser));
+}
+
+// ==================== 初始化 ====================
 loadAvatar();
-
-setTimeout(()=>{
-  loadAvatar();
-},200);
-
+setTimeout(()=>{ loadAvatar(); }, 200);
 loadProfile();
-
-setInterval(loadProfile, 3000);
-
+setInterval(loadProfile, 30000);
 </script>
-
 </body>
 </html>

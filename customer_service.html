@@ -163,8 +163,12 @@ if (!adminAuth || adminAuth.role !== "admin") {
 </div>
 
 <script>
-const socket = io("https://ai-trading-system-j5jf.onrender.com");
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
+const ADMIN_TOKEN = "AI_ADMIN_2026";
+const socket = io(API_BASE);
 
+// ==================== 全局变量 ====================
 let users = [];
 let currentUserId = "";
 let currentUserName = "";
@@ -178,251 +182,254 @@ const userList = document.getElementById("userList");
 const chatBody = document.getElementById("chatBody");
 const input = document.getElementById("messageInput");
 
+// ==================== XSS防护 ====================
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+// ==================== Socket事件 ====================
 socket.on("connect", () => {
-  console.log("客服后台已连接");
+    console.log("客服后台已连接");
+    setServiceOnline();
+    disableAI();
 });
 
-/* 加载真实用户 */
-async function loadUsers(){
-
-  try{
-
-    const res = await fetch(
-      "https://ai-trading-system-j5jf.onrender.com/api/users"
-    );
-    const result = await res.json();
-
-    users = result.data || [];
-
-    if(users.length > 0 && !currentUserId){
-      const first = users[0];
-      currentUserId = first._id || first.id;
-      currentUserName = first.name || first.username || "Unknown";
+socket.on("receive_message", (data) => {
+    const userId = data.user;
+    if(!chatRecords[userId]) chatRecords[userId] = [];
+    chatRecords[userId].push(data);
+    if(userId !== currentUserId){
+        unreadMap[userId] = (unreadMap[userId] || 0) + 1;
+        renderUsers();
+        return;
     }
+    renderMessages();
+});
+
+// ==================== 加载用户列表（修复：添加admin-token） ====================
+async function loadUsers(){
+    try{
+        const res = await fetch(`${API_BASE}/api/users`, {
+            headers: {
+                "admin-token": ADMIN_TOKEN
+            }
+        });
+        const result = await res.json();
+
+        users = result.data || [];
+
+        if(users.length > 0 && !currentUserId){
+            const first = users[0];
+            currentUserId = first._id || first.id;
+            currentUserName = first.name || first.username || "Unknown";
+        }
+
+        renderUsers();
+        renderMessages();
+
+    }catch(err){
+        console.log(err);
+        userList.innerHTML = "<div style='padding:20px;color:#f87171'>用户加载失败</div>";
+    }
+}
+
+// ==================== 渲染用户列表（修复：添加XSS防护） ====================
+function renderUsers(){
+    const keyword = document.getElementById("searchInput").value.toLowerCase();
+
+    const list = users.filter(u => {
+        const text = `${u.uid || ""} ${u.name || ""} ${u.username || ""} ${u.email || ""}`.toLowerCase();
+        return text.includes(keyword);
+    });
+
+    userList.innerHTML = "";
+
+    list.forEach(user => {
+        const id = user._id || user.id;
+        const name = user.name || user.username || "Unknown";
+        const uid = user.uid || "无UID";
+        const email = user.email || "No email";
+        const unread = unreadMap[id] || 0;
+
+        const div = document.createElement("div");
+        div.className = "user-item" + (id === currentUserId ? " active" : "");
+        div.onclick = () => switchUser(id, name, uid, email);
+
+        div.innerHTML = `
+            <div class="user-name">${escapeHtml(name)}</div>
+            <div class="user-meta">UID: ${escapeHtml(uid)}</div>
+            <div class="user-meta">${escapeHtml(email)}</div>
+            <div class="user-status">● 在线 / 可联系</div>
+            <div class="unread" style="display:${unread ? "flex" : "none"}">${unread}</div>
+        `;
+
+        userList.appendChild(div);
+    });
+}
+
+// ==================== 切换用户 ====================
+function switchUser(id, name, uid, email){
+    currentUserId = id;
+    currentUserName = name;
+    unreadMap[id] = 0;
+
+    document.getElementById("chatTitle").innerText = `正在与 ${escapeHtml(name)} 聊天`;
+    document.getElementById("chatSubtitle").innerText = `用户UID: ${escapeHtml(uid)} ｜ 邮箱: ${escapeHtml(email)} ｜ 客服ID: ${serviceId}`;
 
     renderUsers();
     renderMessages();
-
-  }catch(err){
-    console.log(err);
-    userList.innerHTML =
-    "<div style='padding:20px;color:#f87171'>用户加载失败</div>";
-  }
 }
 
-/* 渲染左侧真实用户列表 */
-function renderUsers(){
-  const keyword = document.getElementById("searchInput").value.toLowerCase();
-
-  const list = users.filter(u => {
-    const text = `${u.uid || ""} ${u.name || ""} ${u.username || ""} ${u.email || ""}`.toLowerCase();
-    return text.includes(keyword);
-  });
-
-  userList.innerHTML = "";
-
-  list.forEach(user => {
-    const id = user._id || user.id;
-    const name = user.name || user.username || "Unknown";
-    const uid = user.uid || "无UID";
-    const email = user.email || "No email";
-    const unread = unreadMap[id] || 0;
-
-    const div = document.createElement("div");
-    div.className = "user-item" + (id === currentUserId ? " active" : "");
-    div.onclick = () => switchUser(id, name, uid, email);
-
-    div.innerHTML = `
-      <div class="user-name">${name}</div>
-      <div class="user-meta">UID: ${uid}</div>
-      <div class="user-meta">${email}</div>
-      <div class="user-status">● 在线 / 可联系</div>
-      <div class="unread" style="display:${unread ? "flex" : "none"}">${unread}</div>
-    `;
-
-    userList.appendChild(div);
-  });
-}
-
-/* 切换用户 */
-function switchUser(id, name, uid, email){
-  currentUserId = id;
-  currentUserName = name;
-  unreadMap[id] = 0;
-
-  document.getElementById("chatTitle").innerText = `正在与 ${name} 聊天`;
-  document.getElementById("chatSubtitle").innerText = `用户UID: ${uid} ｜ 邮箱: ${email} ｜ 客服ID: ${serviceId}`;
-
-  renderUsers();
-  renderMessages();
-}
-
-/* 人工/AI开关 */
+// ==================== 人工/AI开关 ====================
 function setServiceOnline(){
-  serviceOnline = true;
-  socket.emit("service_online");
-  updateStatus();
+    serviceOnline = true;
+    socket.emit("service_online");
+    updateStatus();
 }
 
 function setServiceOffline(){
-  serviceOnline = false;
-  socket.emit("service_offline");
-  updateStatus();
+    serviceOnline = false;
+    socket.emit("service_offline");
+    updateStatus();
 }
 
 function enableAI(){
-  aiSupportEnabled = true;
-  socket.emit("set_ai_support", true);
-  updateStatus();
+    aiSupportEnabled = true;
+    socket.emit("set_ai_support", true);
+    updateStatus();
 }
 
 function disableAI(){
-  aiSupportEnabled = false;
-  socket.emit("set_ai_support", false);
-  updateStatus();
+    aiSupportEnabled = false;
+    socket.emit("set_ai_support", false);
+    updateStatus();
 }
 
 function updateStatus(){
-  document.getElementById("onlineBtn").classList.toggle("active", serviceOnline);
-  document.getElementById("offlineBtn").classList.toggle("active", !serviceOnline);
-  document.getElementById("aiOnBtn").classList.toggle("active", aiSupportEnabled);
-  document.getElementById("aiOffBtn").classList.toggle("active", !aiSupportEnabled);
+    document.getElementById("onlineBtn").classList.toggle("active", serviceOnline);
+    document.getElementById("offlineBtn").classList.toggle("active", !serviceOnline);
+    document.getElementById("aiOnBtn").classList.toggle("active", aiSupportEnabled);
+    document.getElementById("aiOffBtn").classList.toggle("active", !aiSupportEnabled);
 
-  document.getElementById("statusBar").innerText =
-    `状态：${serviceOnline ? "人工客服在线" : "人工客服离线"} ｜ ${aiSupportEnabled ? "AI托管开启" : "AI托管关闭"} ｜ 客服ID：${serviceId}`;
+    document.getElementById("statusBar").innerText =
+        `状态：${serviceOnline ? "人工客服在线" : "人工客服离线"} ｜ ${aiSupportEnabled ? "AI托管开启" : "AI托管关闭"} ｜ 客服ID：${serviceId}`;
 }
 
-/* 发送文字 */
+// ==================== 发送文字 ====================
 function sendMessage(){
-  const message = input.value.trim();
+    const message = input.value.trim();
 
-  if(!currentUserId){
-    alert("请先选择用户");
-    return;
-  }
+    if(!currentUserId){
+        alert("请先选择用户");
+        return;
+    }
 
-  if(!message) return;
+    if(!message) return;
 
-  socket.emit("send_message", {
-    user: currentUserId,
-    userName: currentUserName,
-    serviceId,
-    sender: "service",
-    type: "text",
-    message
-  });
+    socket.emit("send_message", {
+        user: currentUserId,
+        userName: currentUserName,
+        serviceId,
+        sender: "service",
+        type: "text",
+        message: escapeHtml(message)
+    });
 
-  input.value = "";
+    input.value = "";
 }
 
 function handleEnter(event){
-  if(event.key === "Enter"){
-    sendMessage();
-  }
+    if(event.key === "Enter"){
+        sendMessage();
+    }
 }
 
-/* 发送图片 */
+// ==================== 发送图片（修复：使用API_BASE） ====================
 async function sendImage(){
-  const file = document.getElementById("imageInput").files[0];
+    const file = document.getElementById("imageInput").files[0];
 
-  if(!currentUserId){
-    alert("请先选择用户");
-    return;
-  }
+    if(!currentUserId){
+        alert("请先选择用户");
+        return;
+    }
 
-  if(!file) return;
+    if(!file) return;
 
-  const formData = new FormData();
-  formData.append("image", file);
+    const formData = new FormData();
+    formData.append("image", file);
 
- const res = await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/chat/upload",
-  {
-    method: "POST",
-    body: formData
-  }
-);
+    try {
+        const res = await fetch(`${API_BASE}/api/chat/upload`, {
+            method: "POST",
+            body: formData
+        });
 
-  const result = await res.json();
+        const result = await res.json();
 
-  if(!result.success){
-    alert("图片上传失败");
-    return;
-  }
+        if(!result.success){
+            alert("图片上传失败");
+            return;
+        }
 
-  socket.emit("send_message", {
-    user: currentUserId,
-    userName: currentUserName,
-    serviceId,
-    sender: "service",
-    type: "image",
-    imageUrl:
-      result.url.startsWith("http")
-      ? result.url
-      : "https://ai-trading-system-j5jf.onrender.com" + result.url,
-    message: "[图片]"
-  });
+        socket.emit("send_message", {
+            user: currentUserId,
+            userName: currentUserName,
+            serviceId,
+            sender: "service",
+            type: "image",
+            imageUrl: result.url.startsWith("http") ? result.url : API_BASE + result.url,
+            message: "[图片]"
+        });
 
-  document.getElementById("imageInput").value = "";
+        document.getElementById("imageInput").value = "";
+    } catch(err) {
+        console.log(err);
+        alert("上传失败");
+    }
 }
 
-/* 接收消息 */
-socket.on("receive_message", (data) => {
-  const userId = data.user;
-
-  if(!chatRecords[userId]){
-    chatRecords[userId] = [];
-  }
-
-  chatRecords[userId].push(data);
-
-  if(userId !== currentUserId){
-    unreadMap[userId] = (unreadMap[userId] || 0) + 1;
-    renderUsers();
-    return;
-  }
-
-  renderMessages();
-});
-
-/* 渲染消息 */
+// ==================== 渲染消息（修复：添加XSS防护） ====================
 function renderMessages(){
-  chatBody.innerHTML = "";
+    chatBody.innerHTML = "";
 
-  if(!currentUserId){
-    chatBody.innerHTML = "<div style='color:#aaa'>请选择一个用户会话</div>";
-    return;
-  }
+    if(!currentUserId){
+        chatBody.innerHTML = "<div style='color:#aaa'>请选择一个用户会话</div>";
+        return;
+    }
 
-  const list = chatRecords[currentUserId] || [];
+    const list = chatRecords[currentUserId] || [];
 
-  list.forEach(data => {
-    const div = document.createElement("div");
-    div.className = data.sender === "service" ? "message service" : "message user";
+    list.forEach(data => {
+        const div = document.createElement("div");
+        div.className = data.sender === "service" ? "message service" : "message user";
 
-    const content = data.type === "image" && data.imageUrl
-      ? `<div>${data.message || ""}</div><img class="chat-img" src="${data.imageUrl}">`
-      : `${data.message || ""}`;
+        let content = "";
+        if (data.type === "image" && data.imageUrl) {
+            content = `<div>${escapeHtml(data.message || "")}</div><img class="chat-img" src="${data.imageUrl}">`;
+        } else {
+            content = escapeHtml(data.message || "");
+        }
 
-    div.innerHTML = `
-      <div class="bubble">
-        ${content}
-        <div class="msg-time">${data.time || "Now"} ${data.serviceId ? "｜" + data.serviceId : ""}</div>
-      </div>
-    `;
+        div.innerHTML = `
+            <div class="bubble">
+                ${content}
+                <div class="msg-time">${escapeHtml(data.time || "Now")} ${data.serviceId ? "｜" + escapeHtml(data.serviceId) : ""}</div>
+            </div>
+        `;
 
-    chatBody.appendChild(div);
-  });
+        chatBody.appendChild(div);
+    });
 
-  chatBody.scrollTop = chatBody.scrollHeight;
+    chatBody.scrollTop = chatBody.scrollHeight;
 }
 
-/* 默认：后台打开就是人工上线 + AI关闭 */
-socket.on("connect", () => {
-  setServiceOnline();
-  disableAI();
-});
-
+// ==================== 页面启动 ====================
 loadUsers();
 updateStatus();
 </script>

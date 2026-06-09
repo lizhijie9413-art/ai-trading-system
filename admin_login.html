@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <title>Admin Login</title>
 <style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
 body{
   margin:0;
   background:#050816;
   color:white;
-  font-family:Arial,sans-serif;
   height:100vh;
   display:flex;
   align-items:center;
@@ -20,10 +20,12 @@ body{
   border-radius:22px;
   background:#111827;
   border:1px solid #7c3aed;
+  box-shadow:0 0 40px rgba(124,58,237,.2);
 }
 h1{
   color:#a855f7;
   text-align:center;
+  margin-bottom:24px;
 }
 input{
   width:100%;
@@ -35,6 +37,10 @@ input{
   background:#1f2937;
   color:white;
   font-size:16px;
+  outline:none;
+}
+input:focus{
+  border:2px solid #7c3aed;
 }
 button{
   width:100%;
@@ -47,7 +53,27 @@ button{
   font-size:17px;
   font-weight:bold;
   cursor:pointer;
+  transition:opacity .2s;
 }
+button:hover{opacity:0.9;}
+button:disabled{opacity:0.5;cursor:not-allowed;}
+.error-msg{
+  color:#ff4d6d;
+  font-size:13px;
+  text-align:center;
+  margin-top:15px;
+  display:none;
+}
+.loading-spinner{
+  display:inline-block;
+  width:20px;
+  height:20px;
+  border:2px solid rgba(255,255,255,.3);
+  border-radius:50%;
+  border-top-color:white;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 
@@ -56,37 +82,79 @@ button{
 <div class="box">
   <h1>Admin Login</h1>
 
-  <input id="username" placeholder="Admin username">
+  <input id="username" placeholder="Admin username" autocomplete="off">
   <input id="password" type="password" placeholder="Password">
 
-  <button onclick="loginAdmin()">Login</button>
+  <button id="loginBtn" onclick="loginAdmin()">Login</button>
+  <div id="errorMsg" class="error-msg"></div>
 </div>
 
 <script>
-function loginAdmin(){
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-  const username =
-  document.getElementById("username").value.trim();
-
-  const password =
-  document.getElementById("password").value.trim();
-
-  if(username === "admin" && password === "Admin123456"){
-
-    localStorage.setItem(
-      "adminAuth",
-      JSON.stringify({
-        role:"admin",
-        loginTime:Date.now()
-      })
-    );
-
-    window.location.href = "dashboard.html";
-
-  }else{
-    alert("Wrong admin account or password");
-  }
+async function loginAdmin() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const btn = document.getElementById("loginBtn");
+    const errorDiv = document.getElementById("errorMsg");
+    
+    errorDiv.style.display = "none";
+    errorDiv.innerText = "";
+    
+    if (!username || !password) {
+        errorDiv.innerText = "请输入用户名和密码";
+        errorDiv.style.display = "block";
+        return;
+    }
+    
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loading-spinner"></div> 验证中...';
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/admin/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            localStorage.setItem("adminAuth", JSON.stringify({
+                role: "admin",
+                username: username,
+                loginTime: Date.now(),
+                token: result.token
+            }));
+            
+            errorDiv.style.color = "#00f5a0";
+            errorDiv.innerText = "登录成功，正在跳转...";
+            errorDiv.style.display = "block";
+            
+            setTimeout(() => {
+                window.location.href = "dashboard.html";
+            }, 1000);
+        } else {
+            errorDiv.innerText = result.message || "用户名或密码错误";
+            errorDiv.style.display = "block";
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    } catch (err) {
+        console.error("Login error:", err);
+        errorDiv.innerText = "网络错误，请检查服务器连接";
+        errorDiv.style.display = "block";
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
 }
+
+document.getElementById("password").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        loginAdmin();
+    }
+});
 </script>
 
 </body>

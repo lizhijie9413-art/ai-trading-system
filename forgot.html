@@ -5,35 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Forgot Password</title>
 <style>
-body { background:#050816; color:white; font-family:Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; }
-.box { width:350px; padding:30px; background:rgba(255,255,255,0.05); border-radius:20px; text-align:center; }
-input { width:100%; padding:12px; margin:12px 0; border:none; border-radius:10px; }
-button { width:100%; padding:12px; background:#00f0ff; border:none; border-radius:10px; color:white; font-weight:bold; cursor:pointer; }
-.message { margin-top:15px; font-size:14px; }
+body { background:#050816; color:white; font-family:Arial,sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+.box { width:350px; padding:30px; background:rgba(255,255,255,0.05); border-radius:20px; text-align:center; border:1px solid #7c3aed; }
+h2 { color:#c084fc; margin-bottom:20px; }
+input { width:100%; padding:12px; margin:12px 0; border:none; border-radius:10px; background:#1f2937; color:white; font-size:14px; outline:none; }
+input:focus { border:2px solid #7c3aed; }
+button { width:100%; padding:12px; background:linear-gradient(135deg,#7c3aed,#c084fc); border:none; border-radius:10px; color:white; font-weight:bold; font-size:15px; cursor:pointer; transition:opacity 0.2s; }
+button:hover { opacity:0.9; }
+button:disabled { opacity:0.5; cursor:not-allowed; }
+.message { margin-top:15px; font-size:14px; padding:10px; border-radius:8px; }
+.message.success { background:rgba(0,245,160,0.15); color:#00f5a0; }
+.message.error { background:rgba(255,77,109,0.15); color:#ff4d6d; }
+a { color:#c084fc; text-decoration:none; font-size:14px; }
+a:hover { text-decoration:underline; }
+.loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:white;animation:spin 0.8s linear infinite;margin-right:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
 <div class="box">
     <h2>Forgot Password</h2>
+    <p style="color:#94a3b8;font-size:13px;margin-bottom:15px;">Enter your email to receive a reset link</p>
     <input type="email" id="email" placeholder="Enter your registered email">
-    <button onclick="sendReset()">Send Reset Link</button>
+    <button id="sendBtn" onclick="sendReset()">Send Reset Link</button>
     <div class="message" id="message"></div>
-    <div style="margin-top:10px;"><a href="login.html" style="color:#00f0ff;">Back to Login</a></div>
+    <div style="margin-top:15px;"><a href="login.html">← Back to Login</a></div>
 </div>
 
 <script>
-const API_BASE =
-"https://ai-trading-system-j5jf.onrender.com";
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
 async function sendReset(){
     const email = document.getElementById("email").value.trim();
-    const msg = document.getElementById("message");
+    const msgDiv = document.getElementById("message");
+    const btn = document.getElementById("sendBtn");
+    
+    msgDiv.innerHTML = "";
+    
     if(!email){
-        msg.innerText = "Please enter your email";
-        msg.style.color = "#ff5c7a";
+        msgDiv.innerHTML = "Please enter your email";
+        msgDiv.className = "message error";
         return;
     }
-
+    
+    // 邮箱格式验证
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(email)){
+        msgDiv.innerHTML = "Please enter a valid email address";
+        msgDiv.className = "message error";
+        return;
+    }
+    
+    // 显示加载状态
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loading-spinner"></div> Sending...';
+    
     try{
         const res = await fetch(API_BASE + "/api/forgot-password", {
             method:"POST",
@@ -41,19 +68,39 @@ async function sendReset(){
             body: JSON.stringify({ email })
         });
         const data = await res.json();
+        
         if(data.success){
-            msg.innerText = "Reset link sent! Check your email.";
-            msg.style.color = "#00ff99";
+            msgDiv.innerHTML = "If the email exists, a reset link has been sent. Please check your email.";
+            msgDiv.className = "message success";
+            
+            // 开发环境显示token（方便测试）
+            if(data.devToken){
+                console.log("开发环境重置链接: " + window.location.origin + "/reset_password.html?token=" + data.devToken);
+            }
+            
+            // 清空输入框
+            document.getElementById("email").value = "";
         } else {
-            msg.innerText = data.message || "Failed to send reset link";
-            msg.style.color = "#ff5c7a";
+            msgDiv.innerHTML = data.message || "Failed to send reset link";
+            msgDiv.className = "message error";
+            btn.disabled = false;
+            btn.innerText = originalText;
         }
     }catch(err){
         console.log(err);
-        msg.innerText = "Server Error";
-        msg.style.color = "#ff5c7a";
+        msgDiv.innerHTML = "Network error. Please try again later.";
+        msgDiv.className = "message error";
+        btn.disabled = false;
+        btn.innerText = originalText;
     }
 }
+
+// 回车提交
+document.getElementById("email").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        sendReset();
+    }
+});
 </script>
 </body>
 </html>

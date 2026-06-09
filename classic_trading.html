@@ -808,19 +808,18 @@ async function startAITrade(){
 
     try{
 
-       const response =
-await fetch(
+ const response = await fetch(
   "https://ai-trading-system-j5jf.onrender.com/api/ai/assistant/start",
   {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json"
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "user-id": localUser.id
     },
-    body:JSON.stringify({
-  userId: localUser.id,
-  amount: aiPlanAmount,
-  strategy: selectedAIPlanName
-})
+    body: JSON.stringify({
+      amount: aiPlanAmount,
+      strategy: selectedAIPlanName
+    })
   }
 );
 

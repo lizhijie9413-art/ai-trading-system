@@ -12,7 +12,8 @@ const { Server } = require("socket.io");
 const multer = require("multer");
 
 const app = express();
-const ADMIN_TOKEN = "AI_ADMIN_2026";
+// 修复：将管理员Token改为环境变量
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "AI_ADMIN_2026";
 
 app.use(cors());
 app.use(express.json());
@@ -81,7 +82,26 @@ app.get("/api/market/quotes", async (req, res) => {
   }
 });
 
-app.get("/api/users/:id", async (req, res) => {
+// 修复：添加用户认证中间件
+async function authenticateUser(req, res, next) {
+  const userId = req.headers["user-id"] || req.params.id;
+  if (!userId) {
+    return res.status(401).json({ success: false, message: "User ID required" });
+  }
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(401).json({ success: false, message: "User not found" });
+  }
+  if (user.status !== 'active') {
+    return res.status(403).json({ success: false, message: "Account is frozen" });
+  }
+  req.user = user;
+  req.userId = userId;
+  next();
+}
+
+// 修复：添加用户认证
+app.get("/api/users/:id", authenticateUser, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
 
@@ -581,8 +601,17 @@ app.get("/api/chat/history/:userId", async (req, res) => {
   }
 });
 
+// 修复：添加金额验证
 app.put("/api/users/:id/recharge", async (req, res) => {
   const amount = Number(req.body.amount);
+
+  // 修复：金额验证
+  if (amount <= 0 || amount > 1000000) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid amount"
+    });
+  }
 
   const user = await User.findById(req.params.id);
 
@@ -1170,18 +1199,17 @@ if(strategy === "Long-Term AI Wealth Plan"){
 
 /* AI Assistant 方案交易 */
 
-app.post("/api/ai/assistant/start", async (req, res) => {
+// 修复：添加用户认证
+app.post("/api/ai/assistant/start", authenticateUser, async (req, res) => {
 
   try {
 
     const {
-      userId,
       amount,
       strategy
     } = req.body;
 
-    const user =
-    await User.findById(userId);
+    const user = req.user;
 
     if (!user) {
 
@@ -1245,7 +1273,7 @@ if(strategy === "Short-Term AI Quant"){
  const weeklyCount =
 await AIQuantOrder.countDocuments({
 
-  userId,
+  userId: user._id,
 
   strategy: "Short-Term AI Quant",
 
@@ -1270,7 +1298,7 @@ await AIQuantOrder.countDocuments({
 }
 
 const firstOrder = await AIQuantOrder.findOne({
-  userId,
+  userId: user._id,
   strategy: "Short-Term AI Quant",
   level: level,
 assistantType: "AI Assistant"
@@ -1403,7 +1431,7 @@ availableMarkets[
     const order =
     await AIQuantOrder.create({
 
-      userId,
+      userId: user._id,
 
       username:
       user.name ||
@@ -1441,11 +1469,10 @@ availableMarkets[
       endTime
     });
 
-    user.asset =
-    asset - tradeAmount;
-
-    user.balance =
-    user.asset;
+    // 修复：正确锁定资金（从asset扣除，增加到lockedAsset）
+    user.asset = asset - tradeAmount;
+    user.balance = user.asset;
+    user.lockedAsset = (user.lockedAsset || 0) + tradeAmount;
 
     if(!user.records){
       user.records = [];
@@ -1478,11 +1505,11 @@ availableMarkets[
 
 /* 开始 AI Quant 交易 */
 
-app.post("/api/ai/quant/start", async (req, res) => {
+// 修复：添加用户认证
+app.post("/api/ai/quant/start", authenticateUser, async (req, res) => {
   try {
-    const { userId, amount } = req.body;
-
-    const user = await User.findById(userId);
+    const { amount } = req.body;
+    const user = req.user;
 
     if (!user) {
       return res.json({
@@ -1538,7 +1565,7 @@ weekStart.setHours(0, 0, 0, 0);
 const weeklyCount =
 await AIQuantOrder.countDocuments({
 
-  userId,
+  userId: user._id,
 
   level: { $ne: "AI Assistant" },
 
@@ -1562,7 +1589,7 @@ if (
 }
 
     const userFirstOrder = await AIQuantOrder.findOne({
-    userId,
+    userId: user._id,
   level: level
    }).sort({ createdAt: 1 });
     let rateRange = setting.week1;
@@ -1643,7 +1670,7 @@ subTrades.sort((a, b) => {
 });
 
     const order = await AIQuantOrder.create({
-      userId,
+      userId: user._id,
       username: user.name || user.username || user.email,
       market: selected.market,
       product: selected.product,
@@ -1662,10 +1689,10 @@ subTrades.sort((a, b) => {
 
 
 
-// 扣除交易本金
-
+// 修复：正确锁定资金（从asset扣除，增加到lockedAsset）
 user.asset = asset - tradeAmount;
 user.balance = user.asset;
+user.lockedAsset = (user.lockedAsset || 0) + tradeAmount;
 
 if(!user.records){
   user.records = [];
@@ -1695,7 +1722,7 @@ res.json({
 
 /* 结算 AI Quant 交易 */
 
-app.post("/api/ai/quant/settle/:id", async (req, res) => {
+app.post("/api/ai/quant/settle/:id", authenticateUser, async (req, res) => {
   try {
     const order = await AIQuantOrder.findById(req.params.id);
 
@@ -1703,6 +1730,13 @@ app.post("/api/ai/quant/settle/:id", async (req, res) => {
       return res.json({
         success: false,
         message: "Order not found"
+      });
+    }
+
+    if (order.userId.toString() !== req.userId) {
+      return res.json({
+        success: false,
+        message: "Not your order"
       });
     }
 
@@ -1722,7 +1756,7 @@ app.post("/api/ai/quant/settle/:id", async (req, res) => {
       });
     }
 
-    const user = await User.findById(order.userId);
+    const user = req.user;
 
     if (!user) {
       return res.json({
@@ -1731,10 +1765,15 @@ app.post("/api/ai/quant/settle/:id", async (req, res) => {
       });
     }
 
-    user.asset = Number(user.asset || 0) + Number(order.profit || 0);
+    // 修复：正确结算（解锁本金并返还利润）
+    const amount = order.amount;
+    const profit = order.profit;
+    user.lockedAsset = Math.max(0, (user.lockedAsset || 0) - amount);
+    user.asset = Number(user.asset || 0) + amount + profit;
+    user.balance = user.asset;
 
     user.records.push(
-      `AI Quant completed: +${order.profit.toFixed(2)} USDT`
+      `AI Quant completed: +${profit.toFixed(2)} USDT`
     );
 
     order.status = "Completed";
@@ -1838,7 +1877,13 @@ generateSubTrades(
 
 /* 获取 AI Quant 订单 */
 
-app.get("/api/ai/quant/orders/:userId", async (req, res) => {
+app.get("/api/ai/quant/orders/:userId", authenticateUser, async (req, res) => {
+  if (req.params.userId !== req.userId) {
+    return res.json({
+      success: false,
+      message: "Access denied"
+    });
+  }
   const orders = await AIQuantOrder.find({
     userId: req.params.userId
   }).sort({ createdAt: -1 });
@@ -1916,13 +1961,12 @@ app.post("/api/tickets", (req, res) => {
   });
 });
 
-app.post("/api/token-yield/start", async (req, res) => {
+app.post("/api/token-yield/start", authenticateUser, async (req, res) => {
 
   try{
 
-    const { userId, planName, amount, days, rate } = req.body;
-
-    const user = await User.findById(userId);
+    const { planName, amount, days, rate } = req.body;
+    const user = req.user;
 
     if(!user){
       return res.json({
@@ -1948,14 +1992,11 @@ app.post("/api/token-yield/start", async (req, res) => {
       });
     }
 
+    // 修复：正确锁定资金
     user.asset = asset - investAmount;
     user.balance = user.asset;
-
-    user.lockedAsset =
-    Number(user.lockedAsset || 0) + investAmount;
-
-    user.tokenLocked =
-    Number(user.tokenLocked || 0) + investAmount;
+    user.lockedAsset = (user.lockedAsset || 0) + investAmount;
+    user.tokenLocked = (user.tokenLocked || 0) + investAmount;
 
     const profit =
     investAmount * (Number(rate || 0) / 100);
@@ -1968,7 +2009,7 @@ app.post("/api/token-yield/start", async (req, res) => {
     );
 
     const order = await TokenYieldOrder.create({
-      userId,
+      userId: user._id,
       planName,
       amount: investAmount,
       days: Number(days || 7),
@@ -1991,7 +2032,8 @@ app.post("/api/token-yield/start", async (req, res) => {
 
     res.json({
       success:true,
-      order
+      order,
+      balance: user.asset
     });
 
   }catch(err){
@@ -2007,22 +2049,15 @@ app.post("/api/token-yield/start", async (req, res) => {
 });
 
 /* 提现申请：提交后立即扣除余额 */
-app.post("/api/withdraw", async (req, res) => {
+// 修复：添加用户认证
+app.post("/api/withdraw", authenticateUser, async (req, res) => {
   try {
 
     console.log("Withdraw body:", req.body);
-    const { userId, uid, email, address, amount, network } = req.body;
+    const { address, amount, network } = req.body;
+    const user = req.user;
 
     const withdrawAmount = Number(amount || 0);
-
-    if (!userId) {
-      return res.json({
-        success: false,
-        message: "User ID missing"
-      });
-    }
-
-    const user = await User.findById(userId);
 
     if (!user) {
       return res.json({
@@ -2060,9 +2095,9 @@ app.post("/api/withdraw", async (req, res) => {
 
     const withdraw = {
       id: Date.now(),
-      userId,
-      uid,
-      email,
+      userId: user._id,
+      uid: user.uid,
+      email: user.email,
       address,
       amount: withdrawAmount,
       network,
@@ -2181,6 +2216,172 @@ app.post(
       message: "更新提现状态失败"
     });
   }
+});
+
+// ==================== 忘记密码功能 ====================
+const crypto = require('crypto');
+
+// 存储重置令牌（生产环境建议使用Redis或数据库）
+const resetTokens = new Map();
+
+// 清理过期令牌的定时任务（每小时执行一次）
+setInterval(() => {
+    const now = Date.now();
+    for (const [token, data] of resetTokens.entries()) {
+        if (now > data.expiresAt) {
+            resetTokens.delete(token);
+        }
+    }
+}, 3600000);
+
+// 发送重置链接
+app.post("/api/forgot-password", async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.json({ success: false, message: "Email is required" });
+        }
+        
+        // 简单的邮箱格式验证
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.json({ success: false, message: "Please enter a valid email address" });
+        }
+        
+        const user = await User.findOne({ email });
+        
+        // 为了安全，即使用户不存在也返回成功（防止邮箱枚举攻击）
+        if (!user) {
+            return res.json({ 
+                success: true, 
+                message: "If the email exists, a reset link has been sent" 
+            });
+        }
+        
+        // 生成重置令牌
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = Date.now() + 3600000; // 1小时后过期
+        
+        resetTokens.set(token, {
+            userId: user._id,
+            email: user.email,
+            expiresAt: expiresAt
+        });
+        
+        // 构建重置链接
+        const resetUrl = `${req.protocol}://${req.get('host')}/reset_password.html?token=${token}`;
+        
+        // 开发环境打印日志，生产环境应发送邮件
+        console.log(`========== 密码重置请求 ==========`);
+        console.log(`用户邮箱: ${email}`);
+        console.log(`重置令牌: ${token}`);
+        console.log(`重置链接: ${resetUrl}`);
+        console.log(`令牌有效期: 1小时`);
+        console.log(`==================================`);
+        
+        // TODO: 生产环境需要配置邮件服务发送邮件
+        // 例如使用 nodemailer 发送邮件
+        
+        res.json({ 
+            success: true, 
+            message: "If the email exists, a reset link has been sent",
+            // 开发环境返回token方便测试，生产环境请删除这一行
+            devToken: token
+        });
+        
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        res.json({ success: false, message: "Server error, please try again later" });
+    }
+});
+
+// 验证重置令牌
+app.get("/api/verify-reset-token", async (req, res) => {
+    try {
+        const { token } = req.query;
+        
+        if (!token) {
+            return res.json({ success: false, message: "Token is required" });
+        }
+        
+        const tokenData = resetTokens.get(token);
+        
+        if (!tokenData) {
+            return res.json({ success: false, message: "Invalid or expired token" });
+        }
+        
+        if (Date.now() > tokenData.expiresAt) {
+            resetTokens.delete(token);
+            return res.json({ success: false, message: "Token has expired" });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: "Token is valid",
+            email: tokenData.email
+        });
+        
+    } catch (error) {
+        console.error("Verify token error:", error);
+        res.json({ success: false, message: "Server error" });
+    }
+});
+
+// 重置密码
+app.post("/api/reset-password", async (req, res) => {
+    try {
+        const { token, newPassword, confirmPassword } = req.body;
+        
+        if (!token || !newPassword) {
+            return res.json({ success: false, message: "Token and new password are required" });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.json({ success: false, message: "Password must be at least 6 characters" });
+        }
+        
+        if (newPassword !== confirmPassword) {
+            return res.json({ success: false, message: "Passwords do not match" });
+        }
+        
+        const tokenData = resetTokens.get(token);
+        
+        if (!tokenData) {
+            return res.json({ success: false, message: "Invalid or expired token" });
+        }
+        
+        if (Date.now() > tokenData.expiresAt) {
+            resetTokens.delete(token);
+            return res.json({ success: false, message: "Token has expired" });
+        }
+        
+        const user = await User.findById(tokenData.userId);
+        if (!user) {
+            return res.json({ success: false, message: "User not found" });
+        }
+        
+        // 更新密码
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+        
+        // 删除已使用的令牌
+        resetTokens.delete(token);
+        
+        // 添加记录
+        user.records.push({ 
+            message: "Password reset successfully", 
+            timestamp: new Date() 
+        });
+        await user.save();
+        
+        res.json({ success: true, message: "Password has been reset successfully" });
+        
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.json({ success: false, message: "Server error, please try again later" });
+    }
 });
 
 /* Socket 客服 */
@@ -2386,10 +2587,11 @@ async function settleExpiredTokenYieldOrders(){
       const amount = Number(order.amount || 0);
       const profit = Number(order.profit || 0);
 
+      // 修复：正确结算
+      user.lockedAsset = Math.max(0, (user.lockedAsset || 0) - amount);
       user.asset = Number(user.asset || 0) + amount + profit;
       user.balance = user.asset;
 
-      user.lockedAsset = Number(user.lockedAsset || 0) - amount;
       user.tokenLocked = Number(user.tokenLocked || 0) - amount;
 
       user.totalProfit = Number(user.totalProfit || 0) + profit;
@@ -2435,6 +2637,8 @@ async function settleExpiredAIQuantOrders(){
       const amount = Number(order.amount || 0);
       const profit = Number(order.profit || 0);
 
+      // 修复：正确结算
+      user.lockedAsset = Math.max(0, (user.lockedAsset || 0) - amount);
       user.asset = Number(user.asset || 0) + amount + profit;
       user.balance = user.asset;
 
@@ -2479,5 +2683,3 @@ setInterval(
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
-
-

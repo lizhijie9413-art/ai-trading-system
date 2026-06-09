@@ -183,13 +183,15 @@ if (!adminAuth || adminAuth.role !== "admin") {
 </div>
 
 <script>
-const API_BASE =
-"https://ai-trading-system-j5jf.onrender.com";
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
+const ADMIN_TOKEN = "AI_ADMIN_2026";
 
 let users = [];
 let orders = [];
 let withdrawals = [];
 
+// ==================== 格式化金额 ====================
 function formatUSDT(value){
   return Number(value || 0).toLocaleString(undefined,{
     minimumFractionDigits:2,
@@ -197,23 +199,44 @@ function formatUSDT(value){
   }) + " USDT";
 }
 
+// ==================== 获取用户资产（兼容多种字段） ====================
+function getUserAsset(user){
+  return Number(user.availableBalance || user.asset || user.balance || 0);
+}
+
+// ==================== 加载仪表盘数据（修复：添加admin-token） ====================
 async function loadDashboard(){
   try{
-    const userRes = await fetch(API_BASE + "/api/users");
+    // 获取用户列表
+    const userRes = await fetch(`${API_BASE}/api/users`, {
+      headers: {
+        "admin-token": ADMIN_TOKEN
+      }
+    });
     const userResult = await userRes.json();
 
     if(userResult.success){
       users = userResult.data || [];
     }
 
-    const orderRes = await fetch(API_BASE + "/api/admin/trade-orders");
+    // 获取交易订单
+    const orderRes = await fetch(`${API_BASE}/api/admin/trade-orders`, {
+      headers: {
+        "admin-token": ADMIN_TOKEN
+      }
+    });
     const orderResult = await orderRes.json();
 
     if(orderResult.success){
       orders = orderResult.data || [];
     }
 
-    const withdrawRes = await fetch(API_BASE + "/api/withdrawals");
+    // 获取提现记录
+    const withdrawRes = await fetch(`${API_BASE}/api/withdrawals`, {
+      headers: {
+        "admin-token": ADMIN_TOKEN
+      }
+    });
     withdrawals = await withdrawRes.json();
 
     renderDashboard();
@@ -224,21 +247,23 @@ async function loadDashboard(){
   }
 }
 
+// ==================== 渲染仪表盘 ====================
 function renderDashboard(){
-  const totalAssets = users.reduce((sum,user)=>{
-    return sum + Number(user.asset || user.balance || 0);
-  },0);
+  // 修复：使用兼容的资产字段
+  const totalAssets = users.reduce((sum, user) => {
+    return sum + getUserAsset(user);
+  }, 0);
 
   const runningOrders = orders.filter(o => o.status === "Running").length;
   const completedOrders = orders.filter(o => o.status === "Completed").length;
 
-  const totalVolume = orders.reduce((sum,o)=>{
+  const totalVolume = orders.reduce((sum, o) => {
     return sum + Number(o.amount || 0);
-  },0);
+  }, 0);
 
-  const totalProfit = orders.reduce((sum,o)=>{
+  const totalProfit = orders.reduce((sum, o) => {
     return sum + Number(o.profit || 0);
-  },0);
+  }, 0);
 
   const pendingWithdraw = withdrawals.filter(w => w.status === "Pending").length;
 
@@ -254,12 +279,14 @@ function renderDashboard(){
   renderRecentOrders();
 }
 
+// ==================== 获取状态文本 ====================
 function getStatusText(status){
   if(status === "Running") return "运行中";
   if(status === "Completed") return "已完成";
   return status || "未知";
 }
 
+// ==================== 渲染最近订单 ====================
 function renderRecentOrders(){
   const tbody = document.getElementById("recentOrders");
   tbody.innerHTML = "";
@@ -275,11 +302,8 @@ function renderRecentOrders(){
     return;
   }
 
-  recent.forEach(order=>{
-    const statusClass =
-      order.status === "Completed"
-      ? "status-completed"
-      : "status-running";
+  recent.forEach(order => {
+    const statusClass = order.status === "Completed" ? "status-completed" : "status-running";
 
     const tr = document.createElement("tr");
 
@@ -299,6 +323,7 @@ function renderRecentOrders(){
   });
 }
 
+// ==================== 页面启动 ====================
 loadDashboard();
 </script>
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"/>
 
 <title>Yield Statement</title>
 
@@ -25,484 +25,417 @@ body{
     linear-gradient(180deg,#030712,#050816,#020617);
 
     color:white;
-
     max-width:430px;
-
     min-height:100vh;
-
     margin:0 auto;
-
     overflow-x:hidden;
-
     padding:18px 16px 110px;
+    position:relative;
 }
 
+/* 动态背景 */
 body::before{
-
     content:"";
-
     position:fixed;
-
     inset:0;
-
     background-image:
     linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
     linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
-
     background-size:42px 42px;
-
     pointer-events:none;
-
     z-index:-1;
 }
 
-.header{
+/* 浮动光晕 */
+.glow-ball{
+    position:fixed;
+    width:250px;
+    height:250px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(139,92,246,0.12),transparent 70%);
+    top:-50px;
+    left:-100px;
+    filter:blur(50px);
+    animation:floatGlow 10s ease-in-out infinite;
+    z-index:-1;
+}
+@keyframes floatGlow{0%,100%{transform:translate(0,0);}50%{transform:translate(60px,40px);}}
 
+.header{
     display:flex;
     align-items:center;
     justify-content:space-between;
-
     margin-bottom:22px;
 }
 
 .back-btn{
-
     width:52px;
     height:52px;
-
     border-radius:18px;
-
     background:rgba(255,255,255,.05);
-
     border:1px solid rgba(168,85,247,.22);
-
     color:#c084fc;
-
     display:flex;
     align-items:center;
     justify-content:center;
-
     font-size:20px;
-
     cursor:pointer;
+    transition:all 0.3s ease;
 }
+.back-btn:hover{transform:scale(1.05);border-color:#c084fc;}
 
 .header-title{
     flex:1;
     padding-left:14px;
 }
-
 .header-title h1{
-
     font-size:30px;
-
     font-weight:900;
+    background:linear-gradient(90deg,#fff,#c084fc,#38bdf8);
+    -webkit-background-clip:text;
+    color:transparent;
 }
-
 .header-title p{
-
     color:#94a3b8;
-
     font-size:13px;
-
     margin-top:4px;
 }
 
 .summary-card{
-
     position:relative;
-
     overflow:hidden;
-
     border-radius:30px;
-
     padding:24px;
-
     margin-bottom:22px;
-
-    background:
-    linear-gradient(145deg,
-    rgba(15,23,42,.96),
-    rgba(8,13,32,.96));
-
+    background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
     border:1px solid rgba(139,92,246,.22);
-
-    box-shadow:
-    0 0 30px rgba(139,92,246,.14);
+    transition:all 0.3s ease;
 }
-
+.summary-card:hover{transform:translateY(-3px);border-color:#c084fc;}
 .summary-card::before{
-
     content:"";
-
     position:absolute;
-
     width:220px;
     height:220px;
-
     right:-100px;
     top:-100px;
-
-    background:
-    radial-gradient(circle,
-    rgba(0,212,255,.18),
-    transparent 70%);
+    background:radial-gradient(circle,rgba(0,212,255,.18),transparent 70%);
 }
-
-.summary-title{
-
-    color:#94a3b8;
-
-    font-size:14px;
-
-    margin-bottom:10px;
-}
-
-.summary-amount{
-
-    font-size:46px;
-
-    font-weight:900;
-}
-
-.summary-profit{
-
-    margin-top:10px;
-
-    color:#00f5a0;
-
-    font-size:18px;
-
-    font-weight:900;
-}
+.summary-title{color:#94a3b8;font-size:14px;margin-bottom:10px;}
+.summary-amount{font-size:46px;font-weight:900;}
+.summary-profit{margin-top:10px;color:#00f5a0;font-size:18px;font-weight:900;}
 
 .statement-card{
-
     position:relative;
-
     overflow:hidden;
-
     border-radius:28px;
-
     padding:20px;
-
     margin-bottom:16px;
-
-    background:
-    linear-gradient(145deg,
-    rgba(15,23,42,.96),
-    rgba(8,13,32,.96));
-
+    background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
     border:1px solid rgba(139,92,246,.18);
+    transition:all 0.3s ease;
 }
+.statement-card:hover{transform:translateY(-3px);border-color:#c084fc;}
 
 .statement-top{
-
     display:flex;
-
     align-items:center;
-
     justify-content:space-between;
-
     margin-bottom:18px;
 }
-
-.statement-title{
-
-    font-size:22px;
-
-    font-weight:900;
-}
-
+.statement-title{font-size:20px;font-weight:900;}
 .statement-status{
-
-    padding:8px 14px;
-
+    padding:6px 12px;
     border-radius:999px;
-
-    background:rgba(0,245,160,.12);
-
-    color:#00f5a0;
-
-    font-size:12px;
-
+    font-size:11px;
     font-weight:900;
 }
+.status-running{background:rgba(255,170,0,.12);color:#ffaa00;}
+.status-completed{background:rgba(0,245,160,.12);color:#00f5a0;}
 
 .statement-grid{
-
     display:grid;
-
     grid-template-columns:repeat(2,1fr);
-
     gap:12px;
 }
-
 .statement-box{
-
     padding:14px;
-
     border-radius:18px;
-
     background:rgba(255,255,255,.04);
-
     border:1px solid rgba(255,255,255,.05);
 }
+.statement-box span{color:#94a3b8;font-size:12px;}
+.statement-box strong{display:block;margin-top:8px;font-size:16px;}
+.green{color:#00f5a0;}
+.blue{color:#38bdf8;}
+.purple{color:#c084fc;}
 
-.statement-box span{
-
+.empty-state{
+    text-align:center;
+    padding:60px 20px;
     color:#94a3b8;
-
-    font-size:12px;
 }
-
-.statement-box strong{
-
-    display:block;
-
-    margin-top:8px;
-
-    font-size:18px;
-}
-
-.green{
-    color:#00f5a0;
-}
-
-.blue{
-    color:#38bdf8;
-}
-
-.purple{
+.empty-state i{
+    font-size:50px;
     color:#c084fc;
+    margin-bottom:16px;
+    display:block;
 }
+
+.loading-spinner{
+    display:inline-block;
+    width:20px;
+    height:20px;
+    border:2px solid rgba(255,255,255,.3);
+    border-radius:50%;
+    border-top-color:#c084fc;
+    animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
 
 .bottom-nav{
-
     position:fixed;
-
     bottom:0;
-
     left:50%;
-
     transform:translateX(-50%);
-
     width:100%;
-
     max-width:430px;
-
     height:82px;
-
     background:rgba(5,8,22,.96);
-
     backdrop-filter:blur(22px);
-
     border-top:1px solid rgba(168,85,247,.22);
-
     display:flex;
-
     justify-content:space-around;
-
     align-items:center;
-
     z-index:999;
 }
-
 .nav-item{
-
     width:20%;
-
     text-decoration:none;
-
     color:#64748b;
-
     font-size:12px;
-
     display:flex;
-
     flex-direction:column;
-
     align-items:center;
-
     gap:5px;
+    transition:all 0.3s ease;
 }
-
-.nav-item i{
-    font-size:20px;
-}
-
-.nav-item.active{
-
-    color:#c084fc;
-
-    text-shadow:
-    0 0 16px rgba(168,85,247,.9);
-}
-
+.nav-item i{font-size:20px;}
+.nav-item:hover{color:#c084fc;transform:translateY(-3px);}
+.nav-item.active{color:#c084fc;text-shadow:0 0 16px rgba(168,85,247,.9);}
 </style>
 </head>
-
 <body>
 
+<div class="glow-ball"></div>
+
 <div class="header">
-
-    <div class="back-btn"
-    onclick="window.location.href='token_yield.html'">
-
+    <div class="back-btn" onclick="window.location.href='token_yield.html'">
         <i class="fa-solid fa-arrow-left"></i>
-
     </div>
-
     <div class="header-title">
-
         <h1>Yield Statement</h1>
-
         <p>AI Yield Distribution Report</p>
-
     </div>
-
 </div>
 
 <div class="summary-card">
-
-    <div class="summary-title">
-        Total Yield Generated
-    </div>
-
-    <div class="summary-amount">
-        $28,420.55
-    </div>
-
-    <div class="summary-profit">
-        +$2,845.20 This Cycle
-    </div>
-
+    <div class="summary-title">Total Yield Generated</div>
+    <div class="summary-amount" id="totalYield">$0.00</div>
+    <div class="summary-profit" id="activeYield">+$0.00 This Cycle</div>
 </div>
 
-<div class="statement-card">
-
-    <div class="statement-top">
-
-        <div class="statement-title">
-            Active Yield Cycle
-        </div>
-
-        <div class="statement-status">
-            Running
-        </div>
-
+<div id="ordersContainer">
+    <div class="empty-state">
+        <i class="fa-solid fa-hourglass-half"></i>
+        <div>Loading yield orders...</div>
     </div>
-
-    <div class="statement-grid">
-
-        <div class="statement-box">
-            <span>Current APY</span>
-            <strong class="green">
-                15%
-            </strong>
-        </div>
-
-        <div class="statement-box">
-            <span>Lock Duration</span>
-            <strong class="blue">
-                30 Days
-            </strong>
-        </div>
-
-        <div class="statement-box">
-            <span>Compounding</span>
-            <strong class="purple">
-                Enabled
-            </strong>
-        </div>
-
-        <div class="statement-box">
-            <span>Next Distribution</span>
-            <strong>
-                12 Hours
-            </strong>
-        </div>
-
-    </div>
-
-</div>
-
-<div class="statement-card">
-
-    <div class="statement-top">
-
-        <div class="statement-title">
-            Previous Distribution
-        </div>
-
-        <div class="statement-status">
-            Completed
-        </div>
-
-    </div>
-
-    <div class="statement-grid">
-
-        <div class="statement-box">
-            <span>Yield Earned</span>
-            <strong class="green">
-                +$1,250
-            </strong>
-        </div>
-
-        <div class="statement-box">
-            <span>AI Yield Rate</span>
-            <strong class="blue">
-                10%
-            </strong>
-        </div>
-
-        <div class="statement-box">
-            <span>Distribution Time</span>
-            <strong class="purple">
-                24H Ago
-            </strong>
-        </div>
-
-        <div class="statement-box">
-            <span>Strategy Status</span>
-            <strong>
-                Stable
-            </strong>
-        </div>
-
-    </div>
-
 </div>
 
 <div class="bottom-nav">
-
-    <a class="nav-item" href="index.html">
-        <i class="fa-solid fa-house"></i>
-        Home
-    </a>
-
-    <a class="nav-item" href="market.html">
-        <i class="fa-solid fa-chart-column"></i>
-        Markets
-    </a>
-
-    <a class="nav-item active" href="trade.html">
-        <i class="fa-solid fa-arrow-right-arrow-left"></i>
-        Trade
-    </a>
-
-    <a class="nav-item" href="portfolio.html">
-        <i class="fa-regular fa-folder"></i>
-        Portfolio
-    </a>
-
-    <a class="nav-item" href="profile.html">
-        <i class="fa-regular fa-user"></i>
-        Profile
-    </a>
-
+    <a class="nav-item" href="index.html"><i class="fa-solid fa-house"></i>Home</a>
+    <a class="nav-item" href="market.html"><i class="fa-solid fa-chart-column"></i>Markets</a>
+    <a class="nav-item active" href="trade.html"><i class="fa-solid fa-arrow-right-arrow-left"></i>Trade</a>
+    <a class="nav-item" href="portfolio.html"><i class="fa-regular fa-folder"></i>Portfolio</a>
+    <a class="nav-item" href="profile.html"><i class="fa-regular fa-user"></i>Profile</a>
 </div>
 
+<script src="config.js"></script>
+<script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
+
+// ==================== 格式化函数 ====================
+function formatMoney(value){
+    return "$" + Number(value || 0).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function formatDate(dateStr){
+    if(!dateStr) return "-";
+    return new Date(dateStr).toLocaleString();
+}
+
+function getStatusClass(status){
+    return status === "Completed" ? "status-completed" : "status-running";
+}
+
+function getStatusText(status){
+    return status === "Completed" ? "Completed" : "Running";
+}
+
+// ==================== 加载Token Yield订单 ====================
+async function loadYieldOrders(){
+    const user = getCurrentUser();
+    if(!user || !user.id){
+        document.getElementById("ordersContainer").innerHTML = `
+            <div class="empty-state">
+                <i class="fa-regular fa-circle-exclamation"></i>
+                <div>Please login to view yield orders</div>
+            </div>
+        `;
+        return;
+    }
+    
+    try{
+        const result = await apiRequest("/api/admin/trade-orders");
+        
+        if(result.success && result.data && result.data.data){
+            const allOrders = result.data.data;
+            // 筛选Token Yield订单
+            const yieldOrders = allOrders.filter(order => order.type === "Token Yield");
+            
+            if(yieldOrders.length === 0){
+                document.getElementById("ordersContainer").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-regular fa-clock"></i>
+                        <div>No Token Yield orders yet</div>
+                        <div style="font-size:12px; margin-top:8px;">Start a yield plan in Token Yield page</div>
+                    </div>
+                `;
+                document.getElementById("totalYield").innerText = "$0.00";
+                document.getElementById("activeYield").innerText = "+$0.00 This Cycle";
+                return;
+            }
+            
+            // 只显示当前用户的订单
+            const userOrders = yieldOrders.filter(order => order.userId === user.id);
+            
+            if(userOrders.length === 0){
+                document.getElementById("ordersContainer").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-regular fa-clock"></i>
+                        <div>No Token Yield orders found for your account</div>
+                        <div style="font-size:12px; margin-top:8px;">Start a yield plan in Token Yield page</div>
+                    </div>
+                `;
+                document.getElementById("totalYield").innerText = "$0.00";
+                document.getElementById("activeYield").innerText = "+$0.00 This Cycle";
+                return;
+            }
+            
+            // 计算总收益
+            let totalProfit = 0;
+            let activeOrders = userOrders.filter(o => o.status !== "Completed");
+            let activeProfit = activeOrders.reduce((sum, o) => sum + Number(o.profit || 0), 0);
+            
+            userOrders.forEach(order => {
+                totalProfit += Number(order.profit || 0);
+            });
+            
+            document.getElementById("totalYield").innerText = formatMoney(totalProfit);
+            document.getElementById("activeYield").innerHTML = `+${formatMoney(activeProfit)} This Cycle`;
+            
+            // 渲染订单列表
+            renderOrders(userOrders);
+        } else {
+            document.getElementById("ordersContainer").innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div>Failed to load orders</div>
+                </div>
+            `;
+        }
+    } catch(err){
+        console.log("Load yield orders error:", err);
+        document.getElementById("ordersContainer").innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-wifi"></i>
+                <div>Network error. Please try again.</div>
+            </div>
+        `;
+    }
+}
+
+// ==================== 渲染订单 ====================
+function renderOrders(orders){
+    const container = document.getElementById("ordersContainer");
+    
+    // 按时间倒序排列
+    const sortedOrders = [...orders].reverse();
+    
+    container.innerHTML = sortedOrders.map(order => {
+        const statusClass = getStatusClass(order.status);
+        const statusText = getStatusText(order.status);
+        const planName = order.coin || order.planName || "Token Yield";
+        const amount = Number(order.amount || 0);
+        const profit = Number(order.profit || 0);
+        const rate = Number(order.rate || 0);
+        const days = order.remark ? parseInt(order.remark) : 30;
+        
+        return `
+            <div class="statement-card">
+                <div class="statement-top">
+                    <div class="statement-title">${escapeHtml(planName)}</div>
+                    <div class="statement-status ${statusClass}">${statusText}</div>
+                </div>
+                <div class="statement-grid">
+                    <div class="statement-box">
+                        <span>Principal</span>
+                        <strong class="blue">${formatMoney(amount)}</strong>
+                    </div>
+                    <div class="statement-box">
+                        <span>Yield Earned</span>
+                        <strong class="green">+${formatMoney(profit)}</strong>
+                    </div>
+                    <div class="statement-box">
+                        <span>Yield Rate</span>
+                        <strong class="purple">${rate}%</strong>
+                    </div>
+                    <div class="statement-box">
+                        <span>Duration</span>
+                        <strong>${days} Days</strong>
+                    </div>
+                    <div class="statement-box">
+                        <span>Start Time</span>
+                        <strong>${formatDate(order.startTime || order.time)}</strong>
+                    </div>
+                    <div class="statement-box">
+                        <span>End Time</span>
+                        <strong>${formatDate(order.endTime)}</strong>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ==================== XSS防护 ====================
+function escapeHtml(str){
+    if(!str) return '';
+    return str.replace(/[&<>]/g, function(m){
+        if(m === '&') return '&amp;';
+        if(m === '<') return '&lt;';
+        if(m === '>') return '&gt;';
+        return m;
+    });
+}
+
+// ==================== 初始化 ====================
+loadYieldOrders();
+setInterval(loadYieldOrders, 30000);
+</script>
 </body>
 </html>

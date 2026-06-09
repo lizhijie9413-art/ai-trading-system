@@ -178,6 +178,12 @@ body{
   flex-shrink:0;
 }
 
+.upload-btn.disabled{
+  background:#2a2a2a;
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
 .progress-card h3{
   font-size:22px;
   margin-bottom:20px;
@@ -193,12 +199,13 @@ body{
 }
 
 .progress-fill{
-  width:68%;
+  width:0%;
   height:100%;
   background:
     linear-gradient(90deg,#38bdf8,#7c3aed);
 
   border-radius:999px;
+  transition:width 0.5s ease;
 }
 
 .progress-info{
@@ -251,6 +258,38 @@ body{
 .nav-item.active{
   color:#c084fc;
 }
+
+.loading-spinner{
+  display:inline-block;
+  width:16px;
+  height:16px;
+  border:2px solid rgba(255,255,255,.3);
+  border-radius:50%;
+  border-top-color:white;
+  animation:spin 0.6s linear infinite;
+  margin-right:8px;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg);}
+}
+
+.global-toast{
+  position:fixed;
+  bottom:100px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(10,20,40,0.95);
+  border:1px solid #c084fc;
+  color:#c084fc;
+  padding:12px 24px;
+  border-radius:50px;
+  font-size:14px;
+  z-index:10000;
+  backdrop-filter:blur(10px);
+  white-space:nowrap;
+}
+
 </style>
 </head>
 
@@ -280,7 +319,7 @@ body{
 
   <h2>Verification Center</h2>
 
-  <div class="pending">
+  <div class="pending" id="statusText">
     Pending Review
   </div>
 
@@ -303,11 +342,13 @@ body{
 
     </div>
 
-    <label class="upload-btn">
+    <label class="upload-btn" id="uploadIdBtn">
 
       <input
         type="file"
+        id="idFile"
         hidden
+        accept="image/*"
         onchange="uploadFile(this,'Government ID')">
 
       Upload
@@ -331,11 +372,13 @@ body{
 
     </div>
 
-    <label class="upload-btn">
+    <label class="upload-btn" id="uploadFaceBtn">
 
       <input
         type="file"
+        id="faceFile"
         hidden
+        accept="image/*"
         onchange="uploadFile(this,'Face Verification')">
 
       Upload
@@ -359,11 +402,13 @@ body{
 
     </div>
 
-    <label class="upload-btn">
+    <label class="upload-btn" id="uploadAddressBtn">
 
       <input
         type="file"
+        id="addressFile"
         hidden
+        accept="image/*"
         onchange="uploadFile(this,'Address Proof')">
 
       Upload
@@ -379,12 +424,12 @@ body{
   <h3>Verification Progress</h3>
 
   <div class="progress-line">
-    <div class="progress-fill"></div>
+    <div class="progress-fill" id="progressFill"></div>
   </div>
 
   <div class="progress-info">
-    <span>68% Completed</span>
-    <span>Estimated: 24 Hours</span>
+    <span id="progressPercent">0% Completed</span>
+    <span id="estimatedTime">Estimated: 24 Hours</span>
   </div>
 
 </div>
@@ -419,94 +464,204 @@ body{
 </div>
 
 <script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-async function uploadFile(input, type){
-
-  if(input.files.length === 0) return;
-
-  const formData = new FormData();
-
-  formData.append(
-    "file",
-    input.files[0]
-  );
-
-  formData.append(
-    "type",
-    type
-  );
-
-  formData.append(
-    "username",
-    "Marjorie AI"
-  );
-
-  try{
-
-    const res = await fetch(
-      "/api/kyc/upload",
-      {
-        method:"POST",
-        body:formData
-      }
-    );
-
-    const data = await res.json();
-
-    console.log(data);
-
-    if(data.success){
-
-      const btn =
-        input.parentElement;
-
-      btn.innerHTML = "Uploaded";
-
-      btn.style.background =
-        "linear-gradient(90deg,#00c48c,#00f5a0)";
-
-      btn.style.color =
-        "#06121a";
-
-      updateProgress();
-
-      alert(
-        "KYC uploaded successfully"
-      );
-
+// ==================== 获取当前用户 ====================
+function getCurrentUser() {
+    try {
+        const user = localStorage.getItem("user");
+        return user ? JSON.parse(user) : null;
+    } catch (e) {
+        return null;
     }
-
-  }catch(error){
-
-    console.error(error);
-
-    alert(
-      "Upload failed"
-    );
-
-  }
-
 }
 
-function updateProgress(){
-
-  const fill =
-    document.querySelector(
-      ".progress-fill"
-    );
-
-  const text =
-    document.querySelector(
-      ".progress-info span"
-    );
-
-  fill.style.width = "100%";
-
-  text.innerText =
-    "100% Completed";
-
+// ==================== 显示提示 ====================
+function showToast(message, type = "info") {
+    const existingToast = document.querySelector(".global-toast");
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement("div");
+    toast.className = "global-toast";
+    toast.textContent = message;
+    
+    const colors = { success: "#00f5a0", error: "#ff4d6d", info: "#c084fc" };
+    toast.style.borderColor = colors[type] || colors.info;
+    toast.style.color = colors[type] || colors.info;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
 }
 
+// ==================== 上传文件（修复：使用正确的接口和认证头） ====================
+let uploadedCount = 0;
+const totalItems = 3;
+
+async function uploadFile(input, type) {
+    if (!input.files || input.files.length === 0) return;
+    
+    const user = getCurrentUser();
+    if (!user || !user.id) {
+        showToast("Please login first", "error");
+        window.location.href = "login.html";
+        return;
+    }
+    
+    const file = input.files[0];
+    
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+        showToast("Please upload an image file", "error");
+        input.value = "";
+        return;
+    }
+    
+    // 验证文件大小（限制5MB）
+    if (file.size > 5 * 1024 * 1024) {
+        showToast("File size should be less than 5MB", "error");
+        input.value = "";
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append("image", file);
+    
+    // 显示加载状态
+    const btn = input.parentElement;
+    const originalText = btn.innerText;
+    btn.innerHTML = '<div class="loading-spinner"></div>';
+    btn.style.opacity = "0.7";
+    btn.style.pointerEvents = "none";
+    
+    try {
+        // 修复：使用正确的接口 /api/chat/upload
+        const res = await fetch(`${API_BASE}/api/chat/upload`, {
+            method: "POST",
+            body: formData
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            btn.innerHTML = "✓ Uploaded";
+            btn.style.background = "linear-gradient(90deg,#00c48c,#00f5a0)";
+            btn.style.color = "#06121a";
+            
+            uploadedCount++;
+            updateProgress();
+            
+            showToast(`${type} uploaded successfully`, "success");
+            
+            // 如果所有文件都上传完成，显示审核中
+            if (uploadedCount === totalItems) {
+                document.getElementById("statusText").innerHTML = "Under Review";
+                document.getElementById("statusText").style.background = "rgba(0,245,160,.12)";
+                document.getElementById("statusText").style.color = "#00f5a0";
+                showToast("All documents uploaded! Your KYC is under review.", "success");
+            }
+        } else {
+            btn.innerHTML = originalText;
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
+            showToast(data.message || "Upload failed", "error");
+        }
+        
+    } catch (error) {
+        console.error("Upload error:", error);
+        btn.innerHTML = originalText;
+        btn.style.opacity = "1";
+        btn.style.pointerEvents = "auto";
+        showToast("Network error, please try again", "error");
+    }
+}
+
+// ==================== 更新进度 ====================
+function updateProgress() {
+    const percent = (uploadedCount / totalItems) * 100;
+    const progressFill = document.getElementById("progressFill");
+    const progressPercent = document.getElementById("progressPercent");
+    
+    if (progressFill) {
+        progressFill.style.width = percent + "%";
+    }
+    
+    if (progressPercent) {
+        progressPercent.innerText = Math.floor(percent) + "% Completed";
+    }
+    
+    // 如果100%完成，更新预估时间
+    if (uploadedCount === totalItems) {
+        const estimatedSpan = document.getElementById("estimatedTime");
+        if (estimatedSpan) {
+            estimatedSpan.innerText = "Review in progress";
+        }
+    }
+}
+
+// ==================== 加载已上传状态 ====================
+function loadUploadStatus() {
+    // 从localStorage读取已上传状态
+    const saved = localStorage.getItem("kyc_uploaded_count");
+    if (saved) {
+        uploadedCount = parseInt(saved);
+        updateProgress();
+        
+        // 更新按钮状态
+        if (uploadedCount >= 1) {
+            const idBtn = document.getElementById("uploadIdBtn");
+            if (idBtn) {
+                idBtn.innerHTML = "✓ Uploaded";
+                idBtn.style.background = "linear-gradient(90deg,#00c48c,#00f5a0)";
+                idBtn.style.color = "#06121a";
+            }
+        }
+        if (uploadedCount >= 2) {
+            const faceBtn = document.getElementById("uploadFaceBtn");
+            if (faceBtn) {
+                faceBtn.innerHTML = "✓ Uploaded";
+                faceBtn.style.background = "linear-gradient(90deg,#00c48c,#00f5a0)";
+                faceBtn.style.color = "#06121a";
+            }
+        }
+        if (uploadedCount >= 3) {
+            const addressBtn = document.getElementById("uploadAddressBtn");
+            if (addressBtn) {
+                addressBtn.innerHTML = "✓ Uploaded";
+                addressBtn.style.background = "linear-gradient(90deg,#00c48c,#00f5a0)";
+                addressBtn.style.color = "#06121a";
+            }
+            document.getElementById("statusText").innerHTML = "Under Review";
+            document.getElementById("statusText").style.background = "rgba(0,245,160,.12)";
+            document.getElementById("statusText").style.color = "#00f5a0";
+        }
+    }
+}
+
+// ==================== 保存上传状态 ====================
+function saveUploadStatus() {
+    localStorage.setItem("kyc_uploaded_count", uploadedCount);
+}
+
+// 监听上传计数变化
+function updateProgressAndSave() {
+    updateProgress();
+    saveUploadStatus();
+}
+
+// 重写 updateProgress
+const originalUpdateProgress = updateProgress;
+window.updateProgress = function() {
+    originalUpdateProgress();
+    saveUploadStatus();
+};
+
+// ==================== 页面启动 ====================
+loadUploadStatus();
 </script>
 
 </body>

@@ -43,28 +43,81 @@ body{
     overflow-x:hidden;
 }
 
-/* background */
-
+/* animated background */
 body::before{
     content:'';
     position:fixed;
     inset:0;
-
     background:
     radial-gradient(circle at top left,#7c3aed22,transparent 25%),
     radial-gradient(circle at bottom right,#00d5ff11,transparent 35%),
     #030712;
-
     z-index:-3;
 }
 
-/* particles */
+/* animated gradient orb 1 */
+.orb-1{
+    position:fixed;
+    width:400px;
+    height:400px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(124,58,237,0.4),transparent 70%);
+    top:-200px;
+    left:-200px;
+    filter:blur(60px);
+    animation:orbMove1 8s ease-in-out infinite alternate;
+    z-index:-2;
+}
 
+@keyframes orbMove1{
+    0%{transform:translate(0,0) scale(1); opacity:0.3;}
+    100%{transform:translate(100px,80px) scale(1.3); opacity:0.6;}
+}
+
+/* animated gradient orb 2 */
+.orb-2{
+    position:fixed;
+    width:500px;
+    height:500px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(0,213,255,0.3),transparent 70%);
+    bottom:-250px;
+    right:-200px;
+    filter:blur(70px);
+    animation:orbMove2 10s ease-in-out infinite alternate;
+    z-index:-2;
+}
+
+@keyframes orbMove2{
+    0%{transform:translate(0,0) scale(1); opacity:0.2;}
+    100%{transform:translate(-80px,-60px) scale(1.2); opacity:0.5;}
+}
+
+/* animated gradient orb 3 */
+.orb-3{
+    position:fixed;
+    width:300px;
+    height:300px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(0,255,157,0.2),transparent 70%);
+    top:50%;
+    right:20%;
+    filter:blur(50px);
+    animation:orbMove3 12s ease-in-out infinite alternate;
+    z-index:-2;
+}
+
+@keyframes orbMove3{
+    0%{transform:translate(0,0) scale(1); opacity:0.15;}
+    100%{transform:translate(-40px,60px) scale(1.4); opacity:0.4;}
+}
+
+/* particles */
 .particles{
     position:fixed;
     inset:0;
     overflow:hidden;
-    z-index:-2;
+    z-index:-1;
 }
 
 .particle{
@@ -78,35 +131,38 @@ body::before{
 }
 
 @keyframes floatParticle{
+    from{transform:translateY(0); opacity:.1;}
+    50%{opacity:1;}
+    to{transform:translateY(-120px); opacity:0;}
+}
 
-    from{
-        transform:translateY(0);
-        opacity:.1;
-    }
+/* floating elements */
+.floating-element{
+    position:fixed;
+    font-size:20px;
+    opacity:0.15;
+    pointer-events:none;
+    z-index:-1;
+    animation:floatElem 15s ease-in-out infinite;
+}
 
-    50%{
-        opacity:1;
-    }
-
-    to{
-        transform:translateY(-120px);
-        opacity:0;
-    }
-
+@keyframes floatElem{
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    50%{transform:translateY(-30px) rotate(10deg);}
 }
 
 /* container */
-
 .container{
     width:100%;
     max-width:430px;
     margin:auto;
     padding:24px 18px 120px;
     overflow-x:hidden;
+    position:relative;
+    z-index:1;
 }
 
-/* top */
-
+/* topbar with glow */
 .topbar{
     display:flex;
     justify-content:space-between;
@@ -117,121 +173,76 @@ body::before{
 .logo{
     font-size:32px;
     font-weight:800;
+    position:relative;
 }
 
 .logo span{
     color:#8b5cf6;
+    position:relative;
+    display:inline-block;
 }
 
-/* premium status */
-
+/* status pill with pulse */
 .status-pill{
-
     height:42px;
-
     padding:0 14px;
-
     border-radius:20px;
-
-    background:
-    linear-gradient(
-        180deg,
-        rgba(255,255,255,.06),
-        rgba(255,255,255,.03)
-    );
-
-    border:1px solid rgba(139,92,246,.14);
-
+    background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
+    border:1px solid rgba(139,92,246,.3);
     backdrop-filter:blur(20px);
-
     display:flex;
-
     align-items:center;
-
     gap:10px;
-
-    box-shadow:
-    0 0 20px rgba(139,92,246,.08);
-
+    box-shadow:0 0 20px rgba(139,92,246,.15);
 }
 
 .live-dot{
-
     width:8px;
     height:8px;
-
     border-radius:50%;
-
     background:#00ff9d;
-
-    box-shadow:
-    0 0 10px #00ff9d;
-
+    box-shadow:0 0 10px #00ff9d;
+    animation:pulse 1.2s infinite;
 }
 
-.status-pill span{
-
-    font-size:12px;
-
-    font-weight:600;
-
-    color:#d1d5db;
-
-    letter-spacing:1px;
-
+@keyframes pulse{
+    0%{transform:scale(1); opacity:1;}
+    50%{transform:scale(1.5); opacity:0.5;}
+    100%{transform:scale(1); opacity:1;}
 }
 
 .divider{
-
     width:1px;
     height:14px;
-
     background:rgba(255,255,255,.08);
-
 }
 
 .notify-ring{
-
     width:16px;
     height:16px;
-
     border-radius:50%;
-
     border:2px solid #8b5cf6;
-
     position:relative;
-
 }
 
 .notify-ring::after{
-
     content:'';
-
     position:absolute;
-
     width:4px;
     height:4px;
-
     border-radius:50%;
-
     background:#00d5ff;
-
     top:4px;
     left:4px;
-
-    box-shadow:
-    0 0 8px #00d5ff;
-
+    box-shadow:0 0 8px #00d5ff;
 }
 
-/* hero */
-
+/* hero section */
 .hero{
     display:flex;
     justify-content:space-between;
     align-items:center;
     gap:10px;
-
     margin-bottom:24px;
 }
 
@@ -251,6 +262,14 @@ body::before{
     background:linear-gradient(90deg,#8b5cf6,#00d5ff);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
+    background-size:200% auto;
+    animation:gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift{
+    0%{background-position:0% center;}
+    50%{background-position:100% center;}
+    100%{background-position:0% center;}
 }
 
 .hero-desc{
@@ -260,8 +279,7 @@ body::before{
     margin-bottom:22px;
 }
 
-/* hero image */
-
+/* hero image animations */
 .hero-right{
     width:180px;
     height:220px;
@@ -273,20 +291,12 @@ body::before{
     bottom:0;
     left:50%;
     transform:translateX(-50%);
-
     width:160px;
     height:42px;
-
     border-radius:50%;
-
-    background:
-    radial-gradient(circle,#8b5cf6 0%,#4f46e5 45%,transparent 75%);
-
+    background:radial-gradient(circle,#8b5cf6 0%,#4f46e5 45%,transparent 75%);
     filter:blur(4px);
-
-    box-shadow:
-    0 0 30px #8b5cf6,
-    0 0 60px #8b5cf6;
+    box-shadow:0 0 30px #8b5cf6,0 0 60px #8b5cf6;
 }
 
 .ai-glow{
@@ -294,17 +304,11 @@ body::before{
     top:20px;
     left:50%;
     transform:translateX(-50%);
-
     width:120px;
     height:120px;
-
     border-radius:50%;
-
-    background:
-    radial-gradient(circle,#8b5cf6 0%,#00d5ff 35%,transparent 75%);
-
+    background:radial-gradient(circle,#8b5cf6 0%,#00d5ff 35%,transparent 75%);
     filter:blur(14px);
-
     animation:pulse 4s infinite;
 }
 
@@ -313,20 +317,32 @@ body::before{
     left:50%;
     transform:translateX(-50%);
     border-radius:50%;
-    border:1px solid rgba(139,92,246,.25);
+    border:1px solid rgba(139,92,246,.3);
 }
 
 .r1{
     width:140px;
     height:140px;
     top:12px;
+    animation:ringRotate 8s linear infinite;
 }
 
 .r2{
     width:190px;
     height:190px;
     top:-10px;
-    border-color:rgba(0,213,255,.15);
+    border-color:rgba(0,213,255,.2);
+    animation:ringRotateReverse 12s linear infinite;
+}
+
+@keyframes ringRotate{
+    from{transform:translateX(-50%) rotate(0deg);}
+    to{transform:translateX(-50%) rotate(360deg);}
+}
+
+@keyframes ringRotateReverse{
+    from{transform:translateX(-50%) rotate(360deg);}
+    to{transform:translateX(-50%) rotate(0deg);}
 }
 
 .ai-text{
@@ -334,18 +350,18 @@ body::before{
     top:34px;
     left:50%;
     transform:translateX(-50%);
-
     font-size:92px;
     font-weight:800;
-
     background:linear-gradient(180deg,#ffffff,#8b5cf6,#00d5ff);
-
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
+    text-shadow:0 0 30px rgba(139,92,246,.8),0 0 60px rgba(139,92,246,.5);
+    animation:textFloat 3s ease-in-out infinite;
+}
 
-    text-shadow:
-    0 0 30px rgba(139,92,246,.8),
-    0 0 60px rgba(139,92,246,.5);
+@keyframes textFloat{
+    0%,100%{transform:translateX(-50%) translateY(0);}
+    50%{transform:translateX(-50%) translateY(-5px);}
 }
 
 .light-lines{
@@ -362,106 +378,95 @@ body::before{
 }
 
 @keyframes lineFloat{
-
-    0%{
-        transform:translateY(0);
-        opacity:.2;
-    }
-
-    50%{
-        opacity:1;
-    }
-
-    100%{
-        transform:translateY(20px);
-        opacity:.2;
-    }
-
-}
-
-@keyframes pulse{
-
-    0%{transform:translateX(-50%) scale(1)}
-
-    50%{transform:translateX(-50%) scale(1.08)}
-
-    100%{transform:translateX(-50%) scale(1)}
-
+    0%{transform:translateY(0); opacity:.2;}
+    50%{opacity:1;}
+    100%{transform:translateY(20px); opacity:.2;}
 }
 
 /* buttons */
-
 .buttons{
     display:flex;
     flex-direction:column;
     gap:14px;
-
     margin-bottom:24px;
 }
 
-.main-btn,
-.secondary-btn{
+.main-btn,.secondary-btn{
     width:100%;
     height:56px;
     border:none;
     border-radius:20px;
-
     font-size:17px;
     font-weight:700;
+    cursor:pointer;
+    transition:all 0.3s ease;
+    position:relative;
+    overflow:hidden;
 }
 
 .main-btn{
     background:linear-gradient(90deg,#7c3aed,#8b5cf6);
-
     color:white;
+    box-shadow:0 10px 30px rgba(124,58,237,.35);
+}
 
-    box-shadow:
-    0 10px 30px rgba(124,58,237,.35);
+.main-btn::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:-100%;
+    width:100%;
+    height:100%;
+    background:linear-gradient(90deg,transparent, rgba(255,255,255,.2), transparent);
+    transition:left 0.5s ease;
+}
+
+.main-btn:hover::before{
+    left:100%;
+}
+
+.main-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 15px 35px rgba(124,58,237,.5);
 }
 
 .secondary-btn{
     background:rgba(255,255,255,.04);
-
     border:1px solid rgba(255,255,255,.06);
-
     color:white;
 }
 
-/* portfolio */
+.secondary-btn:hover{
+    background:rgba(255,255,255,.08);
+    transform:translateY(-2px);
+}
 
+/* portfolio card */
 .portfolio{
-    background:
-    linear-gradient(135deg,
-    rgba(124,58,237,.12),
-    rgba(0,213,255,.04));
-
+    background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(0,213,255,.04));
     border:1px solid rgba(255,255,255,.06);
-
     border-radius:34px;
-
     padding:24px;
-
     margin-bottom:24px;
-
     backdrop-filter:blur(20px);
-
     position:relative;
-
     overflow:hidden;
-
     min-height:180px;
+    transition:all 0.3s ease;
+}
+
+.portfolio:hover{
+    transform:translateY(-3px);
+    border-color:rgba(139,92,246,.3);
+    box-shadow:0 20px 40px rgba(0,0,0,.3);
 }
 
 .portfolio::before{
     content:'';
     position:absolute;
-
     width:260px;
     height:260px;
-
-    background:
-    radial-gradient(circle,#8b5cf622,transparent 70%);
-
+    background:radial-gradient(circle,#8b5cf622,transparent 70%);
     right:-100px;
     top:-100px;
 }
@@ -470,7 +475,6 @@ body::before{
     display:flex;
     justify-content:space-between;
     align-items:center;
-
     margin-bottom:22px;
 }
 
@@ -488,7 +492,13 @@ body::before{
     display:flex;
     align-items:center;
     justify-content:center;
-    box-shadow:0 0 18px rgba(139,92,246,.18);
+    cursor:pointer;
+    transition:all 0.3s ease;
+}
+
+.eye:hover{
+    background:rgba(139,92,246,.25);
+    transform:scale(1.05);
 }
 
 .eye span{
@@ -517,14 +527,11 @@ body::before{
     letter-spacing:-2px;
     line-height:1;
     margin-bottom:12px;
+    transition:all 0.3s ease;
 }
 
 .green{
     color:#00ff9d;
-}
-
-.chart{
-    margin-top:22px;
 }
 
 .chart svg{
@@ -532,38 +539,50 @@ body::before{
     height:90px;
 }
 
-/* return circle */
+.chart path{
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation:drawLine 2s ease-out forwards;
+}
 
+@keyframes drawLine{
+    to{stroke-dashoffset:0;}
+}
+
+/* return circle */
 .return-circle{
     position:absolute;
     right:24px;
     top:90px;
-
     width:90px;
     height:90px;
-
     border-radius:50%;
-
     border:8px solid rgba(139,92,246,.15);
-
     display:flex;
     align-items:center;
     justify-content:center;
+    transition:all 0.3s ease;
+}
+
+.return-circle:hover{
+    transform:scale(1.05);
+    border-color:rgba(139,92,246,.3);
 }
 
 .return-circle::before{
     content:'';
-
     position:absolute;
-
     inset:-8px;
-
     border-radius:50%;
-
     border-top:8px solid #8b5cf6;
     border-right:8px solid #00d5ff;
-
     transform:rotate(40deg);
+    animation:circleSpin 6s linear infinite;
+}
+
+@keyframes circleSpin{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(360deg);}
 }
 
 .return-text{
@@ -582,8 +601,7 @@ body::before{
     font-weight:800;
 }
 
-/* cards */
-
+/* cards grid */
 .cards{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -592,248 +610,408 @@ body::before{
 }
 
 .card{
-
-    background:
-    linear-gradient(
-        180deg,
-        rgba(255,255,255,.04),
-        rgba(255,255,255,.02)
-    );
-
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
     border:1px solid rgba(139,92,246,.14);
-
     border-radius:20px;
-
     padding:14px 8px;
-
     text-align:center;
-
     min-height:110px;
-
     backdrop-filter:blur(20px);
-
     position:relative;
     overflow:hidden;
+    transition:all 0.3s ease;
+    cursor:pointer;
+}
 
-    box-shadow:
-    inset 0 1px 1px rgba(255,255,255,.06),
-    0 0 25px rgba(139,92,246,.08);
-
+.card:hover{
+    transform:translateY(-5px);
+    border-color:rgba(139,92,246,.4);
+    box-shadow:0 10px 30px rgba(139,92,246,.2);
 }
 
 .card::before{
-
     content:'';
-
     position:absolute;
-
     inset:0;
-
-    background:
-    linear-gradient(
-        180deg,
-        rgba(255,255,255,.08),
-        transparent 30%
-    );
-
+    background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 30%);
     opacity:.5;
-
     pointer-events:none;
-
 }
 
 .card-icon{
-
     font-size:28px;
-
     margin-bottom:8px;
+    filter:drop-shadow(0 0 10px rgba(139,92,246,.5));
+    transition:all 0.3s ease;
+}
 
-    filter:
-    drop-shadow(0 0 10px rgba(139,92,246,.5));
-
+.card:hover .card-icon{
+    transform:scale(1.1);
+    filter:drop-shadow(0 0 15px rgba(139,92,246,.8));
 }
 
 .card-title{
-
     font-size:14px;
-
     font-weight:700;
-
     margin-bottom:4px;
-
-    letter-spacing:.3px;
-
 }
 
 .card-desc{
-
     color:#8b93a7;
-
-    line-height:1.3;
-
     font-size:10px;
-
 }
 
-/* vision */
-
+/* ==================== VISION SECTION - WITH AI AVATAR ==================== */
 .vision{
-
-    max-width:100%;
-overflow:hidden;
-
-    background:
-    linear-gradient(135deg,#120924,#071224);
-
-    border-radius:34px;
-
-    padding:22px;
-
-    overflow:hidden;
-
-    position:relative;
+    position: relative;
+    background: linear-gradient(135deg, rgba(10,7,24,0.95), rgba(12,10,26,0.95));
+    border-radius: 34px;
+    padding: 28px 22px;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    margin-top: 10px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
 }
 
-.vision::before{
-    content:'';
+.vision:hover{
+    transform: translateY(-5px);
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(139, 92, 246, 0.25);
+}
 
-    position:absolute;
+.vision-bg{
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(139, 92, 246, 0.12), transparent 60%);
+    pointer-events: none;
+}
 
-    width:180px;
-    height:180px;
-
-    background:
-    radial-gradient(circle,#8b5cf633,transparent 70%);
-
-    right:-60px;
-    top:-60px;
+.vision-content{
+    flex: 1;
+    position: relative;
+    z-index: 2;
 }
 
 .tag{
-    color:#8b5cf6;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #c084fc;
+    margin-bottom: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    background: rgba(139, 92, 246, 0.12);
+    padding: 6px 14px;
+    border-radius: 30px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+}
 
-    margin-bottom:12px;
+.tag-glow{
+    width: 8px;
+    height: 8px;
+    background: #c084fc;
+    border-radius: 50%;
+    display: inline-block;
+    animation: tagPulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 8px #c084fc;
+}
 
-    font-size:16px;
+@keyframes tagPulse{
+    0%,100%{opacity: 0.5; transform: scale(1);}
+    50%{opacity: 1; transform: scale(1.3); box-shadow: 0 0 15px #c084fc;}
 }
 
 .vision-title{
-    font-size:38px;
-    line-height:1.05;
-    font-weight:800;
-    letter-spacing:-2px;
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -2px;
+    margin-bottom: 14px;
+}
 
-    margin-bottom:20px;
+.gradient-text{
+    background: linear-gradient(135deg, #8b5cf6, #00d5ff, #c084fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradientFlow 3s ease infinite;
+}
+
+@keyframes gradientFlow{
+    0%{background-position: 0% center;}
+    50%{background-position: 100% center;}
+    100%{background-position: 0% center;}
 }
 
 .vision-desc{
-    color:#b3bcc9;
-
-    line-height:1.8;
-
-    margin-bottom:24px;
+    color: #9ca3af;
+    line-height: 1.6;
+    margin-bottom: 22px;
+    font-size: 13px;
 }
 
 .vision-btn{
-    width:100%;
-    height:54px;
-
-    border:none;
-
-    border-radius:20px;
-
-    background:#7c3aed;
-
-    color:white;
-
-    font-size:16px;
-    font-weight:700;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    border: none;
+    border-radius: 40px;
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-/* AI face */
-
-.ai-face{
-
-    width:100%;
-
-    margin-top:20px;
-
-    display:flex;
-
-    justify-content:center;
-
+.vision-btn::before{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
 }
 
-.ai-face img{
+.vision-btn:hover::before{
+    left: 100%;
+}
 
-    width:220px;
+.vision-btn:hover{
+    transform: translateX(5px);
+    gap: 15px;
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4);
+}
 
-    opacity:.95;
+.vision-btn i{
+    transition: transform 0.3s ease;
+}
 
-    filter:
-    drop-shadow(0 0 30px rgba(139,92,246,.35));
+.vision-btn:hover i{
+    transform: translateX(5px);
+}
 
+/* AI 头像区域 - 透明蓝色效果 */
+.vision-avatar{
+    position: relative;
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.avatar-img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    filter: drop-shadow(0 0 20px rgba(0, 213, 255, 0.5)) brightness(1.1) contrast(1.1);
+    animation: avatarFloat 4s ease-in-out infinite;
+    position: relative;
+    z-index: 3;
+}
+
+@keyframes avatarFloat{
+    0%,100%{transform: translateY(0);}
+    50%{transform: translateY(-6px);}
+}
+
+.avatar-glow{
+    position: absolute;
+    width: 130%;
+    height: 130%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 213, 255, 0.3), rgba(139, 92, 246, 0.15), transparent 70%);
+    top: -15%;
+    left: -15%;
+    animation: glowPulse 3s ease-in-out infinite;
+    z-index: 1;
+}
+
+@keyframes glowPulse{
+    0%,100%{opacity: 0.5; transform: scale(1);}
+    50%{opacity: 1; transform: scale(1.08);}
+}
+
+.avatar-ring{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 213, 255, 0.4);
+    top: 0;
+    left: 0;
+    animation: ringRotate 8s linear infinite;
+    z-index: 2;
+}
+
+.avatar-ring2{
+    position: absolute;
+    width: 115%;
+    height: 115%;
+    border-radius: 50%;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    top: -7.5%;
+    left: -7.5%;
+    animation: ringRotateReverse 10s linear infinite;
+    z-index: 1;
+}
+
+@keyframes ringRotate{
+    from{transform: rotate(0deg);}
+    to{transform: rotate(360deg);}
+}
+
+@keyframes ringRotateReverse{
+    from{transform: rotate(360deg);}
+    to{transform: rotate(0deg);}
+}
+
+.avatar-pulse{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(0, 213, 255, 0.1);
+    top: 0;
+    left: 0;
+    animation: pulseRing 2s ease-out infinite;
+    z-index: 0;
+}
+
+@keyframes pulseRing{
+    0%{transform: scale(0.9); opacity: 0.6;}
+    100%{transform: scale(1.4); opacity: 0;}
+}
+
+.avatar-overlay{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 213, 255, 0.15), rgba(139, 92, 246, 0.1));
+    top: 0;
+    left: 0;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.avatar-shine{
+    position: absolute;
+    width: 150%;
+    height: 150%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+    top: -25%;
+    left: -25%;
+    animation: shineMove 6s linear infinite;
+    pointer-events: none;
+    z-index: 4;
+}
+
+@keyframes shineMove{
+    from{transform: rotate(0deg);}
+    to{transform: rotate(360deg);}
+}
+
+/* 响应式 */
+@media (max-width: 430px){
+    .vision{
+        padding: 22px 18px;
+        gap: 12px;
+    }
+    
+    .vision-title{
+        font-size: 26px;
+    }
+    
+    .vision-avatar{
+        width: 90px;
+        height: 90px;
+    }
+    
+    .vision-desc{
+        font-size: 12px;
+    }
+    
+    .vision-btn{
+        padding: 10px 18px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 360px){
+    .vision-avatar{
+        width: 70px;
+        height: 70px;
+    }
+    
+    .vision-title{
+        font-size: 22px;
+    }
 }
 
 /* nav */
-
 .bottom-nav{
-
     position:fixed;
-
     bottom:0;
     left:50%;
-
     transform:translateX(-50%);
-
     width:100%;
     max-width:430px;
-
     height:82px;
-
     background:rgba(5,8,22,.96);
-
     backdrop-filter:blur(22px);
-
     border-top:1px solid rgba(168,85,247,.22);
-
     display:flex;
-
     justify-content:space-around;
-
     align-items:center;
-
     z-index:999;
 }
 
 .nav-item{
-
     width:20%;
-
     text-decoration:none;
-
     color:#64748b;
-
     font-size:12px;
-
     display:flex;
-
     flex-direction:column;
-
     align-items:center;
-
     gap:5px;
+    transition:all 0.3s ease;
 }
 
 .nav-item i{
-
     font-size:20px;
+    transition:all 0.3s ease;
+}
+
+.nav-item:hover{
+    color:#c084fc;
+    transform:translateY(-3px);
 }
 
 .nav-item.active{
-
     color:#c084fc;
-
     text-shadow:0 0 16px rgba(168,85,247,.9);
 }
 
@@ -842,12 +1020,22 @@ overflow:hidden;
 
 <body>
 
+<!-- animated orbs -->
+<div class="orb-1"></div>
+<div class="orb-2"></div>
+<div class="orb-3"></div>
+
+<!-- floating elements -->
+<div class="floating-element" style="top:15%; left:5%;">⚡</div>
+<div class="floating-element" style="top:30%; right:8%;">🌀</div>
+<div class="floating-element" style="bottom:20%; left:10%;">✨</div>
+<div class="floating-element" style="bottom:35%; right:5%;">💫</div>
+
 <div class="particles" id="particles"></div>
 
 <div class="container">
 
     <!-- top -->
-
     <div class="topbar">
 
         <div class="logo">
@@ -855,62 +1043,31 @@ overflow:hidden;
         </div>
 
         <div class="status-pill">
-
             <div class="live-dot"></div>
-
             <span>LIVE</span>
-
             <div class="divider"></div>
-
             <div class="notify-ring"></div>
-
         </div>
 
     </div>
 
-    <div style="
-margin-bottom:20px;
-display:flex;
-justify-content:flex-end;
-">
-
-<button onclick="connectWallet()"
-style="
-padding:12px 18px;
-border:none;
-border-radius:16px;
-background:linear-gradient(135deg,#7c3aed,#00d5ff);
-color:white;
-font-weight:700;
-font-size:14px;
-cursor:pointer;
-box-shadow:0 0 20px rgba(139,92,246,.35);
-">
-
-Connect Wallet
-
-</button>
-
-</div>
+    <div style="margin-bottom:20px; display:flex; justify-content:flex-end;">
+        <button onclick="connectWallet()" class="wallet-btn" style="padding:12px 18px; border:none; border-radius:16px; background:linear-gradient(135deg,#7c3aed,#00d5ff); color:white; font-weight:700; font-size:14px; cursor:pointer; box-shadow:0 0 20px rgba(139,92,246,.35); transition:all 0.3s ease;">
+            🔗 Connect Wallet
+        </button>
+    </div>
 
     <!-- hero -->
-
     <div class="hero">
 
         <div class="hero-left">
 
             <div class="hero-title">
-
                 AI FUTURE<br>
-
-                <span class="gradient">
-                    REIMAGINED
-                </span>
-
+                <span class="gradient">REIMAGINED</span>
             </div>
 
             <div class="hero-desc">
-
                 Intelligent. Autonomous. Limitless.<br>
                 Your future, amplified by AI.
 
@@ -921,412 +1078,333 @@ Connect Wallet
         <div class="hero-right">
 
             <div class="light-lines">
-
                 <div class="line" style="left:30px;height:120px;top:40px;"></div>
                 <div class="line" style="left:70px;height:150px;top:20px;"></div>
                 <div class="line" style="left:110px;height:130px;top:30px;"></div>
                 <div class="line" style="left:150px;height:160px;top:10px;"></div>
-
             </div>
 
             <div class="ai-glow"></div>
-
             <div class="ai-ring r1"></div>
             <div class="ai-ring r2"></div>
-
-            <div class="ai-text">
-                AI
-            </div>
-
+            <div class="ai-text">AI</div>
             <div class="ai-platform"></div>
 
         </div>
 
     </div>
 
+    <!-- 按钮容器 -->
+    <div class="buttons"></div>
 
-<!-- 按钮容器 -->
-<div class="buttons"></div>
+    <script>
+    const buttonsContainer = document.querySelector('.buttons');
+    const user = JSON.parse(localStorage.getItem("user"));
 
-<script>
-const buttonsContainer = document.querySelector('.buttons');
-const user = JSON.parse(localStorage.getItem("user"));
+    if(user && user.id){
+        buttonsContainer.innerHTML = `
+            <button class="main-btn" onclick="exploreAI()">
+                🚀 Explore AI Universe →
+            </button>
+            <button class="secondary-btn" onclick="location.href='trade.html'">
+                ⚡ AI Strategy Lab →
+            </button>
+        `;
+    }else{
+        buttonsContainer.innerHTML = `
+            <button class="main-btn" onclick="location.href='register.html'">
+                ✨ Register →
+            </button>
+            <button class="secondary-btn" onclick="location.href='login.html'">
+                🔐 Login →
+            </button>
+        `;
+    }
+    </script>
 
-if(user && user.id){
-    buttonsContainer.innerHTML = `
-        <button class="main-btn" onclick="exploreAI()">
-            Explore AI Universe →
-        </button>
-        <button class="secondary-btn" onclick="location.href='trade.html'">
-            AI Strategy Lab →
-        </button>
-    `;
-}else{
-    buttonsContainer.innerHTML = `
-        <button class="main-btn" onclick="location.href='register.html'">
-            Register →
-        </button>
-        <button class="secondary-btn" onclick="location.href='login.html'">
-            Login →
-        </button>
-    `;
-}
-</script>
+    <!-- portfolio -->
+    <div class="portfolio">
 
-<!-- portfolio -->
-<div class="portfolio">
+        <div class="portfolio-top">
 
-    <div class="portfolio-top">
+            <div class="portfolio-title">
+                My AI Portfolio
+            </div>
 
-        <div class="portfolio-title">
-            My AI Portfolio
+            <div class="eye">
+                <span></span>
+            </div>
+
         </div>
 
-        <div class="eye">
-            <span></span>
+        <div class="total" id="totalAssets">
+            $0.00
+        </div>
+
+        <div class="green">
+            <div class="profit" id="homeProfit">+$0.00 (+0.00%)</div>
+        </div>
+
+        <div class="return-circle">
+            <div class="return-text">
+                <strong>Total Return</strong>
+                <span id="totalReturn">+0%</span>
+            </div>
+        </div>
+
+        <div class="chart">
+            <svg viewBox="0 0 500 120">
+                <path
+                    d="M0 90
+                    Q60 50 120 62
+                    T240 58
+                    T360 36
+                    T500 10"
+                    stroke="#8b5cf6"
+                    stroke-width="5"
+                    fill="none"
+                    stroke-linecap="round"
+                />
+            </svg>
         </div>
 
     </div>
-
-    <div class="total" id="totalAssets">
-        $0.00
-    </div>
-
-    <div class="green">
-        <div class="profit" id="homeProfit">+$0.00 (+0.00%)</div>
-    </div>
-
-    <div class="return-circle">
-        <div class="return-text">
-            <strong>Total Return</strong>
-            <span id="totalReturn">+0%</span>
-        </div>
-    </div>
-
-    <div class="chart">
-        <svg viewBox="0 0 500 120">
-            <path
-                d="M0 90
-                Q60 50 120 62
-                T240 58
-                T360 36
-                T500 10"
-                stroke="#8b5cf6"
-                stroke-width="5"
-                fill="none"
-                stroke-linecap="round"
-            />
-        </svg>
-    </div>
-
-</div>
 
     <!-- cards -->
-
     <div class="cards">
 
-        <div class="card">
-
+        <div class="card" onclick="location.href='market.html'">
             <div class="card-icon">◉</div>
-
-            <div class="card-title">
-                AI Insights
-            </div>
-
-            <div class="card-desc">
-                Smart future prediction systems.
-            </div>
-
+            <div class="card-title">AI Insights</div>
+            <div class="card-desc">Smart future prediction systems.</div>
         </div>
 
-        <div class="card">
-
+        <div class="card" onclick="location.href='trade.html'">
             <div class="card-icon">⬢</div>
-
-            <div class="card-title">
-                AI Strategies
-            </div>
-
-            <div class="card-desc">
-                Autonomous optimized intelligence.
-            </div>
-
+            <div class="card-title">AI Strategies</div>
+            <div class="card-desc">Autonomous optimized intelligence.</div>
         </div>
 
-        <div class="card">
-
+        <div class="card" onclick="location.href='ai_assistant.html'">
             <div class="card-icon">◎</div>
-
-            <div class="card-title">
-                AI Assistant
-            </div>
-
-            <div class="card-desc">
-                24/7 intelligent support systems.
-            </div>
-
+            <div class="card-title">AI Assistant</div>
+            <div class="card-desc">24/7 intelligent support systems.</div>
         </div>
 
-        <div class="card">
-
+        <div class="card" onclick="location.href='profile.html'">
             <div class="card-icon">✦</div>
-
-            <div class="card-title">
-                Future Trends
-            </div>
-
-            <div class="card-desc">
-                Explore tomorrow's AI evolution.
-            </div>
-
+            <div class="card-title">Future Trends</div>
+            <div class="card-desc">Explore tomorrow's AI evolution.</div>
         </div>
 
     </div>
 
-    <!-- vision -->
-
+    <!-- ==================== VISION SECTION ==================== -->
     <div class="vision">
+        <div class="vision-bg"></div>
+        
+        <!-- 左侧内容 -->
+        <div class="vision-content">
+            <div class="tag">
+                <span class="tag-glow"></span>
+                ✨ AI VISION
+            </div>
 
-        <div class="tag">
-            AI VISION
+            <div class="vision-title">
+                Building Wealth<br>
+                In The <span class="gradient-text">AI Era</span>
+            </div>
+
+            <div class="vision-desc">
+                AI is not just the future — it is the present.<br>
+                Intelligent systems guiding the next generation of financial freedom.
+            </div>
+
+            <button class="vision-btn" onclick="location.href='market.html'">
+                <span>Discover AI Vision</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
         </div>
 
-        <div class="vision-title">
-
-            Building Wealth<br>
-
-            In The
-
-            <span class="gradient">
-                AI Era
-            </span>
-
+        <!-- 右侧 AI 头像（透明蓝色效果） -->
+        <div class="vision-avatar">
+            <div class="avatar-glow"></div>
+            <div class="avatar-ring"></div>
+            <div class="avatar-ring2"></div>
+            <div class="avatar-pulse"></div>
+            <img class="avatar-img" src="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=300&auto=format&fit=crop" alt="AI Avatar">
+            <div class="avatar-overlay"></div>
+            <div class="avatar-shine"></div>
         </div>
-
-        <div class="vision-desc">
-
-            AI is not just the future —
-            it is the present.
-            Intelligent systems guiding the next generation of financial freedom.
-
-        </div>
-
-        <button class="vision-btn">
-
-            Discover AI Vision →
-
-        </button>
-
-        <div class="ai-face">
-
-            <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1200&auto=format&fit=crop"
-            alt="AI"/>
-
-        </div>
-
     </div>
 
 </div>
 
 <!-- nav -->
-
 <div class="bottom-nav">
 
     <a href="index.html" class="nav-item active">
-
         <i class="fa-solid fa-house"></i>
-
         <span>Home</span>
-
     </a>
 
     <a href="market.html" class="nav-item">
-
         <i class="fa-solid fa-chart-column"></i>
-
         <span>Markets</span>
-
     </a>
 
     <a href="trade.html" class="nav-item">
-
         <i class="fa-solid fa-arrow-right-arrow-left"></i>
-
         <span>Trade</span>
-
     </a>
 
     <a href="portfolio.html" class="nav-item">
-
         <i class="fa-regular fa-folder"></i>
-
         <span>Portfolio</span>
-
     </a>
 
     <a href="profile.html" class="nav-item">
-
         <i class="fa-regular fa-user"></i>
-
         <span>Profile</span>
-
     </a>
 
 </div>
 
 <script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-/* particles */
+// ==================== 获取当前用户 ====================
+function getCurrentUser() {
+    try {
+        const user = localStorage.getItem("user");
+        return user ? JSON.parse(user) : null;
+    } catch (e) {
+        return null;
+    }
+}
 
+// ==================== 粒子效果 ====================
 const particles = document.getElementById('particles');
-
-for(let i=0;i<45;i++){
-
+for(let i=0;i<60;i++){
     const p = document.createElement('div');
-
     p.className = 'particle';
-
     p.style.left = Math.random()*100 + '%';
-
     p.style.top = Math.random()*100 + '%';
-
-    p.style.animationDuration =
-        (6 + Math.random()*10) + 's';
-
-    p.style.animationDelay =
-        Math.random()*5 + 's';
-
+    p.style.animationDuration = (4 + Math.random()*12) + 's';
+    p.style.animationDelay = Math.random()*8 + 's';
+    p.style.opacity = 0.3 + Math.random()*0.5;
+    p.style.width = (1 + Math.random()*3) + 'px';
+    p.style.height = p.style.width;
     particles.appendChild(p);
-
 }
 
+// ==================== 探索AI ====================
 function exploreAI(){
-
-  const user =
-  JSON.parse(localStorage.getItem("user"));
-
-  if(user && user.id){
-
-    location.href = "market.html";
-
-  }else{
-
-    location.href = "register.html";
-  }
+    const user = getCurrentUser();
+    if(user && user.id){
+        location.href = "market.html";
+    }else{
+        location.href = "register.html";
+    }
 }
 
-/* assets */
-
-const localUser = JSON.parse(localStorage.getItem("user"));
-
+// ==================== 加载首页余额 ====================
 async function loadHomeBalance(){
+    const user = getCurrentUser();
+    if(!user || !user.id) return;
 
-  if(!localUser || !localUser.id) return;
+    try {
+        const response = await fetch(`${API_BASE}/api/users/${user.id}`, {
+            headers: {
+                "user-id": user.id
+            }
+        });
+        const result = await response.json();
 
- const response = await fetch(
-   "https://www.quantai.fyi/api/users/" + localUser.id
-);
+        if(result.success && result.user){
+            const balance = Number(result.user.availableBalance || result.user.balance || result.user.asset || 0);
+            const totalProfit = Number(result.user.totalProfit || 0);
 
-  const result = await response.json();
+            const roiBase = balance - totalProfit;
+            const roi = roiBase > 0 ? ((totalProfit / roiBase) * 100).toFixed(2) : "0.00";
 
-  if(result.success){
+            // 数字动画效果
+            animateNumber('totalAssets', balance);
+            document.getElementById("homeProfit").innerHTML = 
+                "+$" + totalProfit.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) + " (+" + roi + "%)";
 
-    const balance = Number(
-  result.user.balance || result.user.asset || 0
-);
-
-    const totalProfit =
-    Number(result.user.totalProfit || 0);
-
-    const lockedAsset =
-    Number(result.user.lockedAsset || 0);
-
-    const roiBase =
-balance - totalProfit;
-
-const roi =
-roiBase > 0
-? ((totalProfit / roiBase) * 100).toFixed(2)
-: "0.00";
-
-    document.getElementById("totalAssets").innerText =
-      "$" + balance.toLocaleString(undefined,{
-        minimumFractionDigits:2,
-        maximumFractionDigits:2
-      });
-
-    document.getElementById("homeProfit").innerText =
-    "+$" +
-    totalProfit.toLocaleString(undefined,{
-      minimumFractionDigits:2,
-      maximumFractionDigits:2
-    })
-    +
-    " (+" + roi + "%)";
-
-    document.getElementById("totalReturn").innerText =
-    "+" + roi + "%";
-  }
+            document.getElementById("totalReturn").innerHTML = "+" + roi + "%";
+        }
+    } catch(err) {
+        console.log("Load balance error:", err);
+    }
 }
 
-loadHomeBalance();
-setInterval(loadHomeBalance, 10000);
+// 数字动画
+function animateNumber(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    const startValue = 0;
+    const duration = 1000;
+    const startTime = performance.now();
+    
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const currentValue = startValue + (targetValue - startValue) * progress;
+        element.innerHTML = "$" + currentValue.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+    
+    requestAnimationFrame(update);
+}
 
+// ==================== 连接钱包 ====================
 async function connectWallet(){
-
-  if(typeof window.ethereum === "undefined"){
-
-    alert("Please install MetaMask");
-    return;
-  }
-
-  try{
-
-    const accounts =
-    await window.ethereum.request({
-      method:"eth_requestAccounts"
-    });
-
-    const wallet = accounts[0];
-
-    localStorage.setItem(
-      "walletAddress",
-      wallet
-    );
-
-    alert(
-      "Wallet Connected:\n" + wallet
-    );
-
-    console.log("Wallet:", wallet);
-
-  }catch(err){
-
-    console.log(err);
-
-    alert("Wallet connection failed");
-  }
+    if(typeof window.ethereum === "undefined"){
+        alert("Please install MetaMask");
+        return;
+    }
+    try{
+        const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts"
+        });
+        const wallet = accounts[0];
+        localStorage.setItem("walletAddress", wallet);
+        alert("Wallet Connected:\n" + wallet.substring(0,10) + "...");
+        console.log("Wallet:", wallet);
+    }catch(err){
+        console.log(err);
+        alert("Wallet connection failed");
+    }
 }
 
-
-</script>
-
-<script>
+// ==================== 退出登录 ====================
 function logout(){
-  localStorage.removeItem("user");
-  localStorage.removeItem("username");
-  localStorage.removeItem("walletAddress");
-  window.location.href = "login.html";
+    localStorage.removeItem("user");
+    localStorage.removeItem("username");
+    localStorage.removeItem("walletAddress");
+    window.location.href = "login.html";
 }
-</script>
 
-
-<script>
+// ==================== Service Worker ====================
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
+    navigator.serviceWorker.register("/sw.js");
 }
-</script>
 
+// ==================== 页面启动 ====================
+loadHomeBalance();
+setInterval(loadHomeBalance, 30000);
+</script>
 
 </body>
 </html>

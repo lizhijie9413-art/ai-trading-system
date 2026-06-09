@@ -37,6 +37,7 @@ body::before{
     filter:blur(120px);
     top:-100px;
     left:-100px;
+    animation:glowMove 8s ease-in-out infinite alternate;
 }
 
 body::after{
@@ -50,6 +51,17 @@ body::after{
     filter:blur(120px);
     bottom:-100px;
     right:-100px;
+    animation:glowMove2 10s ease-in-out infinite alternate;
+}
+
+@keyframes glowMove{
+    0%{transform:translate(0,0); opacity:0.3;}
+    100%{transform:translate(50px,50px); opacity:0.6;}
+}
+
+@keyframes glowMove2{
+    0%{transform:translate(0,0); opacity:0.2;}
+    100%{transform:translate(-50px,-50px); opacity:0.5;}
 }
 
 .login-box{
@@ -96,6 +108,12 @@ body::after{
     color:white;
     font-size:16px;
     outline:none;
+    transition:all 0.3s ease;
+}
+
+.input-box input:focus{
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(0,240,255,0.3);
 }
 
 .input-box input::placeholder{
@@ -115,15 +133,18 @@ body::after{
     cursor:pointer;
     position:relative;
     z-index:10;
+    transition:all 0.3s ease;
 }
 
 .login-btn:hover{
     opacity:0.9;
+    transform:translateY(-2px);
 }
 
 .login-btn:disabled{
     opacity:0.55;
     cursor:not-allowed;
+    transform:none;
 }
 
 .row-links{
@@ -172,6 +193,22 @@ body::after{
     color:#00ff99;
 }
 
+.loading-spinner{
+    display:inline-block;
+    width:18px;
+    height:18px;
+    border:2px solid rgba(255,255,255,.3);
+    border-radius:50%;
+    border-top-color:white;
+    animation:spin 0.6s linear infinite;
+    margin-right:8px;
+    vertical-align:middle;
+}
+
+@keyframes spin{
+    to{transform:rotate(360deg);}
+}
+
 </style>
 </head>
 
@@ -188,11 +225,11 @@ body::after{
     </div>
 
     <div class="input-box">
-        <input type="email" id="email" placeholder="Email">
+        <input type="email" id="email" placeholder="Email" autocomplete="email">
     </div>
 
     <div class="input-box">
-        <input type="password" id="password" placeholder="Password">
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password">
     </div>
 
     <button class="login-btn" id="loginBtn" onclick="login()">
@@ -215,81 +252,123 @@ body::after{
 
 <script>
 
-const API_BASE = "https://www.quantai.fyi";
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-document.addEventListener("keydown", function(event){
-    if(event.key === "Enter"){
+// ==================== 显示消息 ====================
+function showMessage(text, type) {
+    const messageDiv = document.getElementById("message");
+    messageDiv.innerHTML = text || "";
+    messageDiv.className = "message " + type;
+}
+
+// ==================== 登录函数 ====================
+async function login() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const loginBtn = document.getElementById("loginBtn");
+    
+    // 清空之前的消息
+    showMessage("", "");
+    
+    // 验证输入
+    if (!email) {
+        showMessage("Please enter your email", "error");
+        return;
+    }
+    
+    if (!password) {
+        showMessage("Please enter your password", "error");
+        return;
+    }
+    
+    // 简单的邮箱格式验证
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showMessage("Please enter a valid email address", "error");
+        return;
+    }
+    
+    // 显示加载状态
+    const originalText = loginBtn.innerText;
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<div class="loading-spinner"></div> LOGINING...';
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.user) {
+            // 修复：确保用户信息包含兼容的余额字段
+            const userData = {
+                id: data.user.id,
+                uid: data.user.uid,
+                name: data.user.name,
+                email: data.user.email,
+                // 兼容多种余额字段
+                balance: data.user.availableBalance || data.user.balance || data.user.asset || 0,
+                availableBalance: data.user.availableBalance || data.user.balance || data.user.asset || 0,
+                totalProfit: data.user.totalProfit || 0,
+                status: data.user.status || "active"
+            };
+            
+            // 保存用户信息到本地存储
+            localStorage.removeItem("user");
+            localStorage.setItem("user", JSON.stringify(userData));
+            
+            showMessage("Login successful! Redirecting...", "success");
+            
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 1000);
+            
+        } else {
+            showMessage(data.message || "Login failed. Please check your credentials.", "error");
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = originalText;
+        }
+        
+    } catch (err) {
+        console.error("Login error:", err);
+        showMessage("Network error. Please check your connection and try again.", "error");
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = originalText;
+    }
+}
+
+// ==================== 回车键登录 ====================
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
         login();
     }
 });
 
-function showMessage(text, type){
-    const message = document.getElementById("message");
-
-    message.innerHTML = text || "";
-    message.className = "message " + type;
-}
-
-async function login(){
-
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const loginBtn = document.getElementById("loginBtn");
-
-    if(!email || !password){
-        showMessage("Please enter email and password", "error");
-        return;
-    }
-
-    try{
-
-        loginBtn.disabled = true;
-        loginBtn.innerHTML = "LOGINING...";
-
-        const response = await fetch(API_BASE + "/api/login",{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                email,
-                password
-            })
-        });
-
-        const data = await response.json();
-
-        if(data.success){
-
-            localStorage.removeItem("user");
-            localStorage.setItem("user", JSON.stringify(data.user));
-
-            showMessage("Login Successful", "success");
-
-            setTimeout(()=>{
-                window.location.href = "index.html";
-            },1000);
-
-        }else{
-
-            showMessage(data.message || "Login failed", "error");
-
-            loginBtn.disabled = false;
-            loginBtn.innerHTML = "LOGIN";
+// ==================== 页面初始化 ====================
+// 如果已经登录，自动跳转到首页
+const existingUser = localStorage.getItem("user");
+if (existingUser) {
+    try {
+        const user = JSON.parse(existingUser);
+        if (user && user.id) {
+            // 已登录，直接跳转
+            window.location.href = "index.html";
         }
-
-    }catch(err){
-
-        console.log(err);
-
-        showMessage("Server Error", "error");
-
-        loginBtn.disabled = false;
-        loginBtn.innerHTML = "LOGIN";
+    } catch (e) {
+        // 无效数据，清除
+        localStorage.removeItem("user");
     }
-
 }
-
 </script>
 
 </body>

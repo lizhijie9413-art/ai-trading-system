@@ -211,6 +211,11 @@ body::before{
   font-size:16px;
 }
 
+.input:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
 .textarea{
   width:100%;
   height:120px;
@@ -254,6 +259,11 @@ body::before{
 
   box-shadow:
     0 0 28px rgba(168,85,247,.35);
+}
+
+.save-btn:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
 }
 
 .bottom-nav{
@@ -337,6 +347,7 @@ body::before{
 
       <input type="file"
              hidden
+             accept="image/*"
              onchange="changeAvatar(this)">
 
       Change Avatar
@@ -353,34 +364,25 @@ body::before{
 
   <div class="form-group">
     <label>Full Name</label>
-
-    <input class="input"
-           id="nameInput">
+    <input class="input" id="nameInput" placeholder="Enter your full name">
   </div>
 
   <div class="form-group">
-    <label>Email</label>
-
-    <input class="input"
-           id="emailInput">
+    <label>Email (Cannot be changed)</label>
+    <input class="input" id="emailInput" disabled>
   </div>
 
   <div class="form-group">
     <label>Phone Number</label>
-
-    <input class="input"
-           id="phoneInput">
+    <input class="input" id="phoneInput" placeholder="Enter your phone number">
   </div>
 
   <div class="form-group">
     <label>Bio</label>
-
-    <textarea class="textarea"
-              id="bioInput"></textarea>
+    <textarea class="textarea" id="bioInput" placeholder="Tell us about yourself"></textarea>
   </div>
 
-  <button class="save-btn"
-          onclick="saveProfile()">
+  <button class="save-btn" id="saveBtn" onclick="saveProfile()">
     Save Changes
   </button>
 
@@ -416,139 +418,195 @@ body::before{
 </div>
 
 <script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-const localUser =
-JSON.parse(localStorage.getItem("user"));
-
-if(localUser){
-  document.getElementById("nameInput").value =
-  localUser.name || "";
-
-  document.getElementById("emailInput").value =
-  localUser.email || "";
-
-  document.getElementById("phoneInput").value =
-  localUser.phone || "";
-}
-
-const avatarKey =
-"profile_avatar_" +
-(localUser?.uid || localUser?.id || "guest")
-
-const savedAvatar =
-localStorage.getItem(avatarKey);
-
-if(savedAvatar){
-
-  document.getElementById(
-    "avatarPreview"
-  ).innerHTML = `
-    <img src="${savedAvatar}"
-    style="
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      border-radius:50%;
-    ">
-  `;
-}
-
-async function saveProfile(){
-
-  const user =
-    JSON.parse(localStorage.getItem("user"));
-
-  if(!user || !user.id){
-    alert("Please login again");
-    return;
-  }
-
-  const name =
-    document.getElementById("nameInput").value.trim();
-
-  const email =
-    document.getElementById("emailInput").value.trim();
-
-  const phone =
-    document.getElementById("phoneInput").value.trim();
-
- const res = await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/users/" +
-  user.id +
-  "/profile",
-  {
-      method:"PUT",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        name,
-        email,
-        phone
-      })
+// ==================== 获取当前用户 ====================
+function getCurrentUser() {
+    try {
+        const user = localStorage.getItem("user");
+        return user ? JSON.parse(user) : null;
+    } catch (e) {
+        return null;
     }
-  );
-
-  const result = await res.json();
-
-  if(result.success){
-
-    localStorage.setItem(
-      "user",
-      JSON.stringify(result.user)
-    );
-
-    alert("Profile updated successfully");
-
-    location.href = "profile.html";
-
-  }else{
-    alert(result.message || "Update failed");
-  }
 }
 
-function changeAvatar(input){
-
-  if(input.files.length === 0) return;
-
-  const file = input.files[0];
-
-  const reader = new FileReader();
-
-  reader.onload = function(e){
-
-    const avatarData = e.target.result;
-
-    const localUser =
-JSON.parse(localStorage.getItem("user"));
-
-const avatarKey =
-"profile_avatar_" +
-(localUser?.uid || localUser?.id || "guest");
-
-localStorage.setItem(
-  avatarKey,
-  avatarData
-);
-
-    document.getElementById(
-      "avatarPreview"
-    ).innerHTML = `
-      <img src="${avatarData}"
-      style="
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      border-radius:50%;
-      ">
+// ==================== 显示提示 ====================
+function showToast(message, type = "info") {
+    const existingToast = document.querySelector(".global-toast");
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement("div");
+    toast.className = "global-toast";
+    toast.textContent = message;
+    
+    const colors = { success: "#00f5a0", error: "#ff4d6d", info: "#c084fc" };
+    toast.style.cssText = `
+        position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+        background: rgba(10,20,40,0.95); border: 1px solid ${colors[type] || colors.info};
+        color: ${colors[type] || colors.info}; padding: 12px 24px; border-radius: 50px;
+        font-size: 14px; z-index: 10000; backdrop-filter: blur(10px); white-space: nowrap;
     `;
-
-    alert("Avatar saved");
-  };
-
-  reader.readAsDataURL(file);
+    
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300); }, 2500);
 }
 
+// ==================== 加载用户数据 ====================
+async function loadUserData() {
+    const user = getCurrentUser();
+    
+    if (!user || !user.id) {
+        window.location.href = "login.html";
+        return;
+    }
+    
+    // 从后端获取最新用户信息
+    try {
+        const response = await fetch(`${API_BASE}/api/users/${user.id}`, {
+            headers: {
+                "user-id": user.id
+            }
+        });
+        const result = await response.json();
+        
+        if (result.success && result.user) {
+            const userData = result.user;
+            document.getElementById("nameInput").value = userData.name || "";
+            document.getElementById("emailInput").value = userData.email || "";
+            document.getElementById("phoneInput").value = userData.phone || "";
+            
+            // 更新本地存储
+            const updatedUser = { ...user, ...userData };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+        } else {
+            document.getElementById("nameInput").value = user.name || "";
+            document.getElementById("emailInput").value = user.email || "";
+            document.getElementById("phoneInput").value = user.phone || "";
+        }
+    } catch (err) {
+        console.log(err);
+        document.getElementById("nameInput").value = user.name || "";
+        document.getElementById("emailInput").value = user.email || "";
+        document.getElementById("phoneInput").value = user.phone || "";
+    }
+    
+    // 加载头像
+    const avatarKey = "profile_avatar_" + (user.uid || user.id || "guest");
+    const savedAvatar = localStorage.getItem(avatarKey);
+    if (savedAvatar) {
+        document.getElementById("avatarPreview").innerHTML = `
+            <img src="${savedAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+        `;
+    }
+}
+
+// ==================== 保存资料（修复：添加认证头） ====================
+async function saveProfile() {
+    const user = getCurrentUser();
+    const saveBtn = document.getElementById("saveBtn");
+    
+    if (!user || !user.id) {
+        showToast("Please login again", "error");
+        window.location.href = "login.html";
+        return;
+    }
+
+    const name = document.getElementById("nameInput").value.trim();
+    const phone = document.getElementById("phoneInput").value.trim();
+    const bio = document.getElementById("bioInput").value.trim();
+
+    if (!name) {
+        showToast("Name is required", "error");
+        return;
+    }
+
+    // 显示加载状态
+    const originalText = saveBtn.innerText;
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Saving...";
+
+    try {
+        const response = await fetch(`${API_BASE}/api/users/${user.id}/profile`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "user-id": user.id
+            },
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                bio: bio
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 更新本地存储的用户信息
+            const updatedUser = { ...user, name: name, phone: phone, bio: bio };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            
+            showToast("Profile updated successfully", "success");
+            
+            setTimeout(() => {
+                window.location.href = "profile.html";
+            }, 1000);
+        } else {
+            showToast(result.message || "Update failed", "error");
+            saveBtn.disabled = false;
+            saveBtn.innerText = originalText;
+        }
+    } catch (err) {
+        console.log(err);
+        showToast("Network error, please try again", "error");
+        saveBtn.disabled = false;
+        saveBtn.innerText = originalText;
+    }
+}
+
+// ==================== 更换头像 ====================
+function changeAvatar(input) {
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    
+    // 检查文件大小（限制2MB）
+    if (file.size > 2 * 1024 * 1024) {
+        showToast("Image size should be less than 2MB", "error");
+        return;
+    }
+    
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+        showToast("Only image files are allowed", "error");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const avatarData = e.target.result;
+        const user = getCurrentUser();
+        const avatarKey = "profile_avatar_" + (user?.uid || user?.id || "guest");
+        
+        localStorage.setItem(avatarKey, avatarData);
+        
+        document.getElementById("avatarPreview").innerHTML = `
+            <img src="${avatarData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+        `;
+        
+        showToast("Avatar saved", "success");
+    };
+    
+    reader.onerror = function() {
+        showToast("Failed to read image", "error");
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+// ==================== 页面启动 ====================
+loadUserData();
 </script>
 
 </body>
