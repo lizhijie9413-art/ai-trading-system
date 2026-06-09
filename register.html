@@ -7,7 +7,291 @@
 <title>AI Register</title>
 
 <style>
-/* 你的CSS代码保持不变... 太长省略，请保留原有的所有style */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+
+body{
+    background:#050816;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+    position:relative;
+    overflow-x:hidden;
+}
+
+/* 动态背景光晕 */
+body::before{
+    content:"";
+    position:fixed;
+    width:500px;
+    height:500px;
+    background:#00f0ff33;
+    filter:blur(120px);
+    top:-100px;
+    left:-100px;
+    animation:glowMove1 8s ease-in-out infinite alternate;
+    z-index:0;
+}
+
+body::after{
+    content:"";
+    position:fixed;
+    width:500px;
+    height:500px;
+    background:#7b00ff33;
+    filter:blur(120px);
+    bottom:-100px;
+    right:-100px;
+    animation:glowMove2 10s ease-in-out infinite alternate;
+    z-index:0;
+}
+
+@keyframes glowMove1{
+    0%{transform:translate(0,0); opacity:0.3;}
+    100%{transform:translate(80px,50px); opacity:0.6;}
+}
+
+@keyframes glowMove2{
+    0%{transform:translate(0,0); opacity:0.2;}
+    100%{transform:translate(-60px,-70px); opacity:0.5;}
+}
+
+/* 粒子效果 */
+.particles{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    z-index:0;
+    pointer-events:none;
+}
+.particle{
+    position:absolute;
+    width:2px;
+    height:2px;
+    background:rgba(139,92,246,0.6);
+    border-radius:50%;
+    animation:floatParticle 8s linear infinite;
+}
+@keyframes floatParticle{
+    0%{transform:translateY(0) translateX(0); opacity:0;}
+    50%{opacity:0.8;}
+    100%{transform:translateY(-100px) translateX(30px); opacity:0;}
+}
+
+.register-container{
+    position:relative;
+    width:100%;
+    max-width:400px;
+    padding:40px;
+    border-radius:28px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(20px);
+    box-shadow:0 0 30px rgba(0,255,255,0.15),0 0 60px rgba(123,0,255,0.1);
+    z-index:10;
+    animation:fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp{
+    from{opacity:0; transform:translateY(30px);}
+    to{opacity:1; transform:translateY(0);}
+}
+
+.logo{
+    text-align:center;
+    color:white;
+    font-size:34px;
+    font-weight:bold;
+    margin-bottom:8px;
+}
+.logo span{
+    background:linear-gradient(135deg,#00f0ff,#7b00ff);
+    -webkit-background-clip:text;
+    color:transparent;
+}
+.subtitle{
+    text-align:center;
+    color:#94a3b8;
+    margin-bottom:35px;
+    font-size:14px;
+}
+
+.input-box{
+    margin-bottom:20px;
+}
+.input-box input{
+    width:100%;
+    padding:16px;
+    border:none;
+    border-radius:16px;
+    background:rgba(255,255,255,0.08);
+    color:white;
+    font-size:15px;
+    outline:none;
+    transition:all 0.3s ease;
+}
+.input-box input:focus{
+    border:1px solid #00f0ff;
+    box-shadow:0 0 15px rgba(0,240,255,0.3);
+    background:rgba(255,255,255,0.12);
+}
+.input-box input::placeholder{
+    color:#64748b;
+}
+
+.password-strength{
+    margin-top:8px;
+    font-size:12px;
+    height:20px;
+}
+.strength-weak{color:#ff4d6d;}
+.strength-medium{color:#ffaa00;}
+.strength-strong{color:#00f5a0;}
+
+.register-btn{
+    width:100%;
+    padding:16px;
+    border:none;
+    border-radius:18px;
+    background:linear-gradient(90deg,#00f0ff,#7b00ff);
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:all 0.3s ease;
+    position:relative;
+    overflow:hidden;
+}
+.register-btn::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:-100%;
+    width:100%;
+    height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+    transition:left 0.5s ease;
+}
+.register-btn:hover::before{
+    left:100%;
+}
+.register-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 0 30px rgba(0,240,255,0.4);
+}
+.register-btn:disabled{
+    opacity:0.6;
+    cursor:not-allowed;
+    transform:none;
+}
+
+.loading-spinner{
+    display:inline-block;
+    width:18px;
+    height:18px;
+    border:2px solid rgba(255,255,255,.3);
+    border-radius:50%;
+    border-top-color:white;
+    animation:spin 0.6s linear infinite;
+    margin-right:8px;
+    vertical-align:middle;
+}
+@keyframes spin{
+    to{transform:rotate(360deg);}
+}
+
+.message-box{
+    margin-top:20px;
+    padding:12px;
+    border-radius:14px;
+    text-align:center;
+    font-size:13px;
+    display:none;
+}
+.success-box{
+    background:rgba(0,255,157,0.12);
+    color:#00ff9d;
+    border:1px solid rgba(0,255,157,0.3);
+}
+.error-box{
+    background:rgba(255,77,109,0.12);
+    color:#ff4d6d;
+    border:1px solid rgba(255,77,109,0.3);
+}
+
+.login-link{
+    margin-top:24px;
+    text-align:center;
+    color:#94a3b8;
+    font-size:14px;
+}
+.login-link a{
+    color:#00f0ff;
+    text-decoration:none;
+    transition:all 0.3s ease;
+}
+.login-link a:hover{
+    text-shadow:0 0 10px #00f0ff;
+}
+
+/* 装饰圆环 */
+.ai-circle{
+    position:absolute;
+    width:140px;
+    height:140px;
+    border:2px solid rgba(0,240,255,0.3);
+    border-radius:50%;
+    top:-70px;
+    right:-70px;
+    animation:rotate 12s linear infinite;
+}
+.ai-circle::before{
+    content:"";
+    position:absolute;
+    inset:20px;
+    border:2px solid rgba(123,0,255,0.3);
+    border-radius:50%;
+    animation:rotateReverse 8s linear infinite;
+}
+.ai-circle::after{
+    content:"";
+    position:absolute;
+    inset:45px;
+    border:1px solid rgba(0,240,255,0.2);
+    border-radius:50%;
+}
+@keyframes rotate{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(360deg);}
+}
+@keyframes rotateReverse{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(-360deg);}
+}
+
+/* 底部装饰光晕 */
+.glow-bottom{
+    position:absolute;
+    bottom:-50px;
+    left:50%;
+    transform:translateX(-50%);
+    width:200px;
+    height:80px;
+    background:radial-gradient(circle,rgba(0,240,255,0.2),transparent 70%);
+    filter:blur(20px);
+    animation:pulseGlow 3s ease-in-out infinite;
+}
+@keyframes pulseGlow{
+    0%,100%{opacity:0.5;}
+    50%{opacity:1;}
+}
 </style>
 </head>
 <body>
@@ -61,55 +345,33 @@
 </div>
 
 <script>
-// ==================== 直接写入 config.js 的代码 ====================
+// ==================== 直接写入 config.js 的核心代码 ====================
 const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-function getCurrentUser() {
-    try {
-        const user = localStorage.getItem("user");
-        return user ? JSON.parse(user) : null;
-    } catch (e) {
-        return null;
-    }
-}
-
 function getAuthHeaders() {
-    const user = getCurrentUser();
     const headers = { "Content-Type": "application/json" };
-    
-    if (user && user.id) {
-        headers["user-id"] = user.id;
-    }
-    
-    const adminAuth = localStorage.getItem("adminAuth");
-    if (adminAuth) {
+    const user = localStorage.getItem("user");
+    if (user) {
         try {
-            const admin = JSON.parse(adminAuth);
-            if (admin.role === "admin") {
-                headers["admin-token"] = "AI_ADMIN_2026";
+            const userData = JSON.parse(user);
+            if (userData && userData.id) {
+                headers["user-id"] = userData.id;
             }
-        } catch (e) {}
+        } catch(e) {}
     }
-    
     return headers;
 }
 
 async function apiRequest(endpoint, options = {}) {
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
     const defaultOptions = { headers: getAuthHeaders() };
-    
-    const mergedOptions = {
-        ...defaultOptions,
-        ...options,
-        headers: { ...defaultOptions.headers, ...options.headers }
-    };
+    const mergedOptions = { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } };
     
     try {
         const response = await fetch(url, mergedOptions);
         const data = await response.json();
         return { success: true, data, response };
     } catch (error) {
-        console.error(`API Failed: ${endpoint}`, error);
         return { success: false, error: error.message };
     }
 }
