@@ -3,22 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>KYC Verification</title>
+<title>KYC Verification - AI Trade</title>
 
 <style>
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;}
 
 body{
-  background:
-    radial-gradient(circle at top left,rgba(168,85,247,.24),transparent 30%),
-    radial-gradient(circle at bottom right,rgba(56,189,248,.14),transparent 30%),
-    linear-gradient(180deg,#040612,#050816,#02030a);
-
+  background:radial-gradient(circle at top left,rgba(168,85,247,.24),transparent 30%),
+              radial-gradient(circle at bottom right,rgba(56,189,248,.14),transparent 30%),
+              linear-gradient(180deg,#040612,#050816,#02030a);
   color:white;
   max-width:430px;
   min-height:100vh;
@@ -27,730 +20,189 @@ body{
   overflow-x:hidden;
 }
 
-.header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:24px;
-}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.back-btn{width:44px;height:44px;border-radius:16px;background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.28);display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;}
+.header-title{text-align:center;}
+.header-title h1{font-size:28px;font-weight:900;}
+.header-title p{color:#94a3b8;font-size:14px;margin-top:4px;}
 
-.back-btn{
-  width:44px;
-  height:44px;
-  border-radius:16px;
-  background:rgba(168,85,247,.14);
-  border:1px solid rgba(168,85,247,.28);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:26px;
-  cursor:pointer;
-}
+.card{background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));border:1px solid rgba(168,85,247,.22);border-radius:28px;padding:20px;margin-bottom:16px;}
+.status{text-align:center;}
+.kyc-core{width:120px;height:120px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle,#38bdf8 0%,#7c3aed 42%,rgba(124,58,237,.15) 70%);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;box-shadow:0 0 38px rgba(56,189,248,.45);}
+.status h2{font-size:28px;margin-bottom:10px;}
+.kyc-status{display:inline-block;padding:8px 20px;border-radius:30px;font-weight:700;font-size:14px;}
+.status-pending{background:rgba(255,193,7,.15);color:#ffc107;}
+.status-approved{background:rgba(0,245,160,.15);color:#00f5a0;}
+.status-rejected{background:rgba(255,77,109,.15);color:#ff4d6d;}
 
-.header-title{
-  text-align:center;
-}
+.verify-item{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.verify-item:last-child{border-bottom:none;}
+.verify-left{display:flex;gap:14px;align-items:center;}
+.verify-icon{width:52px;height:52px;border-radius:18px;background:linear-gradient(135deg,#7c3aed,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;flex-shrink:0;}
+.verify-text strong{display:block;font-size:18px;margin-bottom:4px;}
+.verify-text p{color:#94a3b8;font-size:13px;}
+.upload-btn{width:92px;height:40px;border-radius:14px;background:linear-gradient(90deg,#7c3aed,#9333ea);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.upload-btn.uploaded{background:linear-gradient(90deg,#00c48c,#00f5a0);color:#06121a;}
 
-.header-title h1{
-  font-size:28px;
-  font-weight:900;
-}
+.progress-card h3{font-size:22px;margin-bottom:20px;}
+.progress-line{width:100%;height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:14px;}
+.progress-fill{width:0%;height:100%;background:linear-gradient(90deg,#38bdf8,#7c3aed);border-radius:999px;transition:width 0.5s ease;}
+.progress-info{display:flex;justify-content:space-between;color:#94a3b8;font-size:14px;}
 
-.header-title p{
-  color:#94a3b8;
-  font-size:14px;
-  margin-top:4px;
-}
+.loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:white;animation:spin 0.6s linear infinite;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.global-toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(10,20,40,0.95);border:1px solid #c084fc;color:#c084fc;padding:12px 24px;border-radius:50px;font-size:14px;z-index:10000;backdrop-filter:blur(10px);}
 
-.card{
-  background:linear-gradient(145deg,rgba(15,23,55,.96),rgba(5,10,28,.96));
-  border:1px solid rgba(168,85,247,.22);
-  border-radius:28px;
-  padding:20px;
-  margin-bottom:16px;
-  box-shadow:0 0 30px rgba(168,85,247,.12);
-}
-
-.status{
-  text-align:center;
-}
-
-.kyc-core{
-  width:120px;
-  height:120px;
-  border-radius:50%;
-  margin:0 auto 18px;
-  background:
-    radial-gradient(circle,#38bdf8 0%,#7c3aed 42%,rgba(124,58,237,.15) 70%);
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  font-size:34px;
-  font-weight:900;
-
-  box-shadow:0 0 38px rgba(56,189,248,.45);
-}
-
-.status h2{
-  font-size:28px;
-  margin-bottom:10px;
-}
-
-.pending{
-  display:inline-block;
-  padding:8px 16px;
-  border-radius:18px;
-  background:rgba(255,193,7,.12);
-  color:#ffc107;
-  font-weight:700;
-}
-.approved{
-  background:rgba(0,245,160,.12);
-  color:#00f5a0;
-}
-.rejected{
-  background:rgba(255,77,109,.12);
-  color:#ff4d6d;
-}
-
-.verify-item{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:18px 0;
-  border-bottom:1px solid rgba(255,255,255,.06);
-}
-
-.verify-item:last-child{
-  border-bottom:none;
-}
-
-.verify-left{
-  display:flex;
-  gap:14px;
-  align-items:center;
-}
-
-.verify-icon{
-  width:52px;
-  height:52px;
-  border-radius:18px;
-
-  background:
-    linear-gradient(135deg,#7c3aed,#38bdf8);
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  font-size:20px;
-  font-weight:900;
-  flex-shrink:0;
-}
-
-.verify-text strong{
-  display:block;
-  font-size:18px;
-  margin-bottom:4px;
-}
-
-.verify-text p{
-  color:#94a3b8;
-  font-size:13px;
-}
-
-.upload-btn{
-  width:92px;
-  height:40px;
-
-  border-radius:14px;
-
-  background:
-    linear-gradient(90deg,#7c3aed,#9333ea);
-
-  color:white;
-
-  font-weight:700;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  cursor:pointer;
-
-  box-shadow:
-    0 0 18px rgba(168,85,247,.28);
-
-  flex-shrink:0;
-}
-
-.upload-btn.disabled{
-  background:#2a2a2a;
-  opacity:0.6;
-  cursor:not-allowed;
-}
-
-.upload-btn.uploaded{
-  background:linear-gradient(90deg,#00c48c,#00f5a0);
-  color:#06121a;
-}
-
-.progress-card h3{
-  font-size:22px;
-  margin-bottom:20px;
-}
-
-.progress-line{
-  width:100%;
-  height:8px;
-  border-radius:999px;
-  background:rgba(255,255,255,.08);
-  overflow:hidden;
-  margin-bottom:14px;
-}
-
-.progress-fill{
-  width:0%;
-  height:100%;
-  background:
-    linear-gradient(90deg,#38bdf8,#7c3aed);
-
-  border-radius:999px;
-  transition:width 0.5s ease;
-}
-
-.progress-info{
-  display:flex;
-  justify-content:space-between;
-  color:#94a3b8;
-  font-size:14px;
-}
-
-.bottom-nav{
-  position:fixed;
-  bottom:0;
-  left:50%;
-  transform:translateX(-50%);
-
-  width:100%;
-  max-width:430px;
-
-  height:78px;
-
-  background:rgba(5,8,22,.96);
-
-  backdrop-filter:blur(22px);
-
-  border-top:
-    1px solid rgba(168,85,247,.22);
-
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-}
-
-.nav-item{
-  width:20%;
-  text-decoration:none;
-  color:#64748b;
-  font-size:12px;
-
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:5px;
-}
-
-.nav-item b{
-  font-size:22px;
-  font-weight:400;
-}
-
-.nav-item.active{
-  color:#c084fc;
-}
-
-.loading-spinner{
-  display:inline-block;
-  width:16px;
-  height:16px;
-  border:2px solid rgba(255,255,255,.3);
-  border-radius:50%;
-  border-top-color:white;
-  animation:spin 0.6s linear infinite;
-  margin-right:8px;
-}
-
-@keyframes spin{
-  to{transform:rotate(360deg);}
-}
-
-.global-toast{
-  position:fixed;
-  bottom:100px;
-  left:50%;
-  transform:translateX(-50%);
-  background:rgba(10,20,40,0.95);
-  border:1px solid #c084fc;
-  color:#c084fc;
-  padding:12px 24px;
-  border-radius:50px;
-  font-size:14px;
-  z-index:10000;
-  backdrop-filter:blur(10px);
-  white-space:nowrap;
-}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:78px;background:rgba(5,8,22,.96);backdrop-filter:blur(22px);border-top:1px solid rgba(168,85,247,.22);display:flex;justify-content:space-around;align-items:center;}
+.nav-item{width:20%;text-decoration:none;color:#64748b;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.nav-item i{font-size:20px;}
+.nav-item.active{color:#c084fc;}
 </style>
 </head>
-
 <body>
 
 <div class="header">
-
-  <div class="back-btn"
-       onclick="window.history.back()">
-    ‹
-  </div>
-
-  <div class="header-title">
-    <h1>KYC Verification</h1>
-    <p>Secure your AI investment account</p>
-  </div>
-
+  <div class="back-btn" onclick="window.history.back()">‹</div>
+  <div class="header-title"><h1>KYC Verification</h1><p>Secure your AI investment account</p></div>
   <div style="width:44px;"></div>
-
 </div>
 
 <div class="card status">
-
-  <div class="kyc-core">
-    KYC
-  </div>
-
+  <div class="kyc-core">KYC</div>
   <h2>Verification Center</h2>
-
-  <div class="pending" id="statusText">
-    Pending Review
-  </div>
-
+  <div class="kyc-status status-pending" id="statusText">Pending Review</div>
 </div>
 
 <div class="card">
-
   <div class="verify-item">
-
-    <div class="verify-left">
-
-      <div class="verify-icon">
-        ID
-      </div>
-
-      <div class="verify-text">
-        <strong>Government ID</strong>
-        <p>Passport or identity card upload</p>
-      </div>
-
-    </div>
-
-    <label class="upload-btn" id="uploadIdBtn">
-
-      <input
-        type="file"
-        id="idFile"
-        hidden
-        accept="image/*"
-        onchange="uploadFile(this,'Government ID', 'frontImage')">
-
-      Upload
-
-    </label>
-
+    <div class="verify-left"><div class="verify-icon">ID</div><div class="verify-text"><strong>Government ID</strong><p>Passport or identity card upload</p></div></div>
+    <label class="upload-btn" id="uploadIdBtn"><input type="file" hidden accept="image/*" onchange="uploadFile(this, 'Government ID', 'frontImage')">Upload</label>
   </div>
-
   <div class="verify-item">
-
-    <div class="verify-left">
-
-      <div class="verify-icon">
-        FV
-      </div>
-
-      <div class="verify-text">
-        <strong>Face Verification</strong>
-        <p>AI facial recognition verification</p>
-      </div>
-
-    </div>
-
-    <label class="upload-btn" id="uploadFaceBtn">
-
-      <input
-        type="file"
-        id="faceFile"
-        hidden
-        accept="image/*"
-        onchange="uploadFile(this,'Face Verification', 'faceImage')">
-
-      Upload
-
-    </label>
-
+    <div class="verify-left"><div class="verify-icon">FV</div><div class="verify-text"><strong>Face Verification</strong><p>AI facial recognition verification</p></div></div>
+    <label class="upload-btn" id="uploadFaceBtn"><input type="file" hidden accept="image/*" onchange="uploadFile(this, 'Face Verification', 'faceImage')">Upload</label>
   </div>
-
   <div class="verify-item">
-
-    <div class="verify-left">
-
-      <div class="verify-icon">
-        AP
-      </div>
-
-      <div class="verify-text">
-        <strong>Address Proof</strong>
-        <p>Utility bill or bank statement</p>
-      </div>
-
-    </div>
-
-    <label class="upload-btn" id="uploadAddressBtn">
-
-      <input
-        type="file"
-        id="addressFile"
-        hidden
-        accept="image/*"
-        onchange="uploadFile(this,'Address Proof', 'backImage')">
-
-      Upload
-
-    </label>
-
+    <div class="verify-left"><div class="verify-icon">AP</div><div class="verify-text"><strong>Address Proof</strong><p>Utility bill or bank statement</p></div></div>
+    <label class="upload-btn" id="uploadAddressBtn"><input type="file" hidden accept="image/*" onchange="uploadFile(this, 'Address Proof', 'backImage')">Upload</label>
   </div>
-
 </div>
 
 <div class="card progress-card">
-
   <h3>Verification Progress</h3>
-
-  <div class="progress-line">
-    <div class="progress-fill" id="progressFill"></div>
-  </div>
-
-  <div class="progress-info">
-    <span id="progressPercent">0% Completed</span>
-    <span id="estimatedTime">Estimated: 24 Hours</span>
-  </div>
-
+  <div class="progress-line"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-info"><span id="progressPercent">0% Completed</span><span id="estimatedTime">Estimated: 24 Hours</span></div>
 </div>
 
 <div class="bottom-nav">
-
-  <a class="nav-item" href="index.html">
-    <b>⌂</b>
-    Home
-  </a>
-
-  <a class="nav-item" href="market.html">
-    <b>▥</b>
-    Markets
-  </a>
-
-  <a class="nav-item" href="trade.html">
-    <b>↻</b>
-    Trade
-  </a>
-
-  <a class="nav-item" href="portfolio.html">
-    <b>◔</b>
-    Portfolio
-  </a>
-
-  <a class="nav-item active" href="profile.html">
-    <b>●</b>
-    Profile
-  </a>
-
+  <a class="nav-item" href="index.html"><i class="fa-solid fa-house"></i>Home</a>
+  <a class="nav-item" href="market.html"><i class="fa-solid fa-chart-column"></i>Markets</a>
+  <a class="nav-item" href="trade.html"><i class="fa-solid fa-arrow-right-arrow-left"></i>Trade</a>
+  <a class="nav-item" href="portfolio.html"><i class="fa-regular fa-folder"></i>Portfolio</a>
+  <a class="nav-item active" href="profile.html"><i class="fa-regular fa-user"></i>Profile</a>
 </div>
 
+<script src="config.js"></script>
 <script>
-// ==================== 配置 ====================
 const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-// ==================== 获取当前用户 ====================
-function getCurrentUser() {
-    try {
-        const user = localStorage.getItem("user");
-        return user ? JSON.parse(user) : null;
-    } catch (e) {
-        return null;
-    }
+function getCurrentUser(){
+  try{ const user = localStorage.getItem("user"); return user ? JSON.parse(user) : null; }catch(e){ return null; }
 }
 
-// ==================== 显示提示 ====================
-function showToast(message, type = "info") {
-    const existingToast = document.querySelector(".global-toast");
-    if (existingToast) existingToast.remove();
-    
-    const toast = document.createElement("div");
-    toast.className = "global-toast";
-    toast.textContent = message;
-    
-    const colors = { success: "#00f5a0", error: "#ff4d6d", info: "#c084fc" };
-    toast.style.borderColor = colors[type] || colors.info;
-    toast.style.color = colors[type] || colors.info;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = "0";
-        setTimeout(() => toast.remove(), 300);
-    }, 2500);
+function showToast(message, type){
+  const toast = document.createElement("div");
+  toast.className = "global-toast";
+  toast.textContent = message;
+  const colors = { success: "#00f5a0", error: "#ff4d6d", info: "#c084fc" };
+  toast.style.borderColor = colors[type] || colors.info;
+  toast.style.color = colors[type] || colors.info;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
 }
 
-// ==================== 加载用户KYC状态 ====================
-async function loadKYCStatus() {
-    const user = getCurrentUser();
-    if (!user || !user.id) return;
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/users/${user.id}`, {
-            headers: { "user-id": user.id }
-        });
-        const result = await response.json();
-        
-        if (result.success && result.user) {
-            const kycStatus = result.user.kyc || "未审核";
-            const statusEl = document.getElementById("statusText");
-            
-            if (kycStatus === "已通过") {
-                statusEl.innerHTML = "Approved ✓";
-                statusEl.className = "approved";
-                // 禁用所有上传按钮
-                document.querySelectorAll('.upload-btn').forEach(btn => {
-                    btn.style.opacity = "0.5";
-                    btn.style.pointerEvents = "none";
-                });
-            } else if (kycStatus === "已驳回") {
-                statusEl.innerHTML = "Rejected ✗";
-                statusEl.className = "rejected";
-            } else {
-                statusEl.innerHTML = "Pending Review";
-                statusEl.className = "pending";
-            }
-        }
-    } catch (err) {
-        console.log("Load KYC status error:", err);
+async function loadKYCStatus(){
+  const user = getCurrentUser();
+  if(!user || !user.id) return;
+  try{
+    const res = await fetch(`${API_BASE}/api/users/${user.id}`, { headers: { "user-id": user.id } });
+    const result = await res.json();
+    if(result.success && result.user){
+      const kycStatus = result.user.kyc || "未审核";
+      const statusEl = document.getElementById("statusText");
+      if(kycStatus === "已通过"){ statusEl.innerHTML = "Approved ✓"; statusEl.className = "kyc-status status-approved"; }
+      else if(kycStatus === "已驳回"){ statusEl.innerHTML = "Rejected ✗"; statusEl.className = "kyc-status status-rejected"; }
+      else{ statusEl.innerHTML = "Pending Review"; statusEl.className = "kyc-status status-pending"; }
     }
+  }catch(err){ console.log(err); }
 }
 
-// ==================== 上传文件并创建KYC记录 ====================
-let uploadedItems = {
-    frontImage: false,
-    faceImage: false,
-    backImage: false
-};
+let uploadedItems = { frontImage: false, faceImage: false, backImage: false };
 
-async function uploadFile(input, type, imageType) {
-    if (!input.files || input.files.length === 0) return;
+async function uploadFile(input, type, imageType){
+  if(!input.files || input.files.length === 0) return;
+  const user = getCurrentUser();
+  if(!user || !user.id){ showToast("Please login first", "error"); return; }
+  const file = input.files[0];
+  if(!file.type.startsWith('image/')){ showToast("Please upload an image file", "error"); input.value = ""; return; }
+  if(file.size > 5 * 1024 * 1024){ showToast("File size should be less than 5MB", "error"); input.value = ""; return; }
+  
+  const formData = new FormData();
+  formData.append("image", file);
+  const btn = input.parentElement;
+  const originalText = btn.innerText;
+  btn.innerHTML = '<div class="loading-spinner"></div>';
+  btn.style.opacity = "0.7";
+  
+  try{
+    const uploadRes = await fetch(`${API_BASE}/api/chat/upload`, { method: "POST", body: formData });
+    const uploadData = await uploadRes.json();
+    if(!uploadData.success) throw new Error("Upload failed");
+    const imageUrl = uploadData.url;
     
-    const user = getCurrentUser();
-    if (!user || !user.id) {
-        showToast("Please login first", "error");
-        window.location.href = "login.html";
-        return;
-    }
+    const kycRes = await fetch(`${API_BASE}/api/kyc/submit`, {
+      method: "POST", headers: { "Content-Type": "application/json", "user-id": user.id },
+      body: JSON.stringify({ userId: user.id, uid: user.uid, name: user.name, email: user.email, [imageType]: imageUrl, status: "未审核" })
+    });
+    const kycResult = await kycRes.json();
     
-    const file = input.files[0];
-    
-    // 验证文件类型
-    if (!file.type.startsWith('image/')) {
-        showToast("Please upload an image file", "error");
-        input.value = "";
-        return;
-    }
-    
-    // 验证文件大小（限制5MB）
-    if (file.size > 5 * 1024 * 1024) {
-        showToast("File size should be less than 5MB", "error");
-        input.value = "";
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append("image", file);
-    
-    // 显示加载状态
-    const btn = input.parentElement;
-    const originalText = btn.innerText;
-    btn.innerHTML = '<div class="loading-spinner"></div>';
-    btn.style.opacity = "0.7";
-    btn.style.pointerEvents = "none";
-    
-    try {
-        // 1. 上传图片
-        const uploadRes = await fetch(`${API_BASE}/api/chat/upload`, {
-            method: "POST",
-            body: formData
-        });
-        
-        const uploadData = await uploadRes.json();
-        
-        if (!uploadData.success) {
-            throw new Error("Upload failed");
-        }
-        
-        const imageUrl = uploadData.url;
-        
-        // 2. 创建或更新KYC记录
-        const kycRes = await fetch(`${API_BASE}/api/kyc/submit`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "user-id": user.id
-            },
-            body: JSON.stringify({
-                userId: user.id,
-                uid: user.uid,
-                name: user.name,
-                email: user.email,
-                [imageType]: imageUrl,
-                status: "未审核"
-            })
-        });
-        
-        const kycResult = await kycRes.json();
-        
-        if (kycResult.success) {
-            btn.innerHTML = "✓ Uploaded";
-            btn.classList.add("uploaded");
-            
-            uploadedItems[imageType] = true;
-            
-            // 计算进度
-            const completedCount = Object.values(uploadedItems).filter(v => v === true).length;
-            const percent = (completedCount / 3) * 100;
-            
-            updateProgress(percent, completedCount);
-            
-            showToast(`${type} uploaded successfully`, "success");
-            
-            // 保存到本地
-            saveUploadStatus(completedCount);
-            
-            // 如果所有文件都上传完成
-            if (completedCount === 3) {
-                document.getElementById("statusText").innerHTML = "Under Review";
-                document.getElementById("statusText").className = "pending";
-                showToast("All documents uploaded! Your KYC is under review.", "success");
-            }
-        } else {
-            btn.innerHTML = originalText;
-            btn.style.opacity = "1";
-            btn.style.pointerEvents = "auto";
-            showToast(kycResult.message || "Submission failed", "error");
-        }
-        
-    } catch (error) {
-        console.error("Upload error:", error);
-        btn.innerHTML = originalText;
-        btn.style.opacity = "1";
-        btn.style.pointerEvents = "auto";
-        showToast("Network error, please try again", "error");
-    }
+    if(kycResult.success){
+      btn.innerHTML = "✓ Uploaded";
+      btn.classList.add("uploaded");
+      uploadedItems[imageType] = true;
+      const completedCount = Object.values(uploadedItems).filter(v => v === true).length;
+      const percent = (completedCount / 3) * 100;
+      document.getElementById("progressFill").style.width = percent + "%";
+      document.getElementById("progressPercent").innerText = Math.floor(percent) + "% Completed";
+      if(completedCount === 3){
+        document.getElementById("statusText").innerHTML = "Under Review";
+        document.getElementById("estimatedTime").innerText = "Review in progress";
+        showToast("All documents uploaded! Your KYC is under review.", "success");
+      } else { showToast(`${type} uploaded successfully`, "success"); }
+      localStorage.setItem("kyc_uploaded_count", completedCount);
+      localStorage.setItem("kyc_uploaded_items", JSON.stringify(uploadedItems));
+    } else { btn.innerHTML = originalText; btn.style.opacity = "1"; showToast(kycResult.message || "Submission failed", "error"); }
+  }catch(error){ btn.innerHTML = originalText; btn.style.opacity = "1"; showToast("Network error, please try again", "error"); }
 }
 
-// ==================== 更新进度 ====================
-function updateProgress(percent, completedCount) {
-    const progressFill = document.getElementById("progressFill");
-    const progressPercent = document.getElementById("progressPercent");
-    const estimatedSpan = document.getElementById("estimatedTime");
-    
-    if (progressFill) {
-        progressFill.style.width = percent + "%";
-    }
-    
-    if (progressPercent) {
-        progressPercent.innerText = Math.floor(percent) + "% Completed";
-    }
-    
-    if (completedCount === 3 && estimatedSpan) {
-        estimatedSpan.innerText = "Review in progress";
-    }
+function loadUploadStatus(){
+  const savedItems = localStorage.getItem("kyc_uploaded_items");
+  if(savedItems){
+    try{
+      const items = JSON.parse(savedItems);
+      uploadedItems = items;
+      let completedCount = 0;
+      if(uploadedItems.frontImage){ document.getElementById("uploadIdBtn").innerHTML = "✓ Uploaded"; document.getElementById("uploadIdBtn").classList.add("uploaded"); completedCount++; }
+      if(uploadedItems.faceImage){ document.getElementById("uploadFaceBtn").innerHTML = "✓ Uploaded"; document.getElementById("uploadFaceBtn").classList.add("uploaded"); completedCount++; }
+      if(uploadedItems.backImage){ document.getElementById("uploadAddressBtn").innerHTML = "✓ Uploaded"; document.getElementById("uploadAddressBtn").classList.add("uploaded"); completedCount++; }
+      if(completedCount > 0){ const percent = (completedCount / 3) * 100; document.getElementById("progressFill").style.width = percent + "%"; document.getElementById("progressPercent").innerText = Math.floor(percent) + "% Completed"; }
+      if(completedCount === 3) document.getElementById("statusText").innerHTML = "Under Review";
+    }catch(e){}
+  }
 }
 
-// ==================== 保存上传状态到本地 ====================
-function saveUploadStatus(completedCount) {
-    localStorage.setItem("kyc_uploaded_count", completedCount);
-    localStorage.setItem("kyc_uploaded_items", JSON.stringify(uploadedItems));
-}
-
-// ==================== 加载已上传状态 ====================
-function loadUploadStatus() {
-    const saved = localStorage.getItem("kyc_uploaded_count");
-    const savedItems = localStorage.getItem("kyc_uploaded_items");
-    
-    if (savedItems) {
-        try {
-            const items = JSON.parse(savedItems);
-            uploadedItems = items;
-            
-            let completedCount = 0;
-            
-            if (uploadedItems.frontImage) {
-                document.getElementById("uploadIdBtn").innerHTML = "✓ Uploaded";
-                document.getElementById("uploadIdBtn").classList.add("uploaded");
-                completedCount++;
-            }
-            if (uploadedItems.faceImage) {
-                document.getElementById("uploadFaceBtn").innerHTML = "✓ Uploaded";
-                document.getElementById("uploadFaceBtn").classList.add("uploaded");
-                completedCount++;
-            }
-            if (uploadedItems.backImage) {
-                document.getElementById("uploadAddressBtn").innerHTML = "✓ Uploaded";
-                document.getElementById("uploadAddressBtn").classList.add("uploaded");
-                completedCount++;
-            }
-            
-            if (completedCount > 0) {
-                const percent = (completedCount / 3) * 100;
-                updateProgress(percent, completedCount);
-            }
-            
-            if (completedCount === 3) {
-                document.getElementById("statusText").innerHTML = "Under Review";
-                document.getElementById("statusText").className = "pending";
-            }
-        } catch(e) {}
-    } else if (saved) {
-        // 兼容旧版本
-        const completedCount = parseInt(saved);
-        if (completedCount >= 1) {
-            document.getElementById("uploadIdBtn").innerHTML = "✓ Uploaded";
-            document.getElementById("uploadIdBtn").classList.add("uploaded");
-        }
-        if (completedCount >= 2) {
-            document.getElementById("uploadFaceBtn").innerHTML = "✓ Uploaded";
-            document.getElementById("uploadFaceBtn").classList.add("uploaded");
-        }
-        if (completedCount >= 3) {
-            document.getElementById("uploadAddressBtn").innerHTML = "✓ Uploaded";
-            document.getElementById("uploadAddressBtn").classList.add("uploaded");
-            document.getElementById("statusText").innerHTML = "Under Review";
-        }
-        if (completedCount > 0) {
-            updateProgress((completedCount / 3) * 100, completedCount);
-        }
-    }
-}
-
-// ==================== 页面启动 ====================
 loadUploadStatus();
 loadKYCStatus();
 </script>
-
 </body>
 </html>
