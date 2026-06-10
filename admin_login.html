@@ -92,14 +92,12 @@ button:disabled{opacity:0.5;cursor:not-allowed;}
 <script>
 const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-async function loginAdmin() {
+function loginAdmin() {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
-    const btn = document.getElementById("loginBtn");
     const errorDiv = document.getElementById("errorMsg");
     
     errorDiv.style.display = "none";
-    errorDiv.innerText = "";
     
     if (!username || !password) {
         errorDiv.innerText = "请输入用户名和密码";
@@ -107,46 +105,24 @@ async function loginAdmin() {
         return;
     }
     
-    const originalText = btn.innerText;
-    btn.disabled = true;
-    btn.innerHTML = '<div class="loading-spinner"></div> 验证中...';
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/admin/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
-        });
+    // 前端直接验证
+    if (username === "admin" && password === "Admin123456") {
+        localStorage.setItem("adminAuth", JSON.stringify({
+            role: "admin",
+            username: username,
+            loginTime: Date.now()
+        }));
         
-        const result = await response.json();
-        
-        if (result.success) {
-            localStorage.setItem("adminAuth", JSON.stringify({
-                role: "admin",
-                username: username,
-                loginTime: Date.now(),
-                token: result.token
-            }));
-            
-            errorDiv.style.color = "#00f5a0";
-            errorDiv.innerText = "登录成功，正在跳转...";
-            errorDiv.style.display = "block";
-            
-            setTimeout(() => {
-                window.location.href = "dashboard.html";
-            }, 1000);
-        } else {
-            errorDiv.innerText = result.message || "用户名或密码错误";
-            errorDiv.style.display = "block";
-            btn.disabled = false;
-            btn.innerText = originalText;
-        }
-    } catch (err) {
-        console.error("Login error:", err);
-        errorDiv.innerText = "网络错误，请检查服务器连接";
+        errorDiv.style.color = "#00f5a0";
+        errorDiv.innerText = "登录成功，正在跳转...";
         errorDiv.style.display = "block";
-        btn.disabled = false;
-        btn.innerText = originalText;
+        
+        setTimeout(() => {
+            window.location.href = "dashboard.html";
+        }, 1000);
+    } else {
+        errorDiv.innerText = "用户名或密码错误";
+        errorDiv.style.display = "block";
     }
 }
 

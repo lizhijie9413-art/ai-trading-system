@@ -2328,6 +2328,25 @@ app.get("/api/verify-reset-token", async (req, res) => {
     }
 });
 
+// 管理员登录接口
+app.post("/api/admin/login", async (req, res) => {
+    const { username, password } = req.body;
+    
+    // 验证用户名和密码
+    if (username === "admin" && password === "Admin123456") {
+        res.json({
+            success: true,
+            message: "Login successful",
+            token: "admin_" + Date.now()
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            message: "Invalid username or password"
+        });
+    }
+});
+
 // 重置密码
 app.post("/api/reset-password", async (req, res) => {
     try {
