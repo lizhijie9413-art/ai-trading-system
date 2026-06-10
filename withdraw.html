@@ -255,6 +255,15 @@ body::before{
   font-weight:900;
   background:linear-gradient(90deg,#7c3aed,#38bdf8);
   box-shadow:0 0 32px rgba(168,85,247,.45);
+  cursor:pointer;
+  transition:all 0.3s ease;
+}
+.submit-btn:hover{
+  transform:translateY(-2px);
+}
+.submit-btn:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
 }
 
 .toast{
@@ -295,6 +304,19 @@ body::before{
   font-size:13px;
   margin-top:8px;
 }
+
+.loading-spinner{
+  display:inline-block;
+  width:18px;
+  height:18px;
+  border:2px solid rgba(255,255,255,.3);
+  border-radius:50%;
+  border-top-color:white;
+  animation:spin 0.6s linear infinite;
+  margin-right:8px;
+  vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 
@@ -323,7 +345,7 @@ body::before{
   <div class="tabs">
     <button class="tab active" onclick="setNetwork('TRC20', this)">TRC20</button>
     <button class="tab" onclick="setNetwork('ERC20', this)">ERC20</button>
-    <button class="tab" onclick="setNetwork('Bitcoin', this)">Bitcoin</button>
+    <button class="tab" onclick="setNetwork('BTC', this)">Bitcoin</button>
   </div>
 
   <div class="card form-card">
@@ -332,8 +354,6 @@ body::before{
       <label>Withdrawal Address</label>
       <div class="input-box">
         <input id="withdrawAddress" type="text" placeholder="Enter wallet address">
-        <span class="input-action">Scan</span>
-        <span class="input-action">Copy</span>
       </div>
     </div>
 
@@ -345,10 +365,10 @@ body::before{
     </div>
 
     <div class="field">
-      <label>Amount</label>
+      <label>Amount (USDT)</label>
       <div class="input-box">
-        <input id="withdrawAmount" type="text" inputmode="decimal" placeholder="Enter amount" oninput="calcReceive()">
-        <span class="input-action" onclick="setMax()">All</span>
+        <input id="withdrawAmount" type="number" step="1" placeholder="Enter amount" oninput="calcReceive()">
+        <span class="input-action" onclick="setMax()">MAX</span>
       </div>
     </div>
 
@@ -371,12 +391,12 @@ body::before{
 
   <div class="card notice">
     <h3>Withdrawal Notice</h3>
-    <p>Minimum withdrawal amount required for processing.</p>
+    <p>Minimum withdrawal amount: 10 USDT</p>
     <p>Please verify the destination wallet address carefully before submitting.</p>
-    <p>Withdrawals may require additional security review.</p>
+    <p>Withdrawals over 1000 USDT require KYC verification.</p>
   </div>
 
-  <button class="submit-btn" onclick="submitWithdrawal()">
+  <button class="submit-btn" id="submitBtn" onclick="submitWithdrawal()">
     Submit Withdrawal
   </button>
 
@@ -389,173 +409,190 @@ body::before{
 </div>
 
 <script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 let currentBalance = 0;
 
-function getLocalUser(){
-  return JSON.parse(localStorage.getItem("user") || "{}");
-}
-
-function setNetwork(network, btn){
-  document.getElementById("networkInput").value = network;
-
-  document.querySelectorAll(".tab").forEach(tab=>{
-    tab.classList.remove("active");
-  });
-
-  btn.classList.add("active");
-}
-
-function calcReceive(){
-  const amount = Number(document.getElementById("withdrawAmount").value || 0);
-  const fee = 1;
-  const receive = Math.max(amount - fee, 0);
-
-  document.getElementById("receiveText").innerText =
-    "$" + receive.toFixed(2);
-}
-
-function setMax(){
-  document.getElementById("withdrawAmount").value = currentBalance;
-  calcReceive();
-}
-
-function showToast(title, text){
-  document.getElementById("toastTitle").innerText = title;
-  document.getElementById("toastText").innerText = text;
-
-  const toast = document.getElementById("toast");
-  toast.classList.add("show");
-
-  setTimeout(()=>{
-    toast.classList.remove("show");
-  }, 1800);
-}
-
-async function loadAssets(){
-  const localUser = getLocalUser();
-
-  if(!localUser || !localUser.id){
-    return;
-  }
-
-try{
-
-  const API_BASE =
-  "https://ai-trading-system-j5jf.onrender.com";
-
-  const res = await fetch(
-    API_BASE + "/api/users/" + localUser.id
-  );
-    const result = await res.json();
-
-    if(result.success){
-      const user = result.user;
-
-      localStorage.setItem("user", JSON.stringify(user));
-
-      const balance = Number(user.balance || 0);
-      currentBalance = balance;
-
-      document.getElementById("totalAssets").innerText =
-        "$" + balance.toLocaleString(undefined,{
-          minimumFractionDigits:2,
-          maximumFractionDigits:2
-        });
-
-      document.getElementById("availableAssets").innerText =
-        "$" + balance.toLocaleString(undefined,{
-          minimumFractionDigits:2,
-          maximumFractionDigits:2
-        });
+// ==================== 获取用户 ====================
+function getCurrentUser() {
+    try {
+        const user = localStorage.getItem("user");
+        return user ? JSON.parse(user) : null;
+    } catch (e) {
+        return null;
     }
-
-  }catch(err){
-    console.log(err);
-  }
 }
 
-async function submitWithdrawal(){
-
-  const localUser = getLocalUser();
-
-  const address =
-    document.getElementById("withdrawAddress").value.trim();
-
-  const amount =
-    Number(document.getElementById("withdrawAmount").value);
-
-  const network =
-    document.getElementById("networkInput").value;
-
-  if(!localUser || !localUser.id){
-    alert("Please login again");
-    return;
-  }
-
-  if(!address){
-    alert("Please enter wallet address");
-    return;
-  }
-
-  if(!amount || amount <= 0){
-    alert("Please enter amount");
-    return;
-  }
-
-  if(amount > currentBalance){
-    alert("Insufficient balance");
-    return;
-  }
-
-  try{
-const API_BASE =
-"https://ai-trading-system-j5jf.onrender.com";
-
-const res = await fetch(API_BASE + "/api/withdraw",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        userId: localUser.id,
-        uid: localUser.uid || "",
-        email: localUser.email || "",
-        address,
-        amount,
-        network,
-        time:new Date().toLocaleString(),
-        status:"Pending"
-      })
+// ==================== 设置网络 ====================
+function setNetwork(network, btn) {
+    document.getElementById("networkInput").value = network;
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.classList.remove("active");
     });
-
-    const result = await res.json();
-
-    if(result.success){
-
-      localUser.balance = result.balance;
-      localStorage.setItem("user", JSON.stringify(localUser));
-
-      showToast(
-        "Withdrawal Submitted",
-        "Balance deducted, pending review"
-      );
-
-      document.getElementById("withdrawAmount").value = "";
-      document.getElementById("withdrawAddress").value = "";
-      document.getElementById("receiveText").innerText = "$0.00";
-
-      await loadAssets();
-
-    }else{
-      alert(result.message || "Withdrawal failed");
-    }
-
-  }catch(err){
-    console.log(err);
-    alert("Server connection failed");
-  }
+    btn.classList.add("active");
 }
 
+// ==================== 计算到账金额 ====================
+function calcReceive() {
+    const amount = Number(document.getElementById("withdrawAmount").value || 0);
+    const fee = 1;
+    const receive = Math.max(amount - fee, 0);
+    document.getElementById("receiveText").innerHTML = "$" + receive.toFixed(2);
+}
+
+// ==================== 设置最大金额 ====================
+function setMax() {
+    document.getElementById("withdrawAmount").value = currentBalance;
+    calcReceive();
+}
+
+// ==================== 显示提示 ====================
+function showToast(title, text, type = "success") {
+    const toast = document.getElementById("toast");
+    const iconEl = toast.querySelector(".toast-icon");
+    
+    if (type === "error") {
+        iconEl.innerHTML = "✗";
+        iconEl.style.color = "#ff4d6d";
+    } else {
+        iconEl.innerHTML = "✓";
+        iconEl.style.color = "#00f5a0";
+    }
+    
+    document.getElementById("toastTitle").innerText = title;
+    document.getElementById("toastText").innerText = text;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
+// ==================== 加载资产 ====================
+async function loadAssets() {
+    const user = getCurrentUser();
+    if (!user || !user.id) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/api/users/${user.id}`, {
+            headers: { "user-id": user.id }
+        });
+        const result = await response.json();
+
+        if (result.success && result.user) {
+            const userData = result.user;
+            const balance = Number(userData.availableBalance || userData.balance || userData.asset || 0);
+            currentBalance = balance;
+
+            // 更新本地存储
+            const updatedUser = { ...user, ...userData };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+
+            document.getElementById("totalAssets").innerHTML = "$" + balance.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            document.getElementById("availableAssets").innerHTML = "$" + balance.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+    } catch (err) {
+        console.log("Load assets error:", err);
+    }
+}
+
+// ==================== 提交提现（修复：添加认证头） ====================
+async function submitWithdrawal() {
+    const user = getCurrentUser();
+    const submitBtn = document.getElementById("submitBtn");
+    
+    // 检查登录
+    if (!user || !user.id) {
+        showToast("Login Required", "Please login first", "error");
+        setTimeout(() => window.location.href = "login.html", 1500);
+        return;
+    }
+
+    const address = document.getElementById("withdrawAddress").value.trim();
+    const amount = Number(document.getElementById("withdrawAmount").value);
+    const network = document.getElementById("networkInput").value;
+
+    // 验证地址
+    if (!address) {
+        showToast("Address Required", "Please enter wallet address", "error");
+        return;
+    }
+
+    // 验证金额
+    if (!amount || amount <= 0) {
+        showToast("Invalid Amount", "Please enter a valid amount", "error");
+        return;
+    }
+
+    if (amount < 10) {
+        showToast("Minimum Amount", "Minimum withdrawal is 10 USDT", "error");
+        return;
+    }
+
+    if (amount > currentBalance) {
+        showToast("Insufficient Balance", `Your balance is $${currentBalance.toFixed(2)}`, "error");
+        return;
+    }
+
+    // 禁用按钮防止重复提交
+    const originalText = submitBtn.innerText;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<div class="loading-spinner"></div> Processing...';
+
+    try {
+        // 修复：添加 user-id 认证头，不再在 body 中传 userId
+        const response = await fetch(`${API_BASE}/api/withdraw`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "user-id": user.id   // 👈 关键：添加认证头
+            },
+            body: JSON.stringify({
+                address: address,
+                amount: amount,
+                network: network
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 更新本地余额
+            if (result.balance !== undefined) {
+                currentBalance = result.balance;
+                const updatedUser = { ...user, balance: result.balance, asset: result.balance };
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+            }
+            
+            showToast("Withdrawal Submitted", result.message || "Your withdrawal request has been submitted", "success");
+            
+            // 清空表单
+            document.getElementById("withdrawAmount").value = "";
+            document.getElementById("withdrawAddress").value = "";
+            document.getElementById("receiveText").innerHTML = "$0.00";
+            
+            // 刷新余额显示
+            await loadAssets();
+        } else {
+            let errorMsg = result.message || "Withdrawal failed";
+            if (result.code === "KYC_REQUIRED") {
+                errorMsg = "Withdrawals over 1000 USDT require KYC verification. Please complete KYC first.";
+            }
+            showToast("Withdrawal Failed", errorMsg, "error");
+        }
+    } catch (err) {
+        console.error("Withdrawal error:", err);
+        showToast("Network Error", "Please check your connection and try again", "error");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+// ==================== 页面启动 ====================
 loadAssets();
 </script>
 

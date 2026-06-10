@@ -20,7 +20,49 @@ body{
     radial-gradient(circle at bottom right,rgba(56,189,248,.12),transparent 30%),
     linear-gradient(180deg,#03040d,#050816,#02030a);
   color:white;
-  padding:26px;
+  display:flex;
+}
+
+.sidebar{
+  width:260px;
+  background:linear-gradient(180deg,#151515,#0f0f0f);
+  border-right:1px solid rgba(168,85,247,.22);
+  padding:28px 20px;
+  min-height:100vh;
+  position:fixed;
+  left:0;
+  top:0;
+  overflow-y:auto;
+}
+
+.sidebar a{
+  display:block;
+  color:white;
+  text-decoration:none;
+  padding:14px 18px;
+  margin-bottom:6px;
+  border-radius:14px;
+  font-size:15px;
+  font-weight:600;
+  transition:all 0.3s;
+}
+
+.sidebar a:hover{
+  background:rgba(168,85,247,.12);
+  color:#c084fc;
+}
+
+.sidebar a.active{
+  background:linear-gradient(135deg,#7c3aed,#38bdf8);
+  color:white;
+  box-shadow:0 0 15px rgba(124,58,237,.3);
+}
+
+.main{
+  margin-left:260px;
+  flex:1;
+  padding:30px;
+  min-height:100vh;
 }
 
 h1{
@@ -48,6 +90,12 @@ h1{
   border:1px solid rgba(168,85,247,.22);
   border-radius:22px;
   padding:22px;
+  transition:all 0.3s;
+}
+
+.stat:hover{
+  transform:translateY(-3px);
+  border-color:#c084fc;
 }
 
 .stat span{
@@ -74,6 +122,11 @@ h1{
   background:rgba(255,255,255,.08);
   color:white;
   font-size:15px;
+}
+
+.search:focus{
+  border:1px solid #c084fc;
+  background:rgba(255,255,255,.12);
 }
 
 .table-wrap{
@@ -150,6 +203,11 @@ td{
   color:white;
   font-weight:900;
   cursor:pointer;
+  transition:all 0.3s;
+}
+
+.btn:hover{
+  transform:translateY(-2px);
 }
 
 .approve{
@@ -187,16 +245,52 @@ td{
 }
 
 @media(max-width:800px){
-  body{
-    padding:18px;
+  .sidebar{
+    width:220px;
   }
-
+  .main{
+    margin-left:220px;
+    padding:20px;
+  }
+  h1{
+    font-size:32px;
+  }
   .top{
     grid-template-columns:1fr 1fr;
   }
+}
 
+@media(max-width:600px){
+  .sidebar{
+    transform:translateX(-100%);
+    position:fixed;
+    z-index:100;
+    transition:0.3s;
+  }
+  .sidebar.open{
+    transform:translateX(0);
+  }
+  .main{
+    margin-left:0;
+    padding:15px;
+  }
+  .menu-toggle{
+    display:block;
+    position:fixed;
+    top:15px;
+    left:15px;
+    z-index:101;
+    background:#7c3aed;
+    border:none;
+    color:white;
+    width:44px;
+    height:44px;
+    border-radius:12px;
+    font-size:20px;
+    cursor:pointer;
+  }
   h1{
-    font-size:32px;
+    padding-top:50px;
   }
 }
 </style>
@@ -213,234 +307,183 @@ if (!adminAuth || adminAuth.role !== "admin") {
 
 <body>
 
-<div class="sidebar">
+<button class="menu-toggle" onclick="toggleSidebar()">☰</button>
 
-<a href="dashboard.html">仪表板</a>
-<a href="trade_management.html">交易管理</a>
-<a href="user_management.html">用户管理</a>
-<a href="kyc.html">KYC审核</a>
-<a href="order_management.html">订单管理</a>
-<a href="customer_service.html">客服管理</a>
-<a href="withdraw_management.html" class="active">提现管理</a>
-<div class="main">
-
-
-<h1>提现管理</h1>
-<div class="desc">审核和管理用户提现申请</div>
-
-<div class="top">
-  <div class="stat">
-    <span>总申请</span>
-    <strong id="totalCount">0</strong>
-  </div>
-
-  <div class="stat">
-    <span>待审核</span>
-    <strong id="pendingCount">0</strong>
-  </div>
-
-  <div class="stat">
-    <span>已通过</span>
-    <strong id="approvedCount">0</strong>
-  </div>
-
-  <div class="stat">
-    <span>总金额</span>
-    <strong id="totalAmount">$0.00</strong>
-  </div>
+<div class="sidebar" id="sidebar">
+  <a href="dashboard.html">仪表板</a>
+  <a href="trade_management.html">交易管理</a>
+  <a href="user_management.html">用户管理</a>
+  <a href="kyc.html">KYC审核</a>
+  <a href="order_management.html">订单管理</a>
+  <a href="customer_service.html">客服管理</a>
+  <a href="withdraw_management.html" class="active">提现管理</a>
 </div>
 
-<input
-  class="search"
-  id="searchInput"
-  placeholder="搜索提现ID / 钱包地址 / 网络 / 状态"
-  oninput="renderWithdrawals()"
-/>
+<div class="main">
 
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>提现ID</th>
-        <th>钱包地址</th>
-        <th>金额</th>
-        <th>网络</th>
-        <th>申请时间</th>
-        <th>状态</th>
-        <th>操作</th>
-      </tr>
-    </thead>
+  <h1>提现管理</h1>
+  <div class="desc">审核和管理用户提现申请</div>
 
-    <tbody id="withdrawTable">
-      <tr>
-        <td colspan="7" class="empty">加载中...</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="top">
+    <div class="stat"><span>总申请</span><strong id="totalCount">0</strong></div>
+    <div class="stat"><span>待审核</span><strong id="pendingCount">0</strong></div>
+    <div class="stat"><span>已通过</span><strong id="approvedCount">0</strong></div>
+    <div class="stat"><span>总金额</span><strong id="totalAmount">$0.00</strong></div>
+  </div>
+
+  <input class="search" id="searchInput" placeholder="搜索提现ID / 钱包地址 / 网络 / 状态" oninput="searchWithdrawals()">
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>提现ID</th>
+          <th>钱包地址</th>
+          <th>金额</th>
+          <th>网络</th>
+          <th>申请时间</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="withdrawTable">
+        <tr><td colspan="7" class="empty">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <div class="toast" id="toast">状态已更新</div>
 
 <script>
+// ==================== 配置 ====================
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
+const ADMIN_TOKEN = "AI_ADMIN_2026";
+
 let withdrawals = [];
 
+// ==================== 侧边栏切换 ====================
+function toggleSidebar(){
+  const sidebar = document.getElementById("sidebar");
+  sidebar.classList.toggle("open");
+}
 
-  async function loadWithdrawals(){
-
+// ==================== 加载提现列表 ====================
+async function loadWithdrawals(){
   try{
-
-    const res = await fetch(
-  "https://ai-trading-system-j5jf.onrender.com/api/withdrawals"
-);
-
+    const res = await fetch(`${API_BASE}/api/withdrawals`, {
+      headers: { "admin-token": ADMIN_TOKEN }
+    });
     withdrawals = await res.json();
-
     renderWithdrawals();
-
   }catch(err){
-
-    document.getElementById("withdrawTable").innerHTML =
-      `<tr><td colspan="7" class="empty">加载提现申请失败</td></tr>`;
+    console.log(err);
+    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="7" class="empty">加载提现申请失败</td></tr>`;
   }
 }
 
+// ==================== 渲染提现列表 ====================
 function renderWithdrawals(){
-
-  const keyword =
-    document.getElementById("searchInput").value.toLowerCase();
-
+  const keyword = document.getElementById("searchInput").value.toLowerCase();
+  
   const filtered = withdrawals.filter(item => {
-
     return (
-      String(item.id || "").toLowerCase().includes(keyword) ||
+      String(item.id || item._id || "").toLowerCase().includes(keyword) ||
       String(item.address || "").toLowerCase().includes(keyword) ||
       String(item.network || "").toLowerCase().includes(keyword) ||
       String(item.status || "").toLowerCase().includes(keyword)
     );
-
   });
 
-  document.getElementById("totalCount").innerText =
-    withdrawals.length;
-
-  document.getElementById("pendingCount").innerText =
-    withdrawals.filter(i => i.status === "Pending").length;
-
-  document.getElementById("approvedCount").innerText =
-    withdrawals.filter(i => i.status === "Approved").length;
-
-  const totalAmount =
-    withdrawals.reduce((sum,item)=>sum + Number(item.amount || 0),0);
-
-  document.getElementById("totalAmount").innerText =
-    "$" + totalAmount.toLocaleString(undefined,{
-      minimumFractionDigits:2,
-      maximumFractionDigits:2
-    });
+  // 更新统计
+  document.getElementById("totalCount").innerText = withdrawals.length;
+  document.getElementById("pendingCount").innerText = withdrawals.filter(i => i.status === "Pending").length;
+  document.getElementById("approvedCount").innerText = withdrawals.filter(i => i.status === "Approved").length;
+  
+  const totalAmount = withdrawals.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  document.getElementById("totalAmount").innerHTML = "$" + totalAmount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 
   if(filtered.length === 0){
-
-    document.getElementById("withdrawTable").innerHTML =
-      `<tr><td colspan="7" class="empty">暂无提现申请</td></tr>`;
-
+    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="7" class="empty">暂无提现申请</td></tr>`;
     return;
   }
 
-  document.getElementById("withdrawTable").innerHTML =
-    filtered.map(item => {
-
-      const status = item.status || "Pending";
-
-      return `
-        <tr>
-          <td>${item.id || item._id || "-"}</td>
-
-          <td class="address">${item.address || "-"}</td>
-
-          <td class="amount">
-            $${Number(item.amount || 0).toLocaleString(undefined,{
-              minimumFractionDigits:2,
-              maximumFractionDigits:2
-            })}
-          </td>
-
-          <td>${item.network || "-"}</td>
-
-          <td>${item.time || "-"}</td>
-
-          <td>
-            <span class="status ${status}">
-              ${status}
-            </span>
-          </td>
-
-          <td>
-            <div class="actions">
-              <button
-                class="btn approve"
-                onclick="updateStatus('${item._id}','Approved')"
-              >
-                通过
-              </button>
-
-              <button
-                class="btn reject"
-                onclick="updateStatus('${item._id}','Rejected')"
-              >
-                拒绝
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
+  document.getElementById("withdrawTable").innerHTML = filtered.map(item => {
+    const status = item.status || "Pending";
+    return `
+      <tr>
+        <td>${item.id || item._id || "-"}</td>
+        <td class="address">${escapeHtml(item.address || "-")}</td>
+        <td class="amount">$${Number(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${item.network || "-"}</td>
+        <td>${item.time || "-"}</td>
+        <td><span class="status ${status}">${status}</span></td>
+        <td>
+          <div class="actions">
+            ${status === "Pending" ? `
+              <button class="btn approve" onclick="updateStatus('${item._id}','Approved')">通过</button>
+              <button class="btn reject" onclick="updateStatus('${item._id}','Rejected')">拒绝</button>
+            ` : '<span style="color:#666;">已处理</span>'}
+          </div>
+        </td>
+      </table>
+    `;
+  }).join("");
 }
 
+// ==================== 搜索 ====================
+function searchWithdrawals(){
+  renderWithdrawals();
+}
+
+// ==================== 更新状态 ====================
 async function updateStatus(id, status){
-
-  const res = await fetch(
-    "https://ai-trading-system-j5jf.onrender.com/api/withdraw/status",
-    {
-      method:"POST",
-
-      headers:{
-        "Content-Type":"application/json",
-        "admin-token":"AI_ADMIN_2026"
+  try{
+    const res = await fetch(`${API_BASE}/api/withdraw/status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "admin-token": ADMIN_TOKEN
       },
-
-body:JSON.stringify({
-  id,
-  status
-})
-});
-
-  const data = await res.json();
-
-  if(data.success){
-
-    showToast("状态已更新");
-
-    await loadWithdrawals();
-
-  }else{
-
-    showToast(data.message || "更新失败");
+      body: JSON.stringify({ id, status })
+    });
+    const data = await res.json();
+    
+    if(data.success){
+      showToast(status === "Approved" ? "提现已通过" : "提现已拒绝");
+      await loadWithdrawals();
+    }else{
+      showToast(data.message || "更新失败");
+    }
+  }catch(err){
+    console.log(err);
+    showToast("网络错误，请重试");
   }
 }
 
+// ==================== 显示提示 ====================
 function showToast(text){
-
   const toast = document.getElementById("toast");
-
   toast.innerText = text;
-
   toast.classList.add("show");
-
-  setTimeout(()=>{
-    toast.classList.remove("show");
-  },1800);
+  setTimeout(() => toast.classList.remove("show"), 1800);
 }
 
+// ==================== XSS防护 ====================
+function escapeHtml(str){
+  if(!str) return '';
+  return str.replace(/[&<>]/g, function(m){
+    if(m === '&') return '&amp;';
+    if(m === '<') return '&lt;';
+    if(m === '>') return '&gt;';
+    return m;
+  });
+}
+
+// ==================== 页面启动 ====================
 loadWithdrawals();
 </script>
 
