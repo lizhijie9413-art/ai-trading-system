@@ -40,6 +40,103 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+const publicRootFiles = new Set([
+  "admin_login.html",
+  "ai_trading.html",
+  "assistant_orders.html",
+  "billing.html",
+  "classic_trading.html",
+  "config.js",
+  "customer_service.html",
+  "dashboard.html",
+  "deposit.html",
+  "edit_profile.html",
+  "forgot.html",
+  "index.html",
+  "invite.html",
+  "kyc.html",
+  "kyc_verify.html",
+  "login.html",
+  "manifest.json",
+  "market.html",
+  "notifications.html",
+  "order_management.html",
+  "portfolio.html",
+  "profile.html",
+  "records.html",
+  "register.html",
+  "security.html",
+  "settings.html",
+  "strategy.html",
+  "support_chat.html",
+  "sw.js",
+  "token_yield.html",
+  "trade.html",
+  "trade_management.html",
+  "transfer.html",
+  "user_management.html",
+  "withdraw.html",
+  "withdraw_management.html",
+  "yield_statement.html"
+]);
+
+app.use("/images", express.static(path.join(__dirname, "images")));
+
+app.get("/:file", (req, res, next) => {
+  const file = path.basename(req.params.file);
+  if (!publicRootFiles.has(file)) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, file));
+});
+
+
+const allowedHtmlPages = new Set([
+  "admin_login.html",
+  "ai_trading.html",
+  "assistant_orders.html",
+  "billing.html",
+  "classic_trading.html",
+  "customer_service.html",
+  "dashboard.html",
+  "deposit.html",
+  "edit_profile.html",
+  "forgot.html",
+  "index.html",
+  "invite.html",
+  "kyc.html",
+  "kyc_verify.html",
+  "login.html",
+  "market.html",
+  "notifications.html",
+  "order_management.html",
+  "portfolio.html",
+  "profile.html",
+  "records.html",
+  "register.html",
+  "security.html",
+  "settings.html",
+  "strategy.html",
+  "support_chat.html",
+  "token_yield.html",
+  "trade.html",
+  "trade_management.html",
+  "transfer.html",
+  "user_management.html",
+  "withdraw.html",
+  "withdraw_management.html",
+  "yield_statement.html"
+]);
+
+app.get("/:page", (req, res, next) => {
+  const page = path.basename(req.params.page);
+  if (!allowedHtmlPages.has(page)) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, page));
+});
+
+
 function base64UrlEncode(value) {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
 }
