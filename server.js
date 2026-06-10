@@ -10,15 +10,76 @@ const bcrypt = require("bcryptjs");
 const http = require("http");
 const { Server } = require("socket.io");
 const multer = require("multer");
+const crypto = require("crypto");
 
 const app = express();
 // 修复：将管理员Token改为环境变量
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "AI_ADMIN_2026";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_TOKEN_TTL_MS = Number(process.env.ADMIN_TOKEN_TTL_MS || 24 * 60 * 60 * 1000);
+const USER_TOKEN_SECRET = process.env.USER_TOKEN_SECRET || ADMIN_TOKEN;
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map(origin => origin.trim())
+  .filter(Boolean);
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error("Not allowed by CORS"));
+  }
+};
 
-app.use(cors());
+if (!ADMIN_TOKEN || !ADMIN_PASSWORD || !USER_TOKEN_SECRET) {
+  console.warn("Security warning: ADMIN_TOKEN, ADMIN_PASSWORD, and USER_TOKEN_SECRET should be set in .env");
+}
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+function base64UrlEncode(value) {
+  return Buffer.from(JSON.stringify(value)).toString("base64url");
+}
+
+function signToken(payload, secret) {
+  const encodedPayload = base64UrlEncode(payload);
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(encodedPayload)
+    .digest("base64url");
+  return `${encodedPayload}.${signature}`;
+}
+
+function verifySignedToken(token, secret) {
+  if (!token || !secret || !token.includes(".")) return null;
+
+  try {
+    const [encodedPayload, signature] = token.split(".");
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(encodedPayload)
+      .digest("base64url");
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+
+    if (signatureBuffer.length !== expectedBuffer.length) return null;
+    if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
+
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+    if (payload.exp && Date.now() > payload.exp) return null;
+    return payload;
+  } catch (err) {
+    return null;
+  }
+}
+
+function getBearerToken(req) {
+  const header = req.headers.authorization || "";
+  return header.startsWith("Bearer ") ? header.slice(7) : null;
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -84,13 +145,18 @@ app.get("/api/market/quotes", async (req, res) => {
 
 // 修复：添加用户认证中间件
 async function authenticateUser(req, res, next) {
-  const userId = req.headers["user-id"] || req.params.id;
+  const userToken = getBearerToken(req);
+  const tokenPayload = verifySignedToken(userToken, USER_TOKEN_SECRET);
+  const userId = tokenPayload?.userId || req.headers["user-id"] || req.params.id;
   if (!userId) {
     return res.status(401).json({ success: false, message: "User ID required" });
   }
   const user = await User.findById(userId);
   if (!user) {
     return res.status(401).json({ success: false, message: "User not found" });
+  }
+  if (tokenPayload && tokenPayload.userId !== user._id.toString()) {
+    return res.status(403).json({ success: false, message: "Invalid user token" });
   }
   if (user.status !== 'active') {
     return res.status(403).json({ success: false, message: "Account is frozen" });
@@ -285,9 +351,16 @@ app.post("/api/login", async (req, res) => {
             });
         }
 
+        const token = signToken({
+            userId: user._id.toString(),
+            type: "user",
+            exp: Date.now() + ADMIN_TOKEN_TTL_MS
+        }, USER_TOKEN_SECRET);
+
         res.json({
     success: true,
     message: "Login successful.",
+    token,
     user: {
         id: user._id,
         uid: user.uid,
@@ -323,11 +396,17 @@ const kycStorage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage: kycStorage
-
+  storage: kycStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    if (!file.mimetype || !file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image uploads are allowed"));
+    }
+    cb(null, true);
+  }
 });
 
-app.post("/api/chat/upload", upload.single("image"), (req, res) => {
+app.post("/api/chat/upload", authenticateUserOrAdmin, upload.single("image"), (req, res) => {
   res.json({
     success: true,
     url: "/uploads/" + req.file.filename
@@ -346,7 +425,7 @@ const io = new Server(server, {
 
 
 
-app.get("/api/kyc/list", (req, res) => {
+app.get("/api/kyc/list", verifyAdmin, (req, res) => {
   res.json(kycSubmissions);
 });
 
@@ -354,16 +433,9 @@ app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname, {
-  fallthrough: true
-}));
 
-mongoose.connect(
-  "mongodb+srv://lizhijie9413_db_user:7IosWudKAGOOqhLq@cluster0.4yivc9k.mongodb.net/ai_trading_admin?retryWrites=true&w=majority&appName=Cluster0&authSource=admin"
-)
+mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/ai_trading_admin")
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log("MongoDB error:", err));
 
@@ -562,12 +634,12 @@ app.get("/", (req, res) => {
 });
 
 /* 用户 */
-app.get("/api/users", async (req, res) => {
+app.get("/api/users", verifyAdmin, async (req, res) => {
   const users = await User.find();
   res.json({ success: true, data: users, stats });
 });
 
-app.post("/api/users", async (req, res) => {
+app.post("/api/users", verifyAdmin, async (req, res) => {
   const user = await User.create({
     ...req.body,
     asset: Number(req.body.asset || 0),
@@ -579,7 +651,7 @@ app.post("/api/users", async (req, res) => {
   res.json({ success: true, data: user });
 });
 
-app.get("/api/chat/history/:userId", async (req, res) => {
+app.get("/api/chat/history/:userId", authenticateUser, async (req, res) => {
 
   try {
 
@@ -602,7 +674,7 @@ app.get("/api/chat/history/:userId", async (req, res) => {
 });
 
 // 修复：添加金额验证
-app.put("/api/users/:id/recharge", async (req, res) => {
+app.put("/api/users/:id/recharge", verifyAdmin, async (req, res) => {
   const amount = Number(req.body.amount);
 
   // 修复：金额验证
@@ -647,7 +719,7 @@ app.put("/api/users/:id/recharge", async (req, res) => {
   });
 });
 
-app.put("/api/users/:id/profile", async (req, res) => {
+app.put("/api/users/:id/profile", authenticateUser, async (req, res) => {
   try {
     const { name, email, phone } = req.body;
 
@@ -687,7 +759,7 @@ app.put("/api/users/:id/profile", async (req, res) => {
   }
 });
 
-app.put("/api/users/:id/withdraw", async (req, res) => {
+app.put("/api/users/:id/withdraw", verifyAdmin, async (req, res) => {
   const amount = Number(req.body.amount);
   const user = await User.findById(req.params.id);
 
@@ -746,12 +818,12 @@ app.put(
 });
 
 /* KYC */
-app.get("/api/kyc", async (req, res) => {
+app.get("/api/kyc", verifyAdmin, async (req, res) => {
   const list = await KYC.find();
   res.json({ success: true, data: list });
 });
 
-app.put("/api/kyc/:id/approve", async (req, res) => {
+app.put("/api/kyc/:id/approve", verifyAdmin, async (req, res) => {
   const item = await KYC.findByIdAndUpdate(
     req.params.id,
     { status: "已通过" },
@@ -761,7 +833,7 @@ app.put("/api/kyc/:id/approve", async (req, res) => {
   res.json({ success: true, data: item });
 });
 
-app.put("/api/kyc/:id/reject", async (req, res) => {
+app.put("/api/kyc/:id/reject", verifyAdmin, async (req, res) => {
   const item = await KYC.findByIdAndUpdate(
     req.params.id,
     { status: "已驳回" },
@@ -772,12 +844,12 @@ app.put("/api/kyc/:id/reject", async (req, res) => {
 });
 
 /* 订单 */
-app.get("/api/orders", async (req, res) => {
+app.get("/api/orders", verifyAdmin, async (req, res) => {
   const orders = await Order.find();
   res.json({ success: true, data: orders });
 });
 
-app.put("/api/orders/:id/complete", async (req, res) => {
+app.put("/api/orders/:id/complete", verifyAdmin, async (req, res) => {
   const order = await Order.findOneAndUpdate(
     { id: req.params.id },
     { status: "已完成", remark: "订单已完成" },
@@ -787,7 +859,7 @@ app.put("/api/orders/:id/complete", async (req, res) => {
   res.json({ success: true, data: order });
 });
 
-app.put("/api/orders/:id/cancel", async (req, res) => {
+app.put("/api/orders/:id/cancel", verifyAdmin, async (req, res) => {
   const order = await Order.findOneAndUpdate(
     { id: req.params.id },
     { status: "已取消", remark: "订单已取消" },
@@ -855,7 +927,7 @@ const TokenYieldOrder = mongoose.model("TokenYieldOrder", new mongoose.Schema({
 
 /* 后台订单接口 */
 
-app.get("/api/admin/trade-orders", async (req, res) => {
+app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
 
   try {
 
@@ -1059,10 +1131,10 @@ const aiMarkets = [
 /* 管理员权限验证 */
 function verifyAdmin(req, res, next){
 
-  const token =
-  req.headers["admin-token"];
+  const token = req.headers["admin-token"] || getBearerToken(req);
+  const adminPayload = verifySignedToken(token, ADMIN_TOKEN);
 
-  if(token !== ADMIN_TOKEN){
+  if(token !== ADMIN_TOKEN && (!adminPayload || adminPayload.type !== "admin")){
 
     return res.status(403).json({
       success:false,
@@ -1804,7 +1876,7 @@ app.post("/api/ai/quant/settle/:id", authenticateUser, async (req, res) => {
 
 /* 修改 AI 收益率 */
 
-app.post("/api/admin/ai-quant/set-rate/:id", async (req, res) => {
+app.post("/api/admin/ai-quant/set-rate/:id", verifyAdmin, async (req, res) => {
 
   try {
 
@@ -1898,12 +1970,12 @@ app.get("/api/ai/quant/orders/:userId", authenticateUser, async (req, res) => {
 });
 
 /* 交易 */
-app.get("/api/trades", async (req, res) => {
+app.get("/api/trades", verifyAdmin, async (req, res) => {
   const trades = await Trade.find();
   res.json({ success: true, data: trades });
 });
 
-app.put("/api/trades/:id/start", async (req, res) => {
+app.put("/api/trades/:id/start", verifyAdmin, async (req, res) => {
   const trade = await Trade.findOneAndUpdate(
     { id: req.params.id },
     { status: "运行中" },
@@ -1913,7 +1985,7 @@ app.put("/api/trades/:id/start", async (req, res) => {
   res.json({ success: true, data: trade });
 });
 
-app.put("/api/trades/:id/pause", async (req, res) => {
+app.put("/api/trades/:id/pause", verifyAdmin, async (req, res) => {
   const trade = await Trade.findOneAndUpdate(
     { id: req.params.id },
     { status: "暂停" },
@@ -1923,7 +1995,7 @@ app.put("/api/trades/:id/pause", async (req, res) => {
   res.json({ success: true, data: trade });
 });
 
-app.put("/api/trades/:id/close", async (req, res) => {
+app.put("/api/trades/:id/close", verifyAdmin, async (req, res) => {
   const trade = await Trade.findOneAndUpdate(
     { id: req.params.id },
     { status: "已结束" },
@@ -2171,7 +2243,7 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
 });
 
 /* 获取提现列表 */
-app.get("/api/withdrawals", async (req, res) => {
+app.get("/api/withdrawals", verifyAdmin, async (req, res) => {
   try {
     const list = await Withdrawal.find().sort({ createdAt: -1 });
     res.json(list);
@@ -2239,7 +2311,7 @@ app.post("/api/withdraw/status", verifyAdmin, async (req, res) => {
 });
 
 // ==================== 忘记密码功能 ====================
-const crypto = require('crypto');
+// crypto is required at the top of this file
 
 // 存储重置令牌（生产环境建议使用Redis或数据库）
 const resetTokens = new Map();
@@ -2306,8 +2378,7 @@ app.post("/api/forgot-password", async (req, res) => {
         res.json({ 
             success: true, 
             message: "If the email exists, a reset link has been sent",
-            // 开发环境返回token方便测试，生产环境请删除这一行
-            devToken: token
+            resetTokenSent: true
         });
         
     } catch (error) {
@@ -2353,11 +2424,17 @@ app.post("/api/admin/login", async (req, res) => {
     const { username, password } = req.body;
     
     // 验证用户名和密码
-    if (username === "admin" && password === "Admin123456") {
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        const token = signToken({
+            type: "admin",
+            username,
+            exp: Date.now() + ADMIN_TOKEN_TTL_MS
+        }, ADMIN_TOKEN);
+
         res.json({
             success: true,
             message: "Login successful",
-            token: "admin_" + Date.now()
+            token
         });
     } else {
         res.status(401).json({

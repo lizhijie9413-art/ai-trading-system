@@ -266,6 +266,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
 
 const API_BASE =
 "https://ai-trading-system-j5jf.onrender.com";
+const ADMIN_TOKEN = adminAuth.token;
 
 let trades = [];
 
@@ -275,7 +276,12 @@ async function loadTrades(){
 
     const response =
     await fetch(
-      API_BASE + "/api/admin/trade-orders"
+      API_BASE + "/api/admin/trade-orders",
+      {
+        headers: {
+          "admin-token": ADMIN_TOKEN
+        }
+      }
     );
 
     const result =
@@ -319,7 +325,8 @@ async function setRate(id){
     {
       method:"POST",
       headers:{
-        "Content-Type":"application/json"
+        "Content-Type":"application/json",
+        "admin-token": ADMIN_TOKEN
       },
       body:JSON.stringify({
         rate: rate

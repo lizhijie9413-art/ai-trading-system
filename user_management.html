@@ -437,7 +437,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
 <script>
 // ==================== 配置 ====================
 const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
-const ADMIN_TOKEN = "AI_ADMIN_2026";
+const ADMIN_TOKEN = adminAuth.token;
 
 let users = [];
 let stats = { todayRecharge: 0, monthRecharge: 0, todayWithdraw: 0, monthWithdraw: 0 };

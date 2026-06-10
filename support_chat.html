@@ -28,7 +28,6 @@ body{
   position:relative;
 }
 
-/* 动态背景 */
 body::before{
   content:"";
   position:fixed;
@@ -267,11 +266,18 @@ body::before{
   <button class="send-btn" onclick="sendMessage()">↑</button>
 </div>
 
-<script src="config.js"></script>
 <script>
 // ==================== 配置 ====================
 const API_BASE_URL = "https://ai-trading-system-j5jf.onrender.com";
-const socket = io(API_BASE_URL);
+
+// Socket.IO 连接（带错误处理）
+const socket = io(API_BASE_URL, {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+    timeout: 10000
+});
 
 // ==================== 获取用户信息 ====================
 function getCurrentUser(){
@@ -348,23 +354,6 @@ function escapeHTML(str){
   });
 }
 
-// ==================== 显示/隐藏输入状态 ====================
-function showTypingIndicator(show){
-  if(show && !isTyping){
-    isTyping = true;
-    const indicator = document.createElement('div');
-    indicator.id = 'typingIndicator';
-    indicator.className = 'message support';
-    indicator.innerHTML = `<div class="bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
-    chatBody.appendChild(indicator);
-    chatBody.scrollTop = chatBody.scrollHeight;
-  } else if(!show && isTyping){
-    isTyping = false;
-    const indicator = document.getElementById('typingIndicator');
-    if(indicator) indicator.remove();
-  }
-}
-
 // ==================== 发送消息 ====================
 function sendMessage(){
   const text = input.value.trim();
@@ -438,14 +427,26 @@ function handleEnter(event){
 
 // ==================== Socket事件 ====================
 socket.on("connect", () => {
-  console.log("User chat connected:", chatUserId);
+  console.log("✅ Socket连接成功, id:", socket.id);
   document.getElementById("supportStatus").innerHTML = "Online";
+  document.getElementById("supportStatus").style.color = "#00f5a0";
+});
+
+socket.on("connect_error", (err) => {
+  console.log("❌ Socket连接错误:", err.message);
+  document.getElementById("supportStatus").innerHTML = "Connection failed";
+  document.getElementById("supportStatus").style.color = "#ff4d6d";
+});
+
+socket.on("disconnect", () => {
+  console.log("⚠️ Socket断开");
+  document.getElementById("supportStatus").innerHTML = "Disconnected";
 });
 
 socket.on("receive_message", (data) => {
+  console.log("收到消息:", data);
   if(String(data.user) !== String(chatUserId)) return;
   
-  // 移除输入提示
   showTypingIndicator(false);
   
   chatRecords.push({
@@ -464,25 +465,41 @@ socket.on("receive_message", (data) => {
   renderMessages();
 });
 
-// 监听输入状态
 socket.on("user_typing", (data) => {
   if(data.user === chatUserId) return;
   showTypingIndicator(data.typing);
 });
 
-// 监听服务状态更新
 socket.on("service_status", (data) => {
   const statusEl = document.getElementById("supportStatus");
   if(data.serviceOnline){
     statusEl.innerHTML = "Human Support Online";
+    statusEl.style.color = "#00f5a0";
   } else if(data.aiSupportEnabled){
     statusEl.innerHTML = "AI Support Online";
+    statusEl.style.color = "#c084fc";
   } else {
     statusEl.innerHTML = "Online";
   }
 });
 
-// 输入框输入事件（发送输入状态）
+function showTypingIndicator(show){
+  if(show && !isTyping){
+    isTyping = true;
+    const indicator = document.createElement('div');
+    indicator.id = 'typingIndicator';
+    indicator.className = 'message support';
+    indicator.innerHTML = `<div class="bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+    chatBody.appendChild(indicator);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  } else if(!show && isTyping){
+    isTyping = false;
+    const indicator = document.getElementById('typingIndicator');
+    if(indicator) indicator.remove();
+  }
+}
+
+// 输入框输入事件
 let typingTimeout;
 input.addEventListener("input", () => {
   socket.emit("user_typing", { user: chatUserId, typing: true });

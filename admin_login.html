@@ -92,37 +92,59 @@ button:disabled{opacity:0.5;cursor:not-allowed;}
 <script>
 const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
-function loginAdmin() {
+async function loginAdmin() {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
     const errorDiv = document.getElementById("errorMsg");
-    
+    const loginBtn = document.getElementById("loginBtn");
+    const originalText = loginBtn.innerHTML;
+
     errorDiv.style.display = "none";
-    
+
     if (!username || !password) {
-        errorDiv.innerText = "请输入用户名和密码";
+        errorDiv.innerText = "Please enter username and password";
         errorDiv.style.display = "block";
         return;
     }
-    
-    // 前端直接验证
-    if (username === "admin" && password === "Admin123456") {
-        localStorage.setItem("adminAuth", JSON.stringify({
-            role: "admin",
-            username: username,
-            loginTime: Date.now()
-        }));
-        
-        errorDiv.style.color = "#00f5a0";
-        errorDiv.innerText = "登录成功，正在跳转...";
+
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<div class="loading-spinner"></div>';
+
+    try {
+        const response = await fetch(API_BASE + "/api/admin/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+
+        if (data.success && data.token) {
+            localStorage.setItem("adminAuth", JSON.stringify({
+                role: "admin",
+                username,
+                token: data.token,
+                loginTime: Date.now()
+            }));
+
+            errorDiv.style.color = "#00f5a0";
+            errorDiv.innerText = "Login successful. Redirecting...";
+            errorDiv.style.display = "block";
+
+            setTimeout(() => {
+                window.location.href = "dashboard.html";
+            }, 500);
+        } else {
+            errorDiv.innerText = data.message || "Invalid username or password";
+            errorDiv.style.display = "block";
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = originalText;
+        }
+    } catch (err) {
+        console.error("Admin login error:", err);
+        errorDiv.innerText = "Network error. Please try again.";
         errorDiv.style.display = "block";
-        
-        setTimeout(() => {
-            window.location.href = "dashboard.html";
-        }, 1000);
-    } else {
-        errorDiv.innerText = "用户名或密码错误";
-        errorDiv.style.display = "block";
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = originalText;
     }
 }
 

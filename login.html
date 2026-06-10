@@ -319,7 +319,8 @@ async function login() {
                 balance: data.user.availableBalance || data.user.balance || data.user.asset || 0,
                 availableBalance: data.user.availableBalance || data.user.balance || data.user.asset || 0,
                 totalProfit: data.user.totalProfit || 0,
-                status: data.user.status || "active"
+                status: data.user.status || "active",
+                token: data.token || ""
             };
             
             // 保存用户信息到本地存储
