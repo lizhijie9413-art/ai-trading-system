@@ -347,8 +347,35 @@ function applyQuote(group, index, quote, fallbackKey){
     };
 }
 
+async function loadCryptoPrices(){
+    const url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin&vs_currencies=usd&include_24hr_change=true";
+    const response = await fetch(url, { cache: "no-store" });
+    if(!response.ok) throw new Error("CoinGecko request failed");
+    const data = await response.json();
+
+    return {
+        BTC: {
+            price: Number(data.bitcoin?.usd || 0),
+            change: Number(data.bitcoin?.usd_24h_change || 0)
+        },
+        ETH: {
+            price: Number(data.ethereum?.usd || 0),
+            change: Number(data.ethereum?.usd_24h_change || 0)
+        },
+        SOL: {
+            price: Number(data.solana?.usd || 0),
+            change: Number(data.solana?.usd_24h_change || 0)
+        },
+        BNB: {
+            price: Number(data.binancecoin?.usd || 0),
+            change: Number(data.binancecoin?.usd_24h_change || 0)
+        }
+    };
+}
+
 async function loadMarketData(){
     let data = {};
+    let cryptoData = {};
 
     try{
         const symbols = "AAPL,NVDA,MSFT,TSLA,GOOGL,BTC/USD,ETH/USD,SOL/USD,BNB/USD,SPY,QQQ,VTI,SPX,NDX,DJI";
@@ -361,16 +388,22 @@ async function loadMarketData(){
         console.log("Market data error:", err);
     }
 
+    try {
+        cryptoData = await loadCryptoPrices();
+    } catch(err) {
+        console.log("Crypto market data error:", err);
+    }
+
     applyQuote("Stocks", 0, findQuote(data, ["AAPL"]), "AAPL");
     applyQuote("Stocks", 1, findQuote(data, ["NVDA"]), "NVDA");
     applyQuote("Stocks", 2, findQuote(data, ["MSFT"]), "MSFT");
     applyQuote("Stocks", 3, findQuote(data, ["TSLA"]), "TSLA");
     applyQuote("Stocks", 4, findQuote(data, ["GOOGL"]), "GOOGL");
 
-    applyQuote("Crypto", 0, findQuote(data, ["BTC/USD", "BTC_USD", "BTC"]), "BTC");
-    applyQuote("Crypto", 1, findQuote(data, ["ETH/USD", "ETH_USD", "ETH"]), "ETH");
-    applyQuote("Crypto", 2, findQuote(data, ["SOL/USD", "SOL_USD", "SOL"]), "SOL");
-    applyQuote("Crypto", 3, findQuote(data, ["BNB/USD", "BNB_USD", "BNB"]), "BNB");
+    applyQuote("Crypto", 0, cryptoData.BTC?.price ? cryptoData.BTC : findQuote(data, ["BTC/USD", "BTC_USD", "BTC"]), "BTC");
+    applyQuote("Crypto", 1, cryptoData.ETH?.price ? cryptoData.ETH : findQuote(data, ["ETH/USD", "ETH_USD", "ETH"]), "ETH");
+    applyQuote("Crypto", 2, cryptoData.SOL?.price ? cryptoData.SOL : findQuote(data, ["SOL/USD", "SOL_USD", "SOL"]), "SOL");
+    applyQuote("Crypto", 3, cryptoData.BNB?.price ? cryptoData.BNB : findQuote(data, ["BNB/USD", "BNB_USD", "BNB"]), "BNB");
 
     applyQuote("ETFs", 0, findQuote(data, ["SPY"]), "SPY");
     applyQuote("ETFs", 1, findQuote(data, ["QQQ"]), "QQQ");
