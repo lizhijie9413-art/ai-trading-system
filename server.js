@@ -2203,6 +2203,41 @@ app.post("/api/tickets", (req, res) => {
   });
 });
 
+
+app.get("/api/token-yield/orders", authenticateUser, async (req, res) => {
+  try {
+    const user = req.user;
+    const orders = await TokenYieldOrder.find({ userId: user._id.toString() })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: orders.map(order => ({
+        id: order._id,
+        userId: order.userId,
+        type: "Token Yield",
+        planName: order.planName || "",
+        coin: order.planName || "",
+        amount: order.amount || 0,
+        profit: order.profit || 0,
+        rate: order.rate || 0,
+        days: order.days || 0,
+        status: order.status || "Running",
+        startTime: order.startTime,
+        endTime: order.endTime,
+        createdAt: order.createdAt,
+        time: order.createdAt
+      }))
+    });
+  } catch (err) {
+    console.log("Load user token yield orders error:", err);
+    res.json({
+      success: false,
+      message: "Failed to load yield orders"
+    });
+  }
+});
+
 app.post("/api/token-yield/start", authenticateUser, async (req, res) => {
 
   try{

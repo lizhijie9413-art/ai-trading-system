@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -33,7 +33,7 @@ body{
     position:relative;
 }
 
-/* 动态背景 */
+/* 鍔ㄦ€佽儗鏅?*/
 body::before{
     content:"";
     position:fixed;
@@ -46,7 +46,7 @@ body::before{
     z-index:-1;
 }
 
-/* 浮动光晕 */
+/* 娴姩鍏夋檿 */
 .glow-ball{
     position:fixed;
     width:250px;
@@ -262,10 +262,7 @@ body::before{
 
 <script src="config.js"></script>
 <script>
-// ==================== 配置 ====================
-const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
-
-// ==================== 格式化函数 ====================
+// ==================== 鏍煎紡鍖栧嚱鏁?====================
 function formatMoney(value){
     return "$" + Number(value || 0).toLocaleString(undefined, {
         minimumFractionDigits: 2,
@@ -286,7 +283,7 @@ function getStatusText(status){
     return status === "Completed" ? "Completed" : "Running";
 }
 
-// ==================== 加载Token Yield订单 ====================
+// ==================== 鍔犺浇Token Yield璁㈠崟 ====================
 async function loadYieldOrders(){
     const user = getCurrentUser();
     if(!user || !user.id){
@@ -300,28 +297,10 @@ async function loadYieldOrders(){
     }
     
     try{
-        const result = await apiRequest("/api/admin/trade-orders");
+        const result = await apiRequest("https://ai-trading-system-j5jf.onrender.com/api/token-yield/orders");
         
-        if(result.success && result.data && result.data.data){
-            const allOrders = result.data.data;
-            // 筛选Token Yield订单
-            const yieldOrders = allOrders.filter(order => order.type === "Token Yield");
-            
-            if(yieldOrders.length === 0){
-                document.getElementById("ordersContainer").innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-regular fa-clock"></i>
-                        <div>No Token Yield orders yet</div>
-                        <div style="font-size:12px; margin-top:8px;">Start a yield plan in Token Yield page</div>
-                    </div>
-                `;
-                document.getElementById("totalYield").innerText = "$0.00";
-                document.getElementById("activeYield").innerText = "+$0.00 This Cycle";
-                return;
-            }
-            
-            // 只显示当前用户的订单
-            const userOrders = yieldOrders.filter(order => order.userId === user.id);
+        if(result.success && result.data && result.data.success){
+            const userOrders = result.data.data || [];
             
             if(userOrders.length === 0){
                 document.getElementById("ordersContainer").innerHTML = `
@@ -336,7 +315,6 @@ async function loadYieldOrders(){
                 return;
             }
             
-            // 计算总收益
             let totalProfit = 0;
             let activeOrders = userOrders.filter(o => o.status !== "Completed");
             let activeProfit = activeOrders.reduce((sum, o) => sum + Number(o.profit || 0), 0);
@@ -348,7 +326,7 @@ async function loadYieldOrders(){
             document.getElementById("totalYield").innerText = formatMoney(totalProfit);
             document.getElementById("activeYield").innerHTML = `+${formatMoney(activeProfit)} This Cycle`;
             
-            // 渲染订单列表
+            // 娓叉煋璁㈠崟鍒楄〃
             renderOrders(userOrders);
         } else {
             document.getElementById("ordersContainer").innerHTML = `
@@ -369,11 +347,11 @@ async function loadYieldOrders(){
     }
 }
 
-// ==================== 渲染订单 ====================
+// ==================== 娓叉煋璁㈠崟 ====================
 function renderOrders(orders){
     const container = document.getElementById("ordersContainer");
     
-    // 按时间倒序排列
+    // 鎸夋椂闂村€掑簭鎺掑垪
     const sortedOrders = [...orders].reverse();
     
     container.innerHTML = sortedOrders.map(order => {
@@ -383,7 +361,7 @@ function renderOrders(orders){
         const amount = Number(order.amount || 0);
         const profit = Number(order.profit || 0);
         const rate = Number(order.rate || 0);
-        const days = order.remark ? parseInt(order.remark) : 30;
+        const days = Number(order.days || 0) || (order.remark ? parseInt(order.remark) : 30);
         
         return `
             <div class="statement-card">
@@ -422,7 +400,7 @@ function renderOrders(orders){
     }).join('');
 }
 
-// ==================== XSS防护 ====================
+// ==================== XSS闃叉姢 ====================
 function escapeHtml(str){
     if(!str) return '';
     return str.replace(/[&<>]/g, function(m){
@@ -433,7 +411,7 @@ function escapeHtml(str){
     });
 }
 
-// ==================== 初始化 ====================
+// ==================== 鍒濆鍖?====================
 loadYieldOrders();
 setInterval(loadYieldOrders, 30000);
 </script>

@@ -51,25 +51,123 @@ body::before{
 .title p{color:#94a3b8;font-size:13px;margin-top:6px;}
 
 .ai-core{
-    width:210px;height:210px;border-radius:50%;
-    margin:18px auto 20px;
-    background:radial-gradient(circle,rgba(168,85,247,.95),rgba(91,33,182,.55),rgba(0,0,0,0));
+    width:218px;height:218px;border-radius:50%;
+    margin:18px auto 34px;
+    background:
+    radial-gradient(circle at 50% 50%,rgba(255,255,255,.95) 0 8%,rgba(34,211,238,.9) 9% 15%,rgba(124,58,237,.72) 28%,rgba(2,6,23,.08) 68%),
+    conic-gradient(from 0deg,rgba(34,211,238,.2),rgba(168,85,247,.95),rgba(0,245,160,.72),rgba(34,211,238,.2));
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 0 90px rgba(168,85,247,.45);
+    box-shadow:
+    0 0 34px rgba(34,211,238,.32),
+    0 0 90px rgba(168,85,247,.42),
+    inset 0 0 32px rgba(255,255,255,.08);
     position:relative;
+    overflow:visible;
+}
+
+.ai-core::before,
+.ai-core::after{
+    content:"";
+    position:absolute;
+    border-radius:50%;
+    pointer-events:none;
 }
 
 .ai-core::before{
-    content:"";position:absolute;width:250px;height:250px;
-    border-radius:50%;border:1px solid rgba(168,85,247,.25);
-    animation:pulse 3s infinite;
+    width:268px;height:268px;
+    border:1px solid rgba(34,211,238,.28);
+    border-top-color:rgba(0,245,160,.78);
+    border-right-color:rgba(168,85,247,.72);
+    animation:aiRotate 7s linear infinite;
 }
 
-.ai-core i{font-size:66px;color:white;}
+.ai-core::after{
+    width:246px;height:246px;
+    border:1px dashed rgba(255,255,255,.20);
+    box-shadow:0 0 26px rgba(34,211,238,.18);
+    animation:aiRotateReverse 12s linear infinite;
+}
+
+.ai-core i{
+    font-size:66px;
+    color:white;
+    filter:drop-shadow(0 0 16px rgba(34,211,238,.86));
+    z-index:4;
+}
+
+.ai-ring{
+    position:absolute;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,.14);
+    inset:28px;
+    animation:pulse 3.2s ease-out infinite;
+}
+
+.ai-ring.r2{inset:48px;animation-delay:.7s;border-color:rgba(34,211,238,.22);}
+.ai-ring.r3{inset:68px;animation-delay:1.35s;border-color:rgba(0,245,160,.22);}
+
+.ai-scan{
+    position:absolute;
+    width:2px;height:112px;
+    top:14px;left:50%;
+    transform-origin:50% 95px;
+    background:linear-gradient(to bottom,rgba(0,245,160,0),rgba(0,245,160,.9),rgba(34,211,238,0));
+    box-shadow:0 0 18px rgba(0,245,160,.75);
+    animation:aiScan 4.8s linear infinite;
+    z-index:3;
+}
+
+.ai-dots{
+    position:absolute;
+    inset:-18px;
+    background:
+    radial-gradient(circle at 18% 28%,rgba(0,245,160,.9) 0 2px,transparent 3px),
+    radial-gradient(circle at 80% 22%,rgba(34,211,238,.95) 0 2px,transparent 3px),
+    radial-gradient(circle at 78% 78%,rgba(168,85,247,.95) 0 2px,transparent 3px),
+    radial-gradient(circle at 24% 76%,rgba(255,255,255,.72) 0 1px,transparent 2px);
+    animation:aiFloat 5.5s ease-in-out infinite alternate;
+    pointer-events:none;
+}
+
+.ai-status{
+    position:absolute;
+    bottom:-34px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:#a7f3d0;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.8px;
+    background:rgba(3,7,18,.72);
+    border:1px solid rgba(0,245,160,.22);
+    border-radius:999px;
+    padding:7px 11px;
+    box-shadow:0 0 18px rgba(0,245,160,.14);
+    white-space:nowrap;
+}
+
+.ai-status::before{
+    content:"";
+    width:7px;height:7px;
+    border-radius:50%;
+    background:#00f5a0;
+    box-shadow:0 0 12px #00f5a0;
+}
 
 @keyframes pulse{
-    0%{transform:scale(.9);opacity:.8;}
-    100%{transform:scale(1.18);opacity:0;}
+    0%{transform:scale(.72);opacity:.72;}
+    100%{transform:scale(1.2);opacity:0;}
+}
+
+@keyframes aiRotate{to{transform:rotate(360deg);}}
+@keyframes aiRotateReverse{to{transform:rotate(-360deg);}}
+@keyframes aiScan{to{transform:rotate(360deg);}}
+@keyframes aiFloat{
+    from{transform:translateY(0) scale(.98);opacity:.62;}
+    to{transform:translateY(-6px) scale(1.03);opacity:1;}
 }
 
 .hero-text{text-align:center;margin-bottom:22px;}
@@ -360,13 +458,51 @@ function addMessage(text,type){
     }
 }
 
+let preferredAIVoice = null;
+
+function pickNaturalVoice(){
+    if(!window.speechSynthesis) return null;
+
+    const voices = window.speechSynthesis.getVoices();
+    if(!voices || voices.length === 0) return preferredAIVoice;
+
+    const preferredNames = [
+        "Microsoft Jenny Online",
+        "Microsoft Aria Online",
+        "Microsoft Ava",
+        "Microsoft Jenny",
+        "Microsoft Aria",
+        "Samantha",
+        "Google US English",
+        "Google UK English Female"
+    ];
+
+    preferredAIVoice =
+    preferredNames
+    .map(name => voices.find(v => v.name.includes(name)))
+    .find(Boolean) ||
+    voices.find(v => v.lang === "en-US" && /female|natural|online/i.test(v.name)) ||
+    voices.find(v => v.lang === "en-US") ||
+    voices.find(v => v.lang && v.lang.startsWith("en")) ||
+    voices[0];
+
+    return preferredAIVoice;
+}
+
+if(window.speechSynthesis){
+    window.speechSynthesis.onvoiceschanged = pickNaturalVoice;
+    pickNaturalVoice();
+}
+
 function speakAI(text){
     if(!window.speechSynthesis) return;
 
     const cleanText =
     text
-    .replace(/<br>/g,". ")
+    .replace(/<br\s*\/?>/gi,". ")
     .replace(/<[^>]*>/g," ")
+    .replace(/&nbsp;/g," ")
+    .replace(/&amp;/g," and ")
     .replace(/\s+/g," ")
     .trim();
 
@@ -376,39 +512,39 @@ function speakAI(text){
 
     const parts =
     cleanText
-    .split(".")
+    .replace(/([.!?])\s+/g,"$1|")
+    .split("|")
     .map(t => t.trim())
-    .filter(t => t.length > 0);
+    .filter(t => t.length > 0)
+    .slice(0, 8);
 
-    let delay = 0;
+    const voice = pickNaturalVoice();
+    let index = 0;
 
-    parts.forEach(part => {
-        setTimeout(() => {
-            const voice = new SpeechSynthesisUtterance(part);
+    function speakNext(){
+        if(index >= parts.length) return;
 
-            voice.lang = "en-US";
-            voice.rate = 0.82;
-            voice.pitch = 1.05;
-            voice.volume = 0.9;
+        const line = parts[index++];
+        const utterance = new SpeechSynthesisUtterance(line);
 
-            const voices = window.speechSynthesis.getVoices();
+        utterance.lang = voice?.lang || "en-US";
+        utterance.voice = voice || null;
+        utterance.rate = 0.9;
+        utterance.pitch = 0.96;
+        utterance.volume = 0.92;
 
-            const femaleVoice =
-            voices.find(v =>
-                v.name.includes("Samantha") ||
-                v.name.includes("Google US English") ||
-                v.name.includes("Microsoft Aria")
-            );
+        utterance.onend = () => {
+            setTimeout(speakNext, line.length > 80 ? 180 : 110);
+        };
 
-            if(femaleVoice){
-                voice.voice = femaleVoice;
-            }
+        utterance.onerror = () => {
+            setTimeout(speakNext, 120);
+        };
 
-            window.speechSynthesis.speak(voice);
-        }, delay);
+        window.speechSynthesis.speak(utterance);
+    }
 
-        delay += 1900;
-    });
+    speakNext();
 }
 
 let aiPlanStep = "";
