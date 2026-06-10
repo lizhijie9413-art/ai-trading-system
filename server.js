@@ -81,10 +81,9 @@ function getBearerToken(req) {
   return header.startsWith("Bearer ") ? header.slice(7) : null;
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-
-});
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 app.get("/test-server", (req, res) => {
   res.send("THIS IS MY CURRENT SERVER JS");
@@ -380,6 +379,19 @@ app.post("/api/login", async (req, res) => {
         });
     }
 });
+
+
+async function authenticateUserOrAdmin(req, res, next) {
+  const adminToken = req.headers["admin-token"] || getBearerToken(req);
+  const adminPayload = verifySignedToken(adminToken, ADMIN_TOKEN);
+
+  if (adminToken === ADMIN_TOKEN || (adminPayload && adminPayload.type === "admin")) {
+    req.admin = adminPayload || { type: "admin" };
+    return next();
+  }
+
+  return authenticateUser(req, res, next);
+}
 
 const kycStorage = multer.diskStorage({
   destination: function (req, file, cb) {
