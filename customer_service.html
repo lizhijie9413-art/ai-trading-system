@@ -190,10 +190,12 @@ const userList = document.getElementById("userList");
 const chatBody = document.getElementById("chatBody");
 const input = document.getElementById("messageInput");
 
-// ==================== XSS防护 ====================
+// ==================== XSS防护（修复：确保输入是字符串） ====================
 function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
+    // 修复：如果输入不是字符串，先转换为字符串
+    if (str === undefined || str === null) return '';
+    const strVal = String(str);
+    return strVal.replace(/[&<>]/g, function(m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
         if (m === '>') return '&gt;';
@@ -260,6 +262,7 @@ async function loadUsers(){
 // ==================== 渲染用户列表 ====================
 function renderUsers(){
     const keyword = document.getElementById("searchInput").value.toLowerCase();
+
     const list = users.filter(u => {
         const text = `${u.uid || ""} ${u.name || ""} ${u.username || ""} ${u.email || ""}`.toLowerCase();
         return text.includes(keyword);
@@ -269,8 +272,9 @@ function renderUsers(){
 
     list.forEach(user => {
         const id = user._id || user.id;
+        // 修复：确保转换为字符串
         const name = user.name || user.username || "Unknown";
-        const uid = user.uid || "无UID";
+        const uid = user.uid !== undefined && user.uid !== null ? String(user.uid) : "无UID";
         const email = user.email || "No email";
         const unread = unreadMap[id] || 0;
 
@@ -285,6 +289,7 @@ function renderUsers(){
             <div class="user-status">● 在线</div>
             <div class="unread" style="display:${unread ? "flex" : "none"}">${unread}</div>
         `;
+
         userList.appendChild(div);
     });
 }
