@@ -110,6 +110,15 @@ function getCurrentUser(){
   try{ const user = localStorage.getItem("user"); return user ? JSON.parse(user) : null; }catch(e){ return null; }
 }
 
+function getUserAuthHeaders(isJson = false){
+  const headers = {};
+  const user = getCurrentUser();
+  if(user && user.id) headers["user-id"] = user.id;
+  if(user && user.token) headers["Authorization"] = "Bearer " + user.token;
+  if(isJson) headers["Content-Type"] = "application/json";
+  return headers;
+}
+
 function showToast(message, type){
   const toast = document.createElement("div");
   toast.className = "global-toast";
@@ -125,7 +134,7 @@ async function loadKYCStatus(){
   const user = getCurrentUser();
   if(!user || !user.id) return;
   try{
-    const res = await fetch(`${API_BASE}/api/users/${user.id}`, { headers: { "user-id": user.id } });
+    const res = await fetch(`${API_BASE}/api/users/${user.id}`, { headers: getUserAuthHeaders() });
     const result = await res.json();
     if(result.success && result.user){
       const kycStatus = result.user.kyc || "未审核";
@@ -155,13 +164,13 @@ async function uploadFile(input, type, imageType){
   btn.style.opacity = "0.7";
   
   try{
-    const uploadRes = await fetch(`${API_BASE}/api/chat/upload`, { method: "POST", body: formData });
+    const uploadRes = await fetch(`${API_BASE}/api/chat/upload`, { method: "POST", headers: getUserAuthHeaders(), body: formData });
     const uploadData = await uploadRes.json();
     if(!uploadData.success) throw new Error("Upload failed");
     const imageUrl = uploadData.url;
     
     const kycRes = await fetch(`${API_BASE}/api/kyc/submit`, {
-      method: "POST", headers: { "Content-Type": "application/json", "user-id": user.id },
+      method: "POST", headers: getUserAuthHeaders(true),
       body: JSON.stringify({ userId: user.id, uid: user.uid, name: user.name, email: user.email, [imageType]: imageUrl, status: "未审核" })
     });
     const kycResult = await kycRes.json();

@@ -927,6 +927,64 @@ app.put(
 });
 
 /* KYC */
+app.post("/api/kyc/submit", authenticateUser, async (req, res) => {
+  try {
+    const user = req.user;
+    const { frontImage, backImage, imageUrl, documentType } = req.body;
+
+    const docFront = frontImage || imageUrl || "";
+    const docBack = backImage || "";
+
+    if (!docFront && !docBack) {
+      return res.json({
+        success: false,
+        message: "Please upload at least one document image"
+      });
+    }
+
+    const existing = await KYC.findOne({
+      userId: user._id.toString(),
+      status: { $in: ["未审核", "Pending"] }
+    });
+
+    const payload = {
+      userId: user._id.toString(),
+      uid: user.uid || "",
+      name: user.name || user.username || "",
+      email: user.email || "",
+      frontImage: docFront,
+      backImage: docBack,
+      documentType: documentType || "KYC Document",
+      status: "未审核",
+      createdAt: new Date()
+    };
+
+    const item = existing
+      ? await KYC.findByIdAndUpdate(existing._id, payload, { new: true })
+      : await KYC.create(payload);
+
+    user.kyc = "未审核";
+    if (!user.records) user.records = [];
+    user.records.push({
+      message: "KYC submitted for review",
+      timestamp: new Date()
+    });
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "KYC submitted successfully",
+      data: item
+    });
+  } catch (err) {
+    console.log("KYC submit error:", err);
+    res.json({
+      success: false,
+      message: "KYC submission failed"
+    });
+  }
+});
+
 app.get("/api/kyc", verifyAdmin, async (req, res) => {
   const list = await KYC.find();
   res.json({ success: true, data: list });
