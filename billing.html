@@ -82,6 +82,37 @@ body::before{
     margin-top:4px;
 }
 
+/* 统计卡片网格 */
+.stats-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:18px;
+}
+
+.stat-card{
+    background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+    border:1px solid rgba(168,85,247,.22);
+    border-radius:24px;
+    padding:16px;
+    text-align:center;
+}
+
+.stat-label{
+    color:#94a3b8;
+    font-size:12px;
+    margin-bottom:6px;
+}
+
+.stat-value{
+    font-size:24px;
+    font-weight:900;
+}
+
+.stat-value.green{color:#00f5a0;}
+.stat-value.red{color:#ff4d6d;}
+.stat-value.purple{color:#c084fc;}
+
 .summary-card{
     position:relative;
     overflow:hidden;
@@ -113,11 +144,47 @@ body::before{
     font-weight:900;
 }
 
+.summary-amount.positive{
+    color:#00f5a0;
+}
+
+.summary-amount.negative{
+    color:#ff4d6d;
+}
+
 .summary-profit{
     margin-top:10px;
     color:#00f5a0;
     font-size:18px;
     font-weight:900;
+}
+
+/* 筛选标签 */
+.filter-tabs{
+    display:flex;
+    gap:10px;
+    margin-bottom:18px;
+    overflow-x:auto;
+}
+
+.filter-tabs::-webkit-scrollbar{
+    display:none;
+}
+
+.filter-btn{
+    padding:10px 18px;
+    border-radius:30px;
+    background:rgba(255,255,255,.05);
+    color:#94a3b8;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all 0.3s ease;
+}
+
+.filter-btn.active{
+    background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+    color:white;
 }
 
 .statement-card{
@@ -135,6 +202,12 @@ body::before{
     );
 
     border:1px solid rgba(139,92,246,.16);
+    transition:all 0.3s ease;
+}
+
+.statement-card:hover{
+    transform:translateY(-2px);
+    border-color:#c084fc;
 }
 
 .statement-top{
@@ -168,7 +241,7 @@ body::before{
 
 .statement-grid{
     display:grid;
-    grid-template-columns:repeat(2,1fr);
+    grid-template-columns:1fr 1fr;
     gap:12px;
 }
 
@@ -188,6 +261,14 @@ body::before{
     display:block;
     margin-top:8px;
     font-size:16px;
+}
+
+.profit-positive{
+    color:#00f5a0;
+}
+
+.profit-negative{
+    color:#ff4d6d;
 }
 
 .green{
@@ -220,6 +301,25 @@ body::before{
     font-size:16px;
     font-weight:900;
     cursor:pointer;
+    transition:all 0.3s ease;
+}
+
+.settle-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 0 20px rgba(139,92,246,.4);
+}
+
+.empty{
+    text-align:center;
+    padding:60px 20px;
+    color:#94a3b8;
+}
+
+.empty i{
+    font-size:50px;
+    color:#c084fc;
+    margin-bottom:16px;
+    display:block;
 }
 
 .bottom-nav{
@@ -260,7 +360,6 @@ body::before{
 .nav-item.active{
     color:#c084fc;
 }
-
 </style>
 </head>
 
@@ -282,6 +381,26 @@ body::before{
 
 </div>
 
+<!-- 统计卡片 - 显示盈亏明细 -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">总交易次数</div>
+        <div class="stat-value purple" id="totalTrades">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">盈利次数</div>
+        <div class="stat-value green" id="winTrades">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">亏损次数</div>
+        <div class="stat-value red" id="lossTrades">0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">胜率</div>
+        <div class="stat-value" id="winRate">0%</div>
+    </div>
+</div>
+
 <div class="summary-card">
 
     <div class="summary-title">
@@ -298,7 +417,19 @@ body::before{
 
 </div>
 
-<div id="ordersContainer"></div>
+<!-- 筛选标签 -->
+<div class="filter-tabs">
+    <button class="filter-btn active" data-filter="all">全部</button>
+    <button class="filter-btn" data-filter="Running">运行中</button>
+    <button class="filter-btn" data-filter="Completed">已完成</button>
+</div>
+
+<div id="ordersContainer">
+    <div class="empty">
+        <i class="fa-solid fa-spinner fa-pulse"></i>
+        <div>加载订单中...</div>
+    </div>
+</div>
 
 <div class="bottom-nav">
 
@@ -333,6 +464,9 @@ body::before{
 // ==================== 配置 ====================
 const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
+let allOrders = [];
+let currentFilter = "all";
+
 // ==================== 获取用户信息 ====================
 function getCurrentUser() {
     try {
@@ -349,6 +483,13 @@ function formatMoney(value){
         minimumFractionDigits:2,
         maximumFractionDigits:2
     });
+}
+
+function getProfitClass(profit){
+    const num = Number(profit || 0);
+    if(num > 0) return "profit-positive";
+    if(num < 0) return "profit-negative";
+    return "";
 }
 
 // ==================== 显示提示 ====================
@@ -372,12 +513,20 @@ function showToast(message, type = "info") {
     setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300); }, 2500);
 }
 
+// ==================== 筛选 ====================
+function setFilter(filter, btn){
+    currentFilter = filter;
+    document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
+    btn.classList.add("active");
+    renderOrders();
+}
+
 // ==================== 加载订单列表 ====================
 async function loadOrders() {
     const user = getCurrentUser();
     
     if (!user || !user.id) {
-        document.getElementById("ordersContainer").innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">Please login to view orders</div>';
+        document.getElementById("ordersContainer").innerHTML = '<div class="empty"><i class="fa-regular fa-circle-exclamation"></i><div>Please login to view orders</div></div>';
         return;
     }
 
@@ -391,71 +540,112 @@ async function loadOrders() {
         const result = await response.json();
 
         if (!result.success || !result.data) {
-            document.getElementById("ordersContainer").innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">No orders found</div>';
+            document.getElementById("ordersContainer").innerHTML = '<div class="empty"><i class="fa-regular fa-folder-open"></i><div>No orders found</div></div>';
             return;
         }
 
-        const orders = result.data || [];
-        let totalProfit = 0;
-
-        const container = document.getElementById("ordersContainer");
-        container.innerHTML = "";
-
-        // 按时间倒序显示
-        orders.slice().reverse().forEach(order => {
-            totalProfit += Number(order.profit || 0);
-
-            const card = document.createElement("div");
-            card.className = "statement-card";
-
-            const statusClass = order.status === "Completed" ? "completed" : "running";
-            const statusText = order.status === "Completed" ? "Completed" : "Running";
-
-            let settleButton = "";
-            if (order.status !== "Completed") {
-                settleButton = `
-                    <button class="settle-btn" onclick="settleOrder('${order._id}')">
-                        Settle Profit
-                    </button>
-                `;
-            }
-
-            card.innerHTML = `
-                <div class="statement-top">
-                    <div class="statement-date">${order.market || "AI Market"}</div>
-                    <div class="statement-status ${statusClass}">${statusText}</div>
-                </div>
-                <div class="statement-grid">
-                    <div class="statement-box">
-                        <span>Product</span>
-                        <strong>${order.product || "-"}</strong>
-                    </div>
-                    <div class="statement-box">
-                        <span>Amount</span>
-                        <strong class="blue">${formatMoney(order.amount)}</strong>
-                    </div>
-                    <div class="statement-box">
-                        <span>Profit</span>
-                        <strong class="green">+${formatMoney(order.profit)}</strong>
-                    </div>
-                    <div class="statement-box">
-                        <span>AI Confidence</span>
-                        <strong class="purple">${order.confidence || 92}%</strong>
-                    </div>
-                </div>
-                ${settleButton}
-            `;
-
-            container.appendChild(card);
-        });
-
-        document.getElementById("totalProfit").innerText = formatMoney(totalProfit);
-        document.getElementById("todayProfit").innerText = "+" + formatMoney(totalProfit) + " Today";
+        allOrders = result.data || [];
+        renderOrders();
 
     } catch (err) {
         console.error("Load orders error:", err);
-        document.getElementById("ordersContainer").innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">Failed to load orders</div>';
+        document.getElementById("ordersContainer").innerHTML = '<div class="empty"><i class="fa-solid fa-wifi"></i><div>Failed to load orders</div></div>';
     }
+}
+
+// ==================== 渲染订单列表 ====================
+function renderOrders() {
+    let list = allOrders;
+    
+    if (currentFilter !== "all") {
+        list = allOrders.filter(order => order.status === currentFilter);
+    }
+    
+    // 计算统计数据（只统计已完成的订单）
+    const completedOrders = allOrders.filter(o => o.status === "Completed");
+    const winOrders = completedOrders.filter(o => Number(o.profit || 0) > 0);
+    const lossOrders = completedOrders.filter(o => Number(o.profit || 0) < 0);
+    const totalProfitAll = completedOrders.reduce((sum, o) => sum + Number(o.profit || 0), 0);
+    const winRate = completedOrders.length > 0 
+        ? ((winOrders.length / completedOrders.length) * 100).toFixed(1) 
+        : 0;
+    
+    // 更新统计卡片
+    document.getElementById("totalTrades").innerText = allOrders.length;
+    document.getElementById("winTrades").innerText = winOrders.length;
+    document.getElementById("lossTrades").innerText = lossOrders.length;
+    document.getElementById("winRate").innerText = winRate + "%";
+    
+    // 更新总收益显示（只显示已完成的收益）
+    const totalProfitElement = document.getElementById("totalProfit");
+    totalProfitElement.innerText = formatMoney(totalProfitAll);
+    totalProfitElement.className = totalProfitAll >= 0 ? "summary-amount positive" : "summary-amount negative";
+    document.getElementById("todayProfit").innerText = (totalProfitAll >= 0 ? "+" : "") + formatMoney(totalProfitAll) + " Total";
+
+    const container = document.getElementById("ordersContainer");
+    
+    if (list.length === 0) {
+        container.innerHTML = `<div class="empty"><i class="fa-regular fa-folder-open"></i><div>暂无订单</div></div>`;
+        return;
+    }
+
+    container.innerHTML = "";
+
+    list.forEach(order => {
+        const card = document.createElement("div");
+        card.className = "statement-card";
+
+        const statusClass = order.status === "Completed" ? "completed" : "running";
+        const statusText = order.status === "Completed" ? "已完成" : "运行中";
+        const profitNum = Number(order.profit || 0);
+        const profitClass = getProfitClass(profitNum);
+        const profitDisplay = profitNum >= 0 ? `+${formatMoney(profitNum)}` : `-${formatMoney(Math.abs(profitNum))}`;
+
+        let settleButton = "";
+        if (order.status !== "Completed") {
+            settleButton = `
+                <button class="settle-btn" onclick="settleOrder('${order._id}')">
+                    立即结算
+                </button>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="statement-top">
+                <div class="statement-date">${order.market || "AI Market"}</div>
+                <div class="statement-status ${statusClass}">${statusText}</div>
+            </div>
+            <div class="statement-grid">
+                <div class="statement-box">
+                    <span>产品</span>
+                    <strong>${order.product || "-"}</strong>
+                </div>
+                <div class="statement-box">
+                    <span>投入金额</span>
+                    <strong class="blue">${formatMoney(order.amount)}</strong>
+                </div>
+                <div class="statement-box">
+                    <span>盈亏金额</span>
+                    <strong class="${profitClass}">${profitDisplay}</strong>
+                </div>
+                <div class="statement-box">
+                    <span>收益率</span>
+                    <strong class="${profitClass}">${Number(order.profitRate || 0).toFixed(2)}%</strong>
+                </div>
+                <div class="statement-box">
+                    <span>开始时间</span>
+                    <strong>${order.startTime ? new Date(order.startTime).toLocaleString() : "-"}</strong>
+                </div>
+                <div class="statement-box">
+                    <span>结束时间</span>
+                    <strong>${order.endTime ? new Date(order.endTime).toLocaleString() : "-"}</strong>
+                </div>
+            </div>
+            ${settleButton}
+        `;
+
+        container.appendChild(card);
+    });
 }
 
 // ==================== 结算订单 ====================
@@ -479,16 +669,23 @@ async function settleOrder(orderId) {
         const result = await response.json();
 
         if (result.success) {
-            showToast("Settlement completed successfully!", "success");
+            showToast("结算成功！", "success");
             loadOrders(); // 刷新列表
         } else {
-            showToast(result.message || "Settlement failed", "error");
+            showToast(result.message || "结算失败", "error");
         }
     } catch (err) {
         console.error("Settle order error:", err);
-        showToast("Network error, please try again", "error");
+        showToast("网络错误，请重试", "error");
     }
 }
+
+// ==================== 绑定筛选事件 ====================
+document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        setFilter(btn.dataset.filter, btn);
+    });
+});
 
 // ==================== 页面启动 ====================
 loadOrders();

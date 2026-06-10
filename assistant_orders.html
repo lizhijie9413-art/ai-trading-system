@@ -1,886 +1,488 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Assistant Orders</title>
 
-<title>AI Trading Center</title>
-
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
 <style>
-
 *{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
 }
 
 body{
-    background:
-    radial-gradient(circle at 20% 10%,rgba(124,58,237,.28),transparent 30%),
-    radial-gradient(circle at 85% 40%,rgba(0,212,255,.16),transparent 34%),
-    linear-gradient(180deg,#030712,#050816,#020617);
-
-    color:white;
-
-    max-width:430px;
-
-    min-height:100vh;
-
-    margin:0 auto;
-
-    overflow-x:hidden;
-
-    padding:22px 18px 120px;
-}
-
-body::before{
-    content:"";
-
-    position:fixed;
-    inset:0;
-
-    background-image:
-    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
-
-    background-size:42px 42px;
-
-    pointer-events:none;
-
-    z-index:-1;
+  max-width:430px;
+  margin:0 auto;
+  min-height:100vh;
+  color:white;
+  background:
+  radial-gradient(circle at 20% 8%,rgba(124,58,237,.35),transparent 32%),
+  radial-gradient(circle at 85% 45%,rgba(0,212,255,.12),transparent 35%),
+  linear-gradient(180deg,#030712,#050816,#020617);
+  padding:18px 16px 110px;
 }
 
 .header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    margin-bottom:24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;
 }
 
-.menu-btn,
-.pro-btn{
-
-    width:56px;
-    height:56px;
-
-    border-radius:18px;
-
-    background:rgba(255,255,255,.05);
-
-    border:1px solid rgba(168,85,247,.20);
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    color:#c084fc;
-
-    font-size:22px;
-    cursor:pointer;
+.icon-btn{
+  width:52px;
+  height:52px;
+  border-radius:18px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(168,85,247,.25);
+  color:#c084fc;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:21px;
+  cursor:pointer;
 }
 
-.title-box{
-    text-align:center;
-    flex:1;
+.title{
+  text-align:center;
 }
 
-.title-box h1{
-    font-size:18px;
-    letter-spacing:3px;
-    font-weight:800;
+.title h1{
+  font-size:18px;
+  letter-spacing:3px;
+  font-weight:900;
 }
 
-.title-box p{
-    color:#94a3b8;
-    margin-top:6px;
-    font-size:13px;
+.title p{
+  color:#94a3b8;
+  font-size:13px;
+  margin-top:6px;
 }
 
-.ai-core{
-
-    position:relative;
-
-    width:240px;
-    height:240px;
-
-    margin:30px auto 24px;
-
-    border-radius:50%;
-
-    background:
-    radial-gradient(circle,
-    rgba(168,85,247,.95),
-    rgba(91,33,182,.55),
-    rgba(0,0,0,0));
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    box-shadow:
-    0 0 80px rgba(168,85,247,.45),
-    0 0 140px rgba(168,85,247,.20);
+.summary-card{
+  background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+  border:1px solid rgba(168,85,247,.25);
+  border-radius:28px;
+  padding:22px;
+  margin-bottom:18px;
+  box-shadow:0 0 28px rgba(168,85,247,.16);
 }
 
-.ai-core::before{
-
-    content:"";
-
-    position:absolute;
-
-    width:280px;
-    height:280px;
-
-    border-radius:50%;
-
-    border:1px solid rgba(168,85,247,.20);
-
-    animation:pulse 4s infinite;
+.summary-label{
+  color:#94a3b8;
+  font-size:14px;
 }
 
-.ai-core i{
-    font-size:70px;
-    color:white;
+.summary-value{
+  font-size:38px;
+  font-weight:900;
+  margin-top:12px;
+  color:#00f5a0;
 }
 
-@keyframes pulse{
-
-    0%{
-        transform:scale(1);
-        opacity:1;
-    }
-
-    100%{
-        transform:scale(1.15);
-        opacity:0;
-    }
+.summary-sub{
+  margin-top:8px;
+  color:#c084fc;
+  font-size:14px;
 }
 
-.main-text{
-    text-align:center;
+.tabs{
+  display:flex;
+  gap:10px;
+  margin-bottom:18px;
 }
 
-.main-text h2{
-    font-size:36px;
-    font-weight:800;
-
-    margin-bottom:10px;
+.tab{
+  flex:1;
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(168,85,247,.25);
+  background:rgba(255,255,255,.04);
+  color:#94a3b8;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
 }
 
-.main-text p{
-    color:#94a3b8;
-    font-size:17px;
-    line-height:1.7;
+.tab.active{
+  color:white;
+  background:linear-gradient(135deg,#7c3aed,#a855f7);
+  box-shadow:0 0 20px rgba(168,85,247,.25);
 }
 
-.ask-box{
-
-    margin-top:34px;
-
-    background:
-    linear-gradient(
-        145deg,
-        rgba(15,23,42,.95),
-        rgba(8,13,32,.95)
-    );
-
-    border:1px solid rgba(168,85,247,.18);
-
-    border-radius:28px;
-
-    padding:18px;
-
-    display:flex;
-    align-items:center;
-    gap:14px;
-
-    box-shadow:
-    0 0 28px rgba(168,85,247,.10);
+.order-card{
+  background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+  border:1px solid rgba(168,85,247,.22);
+  border-radius:24px;
+  padding:18px;
+  margin-bottom:14px;
+  box-shadow:0 0 24px rgba(168,85,247,.12);
 }
 
-.ask-box input{
-
-    flex:1;
-
-    background:none;
-
-    border:none;
-
-    outline:none;
-
-    color:white;
-
-    font-size:16px;
+.order-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
 }
 
-.ask-box input::placeholder{
-    color:#64748b;
+.order-name{
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 
-.voice-btn{
-
-    width:60px;
-    height:60px;
-
-    border-radius:50%;
-
-    border:none;
-
-    background:
-    linear-gradient(
-        135deg,
-        #8b5cf6,
-        #a855f7
-    );
-
-    color:white;
-
-    font-size:24px;
-
-    box-shadow:
-    0 0 25px rgba(168,85,247,.45);
-    cursor:pointer;
+.order-icon{
+  width:46px;
+  height:46px;
+  border-radius:16px;
+  background:linear-gradient(135deg,#7c3aed,#22d3ee);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
 }
 
-.quick-actions{
-
-    display:flex;
-
-    gap:12px;
-
-    overflow-x:auto;
-
-    margin-top:22px;
-
-    padding-bottom:6px;
+.order-title{
+  font-size:17px;
+  font-weight:900;
 }
 
-.quick-actions::-webkit-scrollbar{
-    display:none;
+.order-sub{
+  color:#94a3b8;
+  font-size:12px;
+  margin-top:4px;
 }
 
-.action-chip{
-
-    min-width:max-content;
-
-    padding:14px 18px;
-
-    border-radius:999px;
-
-    background:rgba(255,255,255,.04);
-
-    border:1px solid rgba(168,85,247,.14);
-
-    color:#c084fc;
-
-    font-size:14px;
-    cursor:pointer;
-    transition:0.2s;
+.status{
+  padding:7px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
 }
 
-.action-chip:active{
-    transform:scale(0.95);
+.running{
+  background:rgba(34,211,238,.12);
+  color:#22d3ee;
 }
 
-.ai-result{
-
-    margin-top:30px;
-
-    border-radius:30px;
-
-    padding:22px;
-
-    background:
-    linear-gradient(
-        145deg,
-        rgba(15,23,42,.96),
-        rgba(8,13,32,.96)
-    );
-
-    border:1px solid rgba(168,85,247,.18);
-
-    box-shadow:
-    0 0 35px rgba(168,85,247,.10);
+.completed{
+  background:rgba(0,245,160,.12);
+  color:#00f5a0;
 }
 
-.result-top{
-
-    display:flex;
-    align-items:center;
-    gap:12px;
-
-    margin-bottom:18px;
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:12px;
 }
 
-.result-top i{
-    color:#c084fc;
-    font-size:22px;
+.box{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:12px;
 }
 
-.result-top h3{
-    font-size:22px;
-    font-weight:800;
+.box span{
+  display:block;
+  color:#94a3b8;
+  font-size:12px;
+  margin-bottom:6px;
 }
 
-.result-text{
-
-    color:#cbd5e1;
-
-    line-height:1.8;
-
-    font-size:15px;
-
-    margin-bottom:22px;
-    max-height:300px;
-    overflow-y:auto;
+.box b{
+  font-size:16px;
 }
 
-.asset-list{
-    display:flex;
-    flex-direction:column;
-    gap:14px;
+.profit{
+  color:#00f5a0;
 }
 
-.asset-card{
-
-    background:rgba(255,255,255,.04);
-
-    border-radius:20px;
-
-    padding:16px;
-
-    border:1px solid rgba(255,255,255,.05);
-
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+.detail-btn{
+  margin-top:14px;
+  width:100%;
+  padding:13px;
+  border:none;
+  border-radius:16px;
+  background:rgba(168,85,247,.12);
+  color:#c084fc;
+  font-weight:900;
+  cursor:pointer;
 }
 
-.asset-left{
-    display:flex;
-    align-items:center;
-    gap:14px;
+.sub-trades{
+  display:none;
+  margin-top:14px;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-top:12px;
 }
 
-.asset-icon{
-
-    width:48px;
-    height:48px;
-
-    border-radius:16px;
-
-    background:rgba(168,85,247,.12);
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    color:#c084fc;
-
-    font-size:22px;
+.sub-row{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  color:#cbd5e1;
+  font-size:13px;
+  border-bottom:1px solid rgba(255,255,255,.06);
 }
 
-.asset-name{
-    font-size:17px;
-    font-weight:700;
+.empty{
+  text-align:center;
+  padding:40px 20px;
+  color:#94a3b8;
 }
 
-.asset-sub{
-    color:#94a3b8;
-    font-size:13px;
-    margin-top:4px;
+.empty i{
+  font-size:50px;
+  color:#c084fc;
+  margin-bottom:16px;
 }
-
-.asset-right{
-    text-align:right;
-}
-
-.asset-profit{
-    color:#00f5a0;
-    font-size:18px;
-    font-weight:800;
-}
-
-.asset-action{
-
-    margin-top:8px;
-
-    display:inline-block;
-
-    padding:8px 14px;
-
-    border-radius:999px;
-
-    background:
-    linear-gradient(
-        135deg,
-        #8b5cf6,
-        #a855f7
-    );
-
-    font-size:12px;
-    font-weight:700;
-}
-
-.bottom-nav{
-
-    position:fixed;
-
-    bottom:0;
-
-    left:50%;
-
-    transform:translateX(-50%);
-
-    width:100%;
-    max-width:430px;
-
-    height:86px;
-
-    background:rgba(5,8,22,.96);
-
-    backdrop-filter:blur(20px);
-
-    border-top:1px solid rgba(168,85,247,.20);
-
-    display:flex;
-    justify-content:space-around;
-    align-items:center;
-
-    z-index:999;
-}
-
-.nav-item{
-
-    width:20%;
-
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-
-    gap:5px;
-
-    text-decoration:none;
-
-    color:#64748b;
-
-    font-size:12px;
-}
-
-.nav-item i{
-    font-size:22px;
-}
-
-.nav-item.active{
-
-    color:#c084fc;
-
-    text-shadow:
-    0 0 16px rgba(168,85,247,.9);
-}
-
-.loading-spinner{
-    display:inline-block;
-    width:20px;
-    height:20px;
-    border:2px solid rgba(255,255,255,.3);
-    border-radius:50%;
-    border-top-color:white;
-    animation:spin 0.8s linear infinite;
-    margin-right:8px;
-}
-
-@keyframes spin{
-    to{transform:rotate(360deg);}
-}
-
 </style>
 </head>
 
 <body>
 
 <div class="header">
+  <div class="icon-btn" onclick="history.back()">
+    <i class="fa-solid fa-arrow-left"></i>
+  </div>
 
-    <div class="menu-btn">
-        <i class="fa-solid fa-bars"></i>
-    </div>
+  <div class="title">
+    <h1>AI ASSISTANT ORDERS</h1>
+    <p>Execution history</p>
+  </div>
 
-    <div class="title-box">
-        <h1>AI TRADING CENTER</h1>
-        <p>Your AI Financial Assistant</p>
-    </div>
-
-    <div class="pro-btn">
-        <i class="fa-solid fa-gem"></i>
-    </div>
-
+  <div class="icon-btn" onclick="loadOrders()">
+    <i class="fa-solid fa-rotate-right"></i>
+  </div>
 </div>
 
-<div class="ai-core">
-    <i class="fa-solid fa-wave-square"></i>
+<div class="summary-card">
+  <div class="summary-label">Total AI Assistant Profit</div>
+  <div class="summary-value" id="totalProfit">+$0.00</div>
+  <div class="summary-sub" id="orderCount">0 Orders</div>
 </div>
 
-<div class="main-text">
-
-    <h2>Hello.</h2>
-
-    <p>
-        What can I help you analyze today?
-    </p>
-
+<div class="tabs">
+  <button class="tab active" onclick="setFilter('all', this)">All</button>
+  <button class="tab" onclick="setFilter('Running', this)">Running</button>
+  <button class="tab" onclick="setFilter('Completed', this)">Completed</button>
 </div>
 
-<div class="ask-box">
-
-    <i class="fa-solid fa-keyboard"
-    style="color:#8b5cf6;font-size:22px;"></i>
-
-    <input
-    type="text"
-    id="aiInput"
-    placeholder="Ask me anything about markets..." />
-
-    <button class="voice-btn" id="voiceBtn">
-        <i class="fa-solid fa-microphone"></i>
-    </button>
-
-</div>
-
-<div class="quick-actions">
-
-    <div class="action-chip" onclick="quickAsk('Market Overview')">
-        Market Overview
-    </div>
-
-    <div class="action-chip" onclick="quickAsk('Best Opportunities')">
-        Best Opportunities
-    </div>
-
-    <div class="action-chip" onclick="quickAsk('Risk Analysis')">
-        Risk Analysis
-    </div>
-
-    <div class="action-chip" onclick="quickAsk('ETF Allocation')">
-        ETF Allocation
-    </div>
-
-</div>
-
-<div class="ai-result">
-
-    <div class="result-top">
-
-        <i class="fa-solid fa-sparkles"></i>
-
-        <h3>AI Analysis Result</h3>
-
-    </div>
-
-    <div class="result-text" id="resultText">
-
-        AI currently detects strong momentum in
-        AI semiconductor assets, crypto and
-        defensive sectors this week.
-
-    </div>
-
-    <div class="asset-list" id="assetList">
-
-        <div class="asset-card">
-
-            <div class="asset-left">
-
-                <div class="asset-icon">
-                    <i class="fa-solid fa-microchip"></i>
-                </div>
-
-                <div>
-
-                    <div class="asset-name">
-                        NVIDIA
-                    </div>
-
-                    <div class="asset-sub">
-                        AI Semiconductor
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="asset-right">
-
-                <div class="asset-profit">
-                    +3.28%
-                </div>
-
-                <div class="asset-action">
-                    Strong Buy
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="asset-card">
-
-            <div class="asset-left">
-
-                <div class="asset-icon">
-                    <i class="fa-brands fa-bitcoin"></i>
-                </div>
-
-                <div>
-
-                    <div class="asset-name">
-                        Bitcoin
-                    </div>
-
-                    <div class="asset-sub">
-                        Crypto Momentum
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="asset-right">
-
-                <div class="asset-profit">
-                    +1.85%
-                </div>
-
-                <div class="asset-action">
-                    Buy
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="asset-card">
-
-            <div class="asset-left">
-
-                <div class="asset-icon">
-                    <i class="fa-solid fa-coins"></i>
-                </div>
-
-                <div>
-
-                    <div class="asset-name">
-                        Gold ETF
-                    </div>
-
-                    <div class="asset-sub">
-                        Defensive Asset
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="asset-right">
-
-                <div class="asset-profit">
-                    +0.65%
-                </div>
-
-                <div class="asset-action">
-                    Hold
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<div class="bottom-nav">
-
-    <a class="nav-item" href="index.html">
-        <i class="fa-solid fa-house"></i>
-        Home
-    </a>
-
-    <a class="nav-item" href="market.html">
-        <i class="fa-solid fa-chart-column"></i>
-        Markets
-    </a>
-
-    <a class="nav-item active" href="ai_assistant.html">
-        <i class="fa-solid fa-wave-square"></i>
-        AI
-    </a>
-
-    <a class="nav-item" href="portfolio.html">
-        <i class="fa-regular fa-folder"></i>
-        Portfolio
-    </a>
-
-    <a class="nav-item" href="profile.html">
-        <i class="fa-regular fa-user"></i>
-        Profile
-    </a>
-
+<div id="ordersBox">
+  <div class="empty">
+    <i class="fa-solid fa-robot"></i>
+    <div>Loading AI Assistant orders...</div>
+  </div>
 </div>
 
 <script>
-// ==================== 配置 ====================
-const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
+let allOrders = [];
+let currentFilter = "all";
 
-// ==================== 获取用户信息 ====================
-function getCurrentUser() {
-    try {
-        const user = localStorage.getItem("user");
-        return user ? JSON.parse(user) : null;
-    } catch (e) {
-        return null;
-    }
+function money(n){
+  return "$" + Number(n || 0).toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
 }
 
-// ==================== 显示提示 ====================
-function showToast(message, type = "info") {
-    const existingToast = document.querySelector(".global-toast");
-    if (existingToast) existingToast.remove();
-    
-    const toast = document.createElement("div");
-    toast.className = "global-toast";
-    toast.textContent = message;
-    
-    const colors = { success: "#00f5a0", error: "#ff4d6d", info: "#c084fc" };
-    toast.style.cssText = `
-        position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-        background: rgba(10,20,40,0.95); border: 1px solid ${colors[type] || colors.info};
-        color: ${colors[type] || colors.info}; padding: 12px 24px; border-radius: 50px;
-        font-size: 14px; z-index: 10000; backdrop-filter: blur(10px); white-space: nowrap;
+function plusMoney(n){
+  const num = Number(n || 0);
+  return (num >= 0 ? "+" : "-") + money(Math.abs(num));
+}
+
+function formatTime(t){
+  if(!t) return "-";
+  return new Date(t).toLocaleString();
+}
+
+function setFilter(type, btn){
+  currentFilter = type;
+
+  document.querySelectorAll(".tab").forEach(item=>{
+    item.classList.remove("active");
+  });
+
+  btn.classList.add("active");
+
+  renderOrders();
+}
+
+async function loadOrders(){
+
+  const localUser = JSON.parse(localStorage.getItem("user"));
+
+  if(!localUser || !localUser.id){
+    document.getElementById("ordersBox").innerHTML = `
+      <div class="empty">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <div>User not found. Please login again.</div>
+      </div>
     `;
-    
-    document.body.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300); }, 2500);
+    return;
+  }
+
+  try{
+
+ const response = await fetch(
+    "https://www.quantai.fyi/api/ai/quant/orders/" +
+    localUser.id
+  );
+
+
+    const result = await response.json();
+
+    if(!result.success){
+      document.getElementById("ordersBox").innerHTML = `
+        <div class="empty">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <div>Failed to load orders.</div>
+        </div>
+      `;
+      return;
+    }
+
+    allOrders = (result.data || []).filter(order =>
+  order.assistantType === "AI Assistant" ||
+  order.level === "AI Assistant"
+);
+
+    renderOrders();
+
+  }catch(err){
+
+    document.getElementById("ordersBox").innerHTML = `
+      <div class="empty">
+        <i class="fa-solid fa-wifi"></i>
+        <div>Network connection failed.</div>
+      </div>
+    `;
+  }
 }
 
-// ==================== AI 分析（模拟 + 后端接口） ====================
-async function getAIAnalysis(question) {
-    const user = getCurrentUser();
-    const msg = question.toLowerCase();
-    
-    // 处理交易相关请求
-    if (msg.includes("build") || msg.includes("trading plan") || msg.includes("trade plan")) {
-        if (!user || !user.id) {
-            return "Please login first to create a trading plan.";
-        }
-        return `To start an AI trading plan, please go to the Trade page and click "Run AI Quant Trade". You can also ask me to analyze specific markets.`;
-    }
-    
-    // 市场分析
-    if (msg.includes("market") || msg.includes("overview")) {
-        return `📊 Market Overview:\n\n• Tech stocks show strong momentum with AI sector leading gains\n• Crypto markets are volatile but showing resilience\n• Defensive assets like gold remain stable\n• Overall market sentiment is BULLISH with moderate volatility\n\nRecommendation: Maintain exposure to AI and tech sectors, diversify across asset classes.`;
-    }
-    
-    // 机会分析
-    if (msg.includes("opportunity") || msg.includes("best")) {
-        return `🎯 Top Opportunities:\n\n1. AI Infrastructure (Semiconductors, Cloud Computing)\n2. Renewable Energy (Solar, EV)\n3. Digital Assets (Bitcoin, Ethereum)\n\nAI Confidence Score: 87%`;
-    }
-    
-    // 风险分析
-    if (msg.includes("risk")) {
-        return `⚠️ Risk Analysis:\n\n• Current volatility index: MEDIUM\n• Interest rate risk: STABLE\n• Geopolitical risk: ELEVATED\n• Liquidity risk: LOW\n\nRecommendation: Maintain diversified portfolio with 10-15% defensive assets.`;
-    }
-    
-    // ETF配置
-    if (msg.includes("etf")) {
-        return `📈 ETF Allocation Recommendation:\n\n• QQQ (Tech): 35%\n• SPY (S&P 500): 25%\n• GLD (Gold): 15%\n• IWM (Small Cap): 15%\n• TLT (Bonds): 10%\n\nExpected Annual Return: 8-12%`;
-    }
-    
-    // 默认回复
-    return `🤖 AI Financial Assistant\n\nI can help you analyze:\n• Market Overview\n• Best Opportunities\n• Risk Analysis\n• ETF Allocation\n\nYou can also click the quick action buttons above or ask me any specific question about markets, trading strategies, or portfolio allocation.`;
+function renderOrders(){
+
+  const box = document.getElementById("ordersBox");
+
+  let list = allOrders;
+
+  if(currentFilter !== "all"){
+    list = allOrders.filter(order => order.status === currentFilter);
+  }
+
+  const totalProfit = allOrders.reduce((sum, order)=>{
+    return sum + Number(order.profit || 0);
+  },0);
+
+  document.getElementById("totalProfit").innerText = plusMoney(totalProfit);
+  document.getElementById("orderCount").innerText =
+    allOrders.length + " Orders";
+
+  if(list.length === 0){
+    box.innerHTML = `
+      <div class="empty">
+        <i class="fa-solid fa-robot"></i>
+        <div>No AI Assistant orders yet.</div>
+      </div>
+    `;
+    return;
+  }
+
+  box.innerHTML = list.map(order => {
+
+    const statusClass =
+    order.status === "Completed"
+    ? "completed"
+    : "running";
+
+    const subTrades = order.subTrades || [];
+
+    return `
+      <div class="order-card">
+
+        <div class="order-top">
+          <div class="order-name">
+            <div class="order-icon">AI</div>
+            <div>
+              <div class="order-title">${order.product || "AI Assistant"}</div>
+              <div class="order-sub">${order.market || "Smart Strategy"}</div>
+            </div>
+          </div>
+
+          <div class="status ${statusClass}">
+            ${order.status || "Running"}
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="box">
+            <span>Amount</span>
+            <b>${money(order.amount || 0)}</b>
+          </div>
+
+          <div class="box">
+            <span>Profit Rate</span>
+            <b class="profit">+${Number(order.profitRate || 0).toFixed(2)}%</b>
+          </div>
+
+          <div class="box">
+            <span>Profit</span>
+            <b class="profit">${plusMoney(order.profit || 0)}</b>
+          </div>
+
+          <div class="box">
+            <span>Start Time</span>
+            <b style="font-size:12px;">${formatTime(order.startTime)}</b>
+          </div>
+        </div>
+
+        <div class="box" style="margin-top:10px;">
+          <span>End Time</span>
+          <b style="font-size:12px;">${formatTime(order.endTime)}</b>
+        </div>
+
+        <button class="detail-btn" onclick="toggleDetail('${order._id}')">
+          View AI Execution Details
+        </button>
+
+        <div class="sub-trades" id="detail-${order._id}">
+          ${
+            subTrades.length === 0
+            ? `<div class="sub-row"><span>No execution details</span><b>-</b></div>`
+            : subTrades.map(item => `
+              <div class="sub-row">
+                <span>${item.product || "AI Market"} · ${item.direction || ""}</span>
+                <b class="profit">${Number(item.rate || 0).toFixed(2)}%</b>
+              </div>
+            `).join("")
+          }
+        </div>
+
+      </div>
+    `;
+  }).join("");
 }
 
-// ==================== 发送消息 ====================
-async function sendMessage() {
-    const input = document.getElementById("aiInput");
-    const question = input.value.trim();
-    
-    if (!question) return;
-    
-    // 显示用户问题
-    const resultDiv = document.getElementById("resultText");
-    const userMessage = `<div style="background:rgba(139,92,246,.2); padding:12px; border-radius:16px; margin-bottom:12px;">👤 You: ${question}</div>`;
-    resultDiv.innerHTML = userMessage + '<div class="loading-spinner"></div> Analyzing...';
-    
-    input.value = "";
-    
-    // 获取AI回复
-    const reply = await getAIAnalysis(question);
-    
-    // 显示AI回复
-    resultDiv.innerHTML = userMessage + `<div>🤖 AI: ${reply.replace(/\n/g, '<br>')}</div>`;
-    
-    // 滚动到底部
-    resultDiv.scrollTop = resultDiv.scrollHeight;
+function toggleDetail(id){
+  const el = document.getElementById("detail-" + id);
+
+  if(!el) return;
+
+  el.style.display =
+  el.style.display === "block"
+  ? "none"
+  : "block";
 }
 
-// ==================== 快速问答 ====================
-function quickAsk(text) {
-    document.getElementById("aiInput").value = text;
-    sendMessage();
-}
-
-// ==================== 语音识别 ====================
-function initVoiceRecognition() {
-    const voiceBtn = document.getElementById("voiceBtn");
-    
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        voiceBtn.style.opacity = "0.5";
-        voiceBtn.title = "Voice recognition not supported";
-        return;
-    }
-    
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    
-    voiceBtn.addEventListener("click", () => {
-        recognition.start();
-        showToast("Listening... Speak now", "info");
-    });
-    
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        document.getElementById("aiInput").value = transcript;
-        sendMessage();
-    };
-    
-    recognition.onerror = () => {
-        showToast("Voice recognition failed. Please type your question.", "error");
-    };
-}
-
-// ==================== 绑定事件 ====================
-function init() {
-    // 回车发送
-    const input = document.getElementById("aiInput");
-    input.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-            sendMessage();
-        }
-    });
-    
-    // 语音识别
-    initVoiceRecognition();
-}
-
-// ==================== 页面启动 ====================
-init();
+loadOrders();
 </script>
 
 </body>
