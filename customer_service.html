@@ -39,7 +39,7 @@ body{
 .user-item.active{background:#2d2d35;border-left:4px solid #7c3aed}
 .user-name{font-size:20px;font-weight:900}
 .user-meta{margin-top:6px;color:#aaa;font-size:13px}
-.user-status{margin-top:6px;color:#00ff88;font-size:14px}
+.user-status{margin-top:6px;font-size:14px}.user-status.online{color:#00ff88}.user-status.offline{color:#94a3b8}
 .unread{
   position:absolute;right:18px;top:22px;min-width:22px;height:22px;
   padding:0 7px;border-radius:20px;background:#ff1744;color:white;
@@ -326,6 +326,7 @@ function renderUsers(){
         const uid = user.uid !== undefined && user.uid !== null ? String(user.uid) : "无UID";
         const email = user.email || "No email";
         const unread = unreadMap[id] || 0;
+        const isOnline = !!onlineUsers[id];
 
         const div = document.createElement("div");
         div.className = "user-item" + (id === currentUserId ? " active" : "");
@@ -335,7 +336,7 @@ function renderUsers(){
             <div class="user-name">${escapeHtml(name)}</div>
             <div class="user-meta">UID: ${escapeHtml(uid)}</div>
             <div class="user-meta">${escapeHtml(email)}</div>
-            <div class="user-status">● 在线</div>
+            <div class="user-status ${isOnline ? 'online' : 'offline'}">${isOnline ? "● 在线" : "○ 离线"}</div>
             <div class="unread" style="display:${unread ? "flex" : "none"}">${unread}</div>
         `;
 
