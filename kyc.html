@@ -208,10 +208,13 @@ tr:hover{
 
 <script>
 const adminAuth = JSON.parse(localStorage.getItem("adminAuth") || "null");
+const isAdminKycEntry = new URLSearchParams(window.location.search).get("admin") === "1";
 
-if (!adminAuth || adminAuth.role !== "admin") {
+if (!isAdminKycEntry) {
+  window.location.replace("kyc_verify.html");
+} else if (!adminAuth || adminAuth.role !== "admin" || !adminAuth.token) {
   alert("Please login as admin");
-  window.location.href = "admin_login.html";
+  window.location.replace("admin_login.html");
 }
 </script>
 
@@ -224,7 +227,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
     <a href="dashboard.html">仪表板</a>
     <a href="trade_management.html">交易管理</a>
     <a href="user_management.html">用户管理</a>
-    <a href="kyc.html" class="active">KYC审核</a>
+    <a href="kyc.html?admin=1" class="active">KYC审核</a>
     <a href="order_management.html">订单管理</a>
     <a href="withdraw_management.html">提现管理</a>
     <a href="customer_service.html">客服管理</a>
