@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>用户管理 - AI Trade Admin</title>
+<title>交易管理</title>
 
 <style>
 *{
@@ -26,7 +26,6 @@ body{
   left:0;
   top:0;
   padding-top:25px;
-  overflow-y:auto;
 }
 
 .sidebar h2{
@@ -42,7 +41,6 @@ body{
   padding:15px 22px;
   font-size:18px;
   font-weight:bold;
-  transition:all 0.3s;
 }
 
 .sidebar a:hover,
@@ -54,11 +52,10 @@ body{
 .main{
   margin-left:260px;
   padding:35px;
-  min-height:100vh;
 }
 
 h1{
-  font-size:52px;
+  font-size:58px;
   color:#7c4dff;
   margin-bottom:28px;
 }
@@ -75,12 +72,6 @@ h1{
   border:1px solid #333;
   border-radius:16px;
   padding:24px;
-  transition:all 0.3s;
-}
-
-.card:hover{
-  transform:translateY(-2px);
-  border-color:#7c4dff;
 }
 
 .card p{
@@ -91,7 +82,7 @@ h1{
 .card h2{
   color:#7c4dff;
   margin-top:16px;
-  font-size:36px;
+  font-size:38px;
 }
 
 .search{
@@ -99,123 +90,94 @@ h1{
 }
 
 .search input{
-  width:420px;
+  width:500px;
   background:#1f1f1f;
   border:none;
   color:white;
-  padding:14px 18px;
+  padding:15px;
   border-radius:10px;
   font-size:16px;
   outline:none;
-}
-
-.search input:focus{
-  border:1px solid #7c4dff;
 }
 
 .table-box{
   background:#121212;
   border:1px solid #333;
   border-radius:16px;
-  overflow-x:auto;
+  overflow:hidden;
 }
 
 table{
   width:100%;
   border-collapse:collapse;
-  min-width:1000px;
 }
 
 th{
   background:#1d1d1d;
   color:white;
-  padding:16px;
+  padding:18px;
   border:1px solid #333;
-  font-size:15px;
-  font-weight:bold;
+  font-size:16px;
 }
 
 td{
-  padding:14px;
+  padding:18px;
   border:1px solid #333;
   text-align:center;
   color:#ddd;
-  font-size:14px;
 }
 
 tr:hover{
-  background:#1a1a1a;
+  background:#1b1b1b;
 }
 
-.status-active{
+.running{
+  color:orange;
+  font-weight:bold;
+}
+
+.completed{
   color:#00ff88;
   font-weight:bold;
 }
 
-.status-frozen{
-  color:#ffaa00;
+.profit-positive{
+  color:#00ff88;
   font-weight:bold;
 }
 
-.status-blacklisted{
-  color:#ff4d6d;
+.profit-negative{
+  color:red;
   font-weight:bold;
 }
 
 .action-btn{
   border:none;
-  padding:6px 12px;
-  border-radius:6px;
+  padding:8px 14px;
+  border-radius:8px;
   cursor:pointer;
   font-weight:bold;
-  margin:2px;
-  transition:opacity 0.2s;
+  margin-top:8px;
 }
 
-.action-btn:hover{
-  opacity:0.8;
-}
-
-.freeze-btn{
-  background:#ff9800;
-  color:#000;
-}
-
-.unfreeze-btn{
-  background:#4caf50;
-  color:white;
-}
-
-.blacklist-btn{
-  background:#f44336;
-  color:white;
-}
-
-.restore-btn{
-  background:#2196f3;
+.refresh-btn{
+  background:#2979ff;
   color:white;
 }
 
 .empty{
   text-align:center;
   color:#888;
-  padding:40px;
-}
-
-.loading{
-  text-align:center;
-  color:#c084fc;
-  padding:40px;
+  padding:35px;
 }
 </style>
 </head>
 
 <script>
-// 管理员认证检查
 const adminAuth = JSON.parse(localStorage.getItem("adminAuth") || "null");
 
 if (!adminAuth || adminAuth.role !== "admin") {
-  alert("请先登录管理员账号");
+  alert("Please login as admin");
   window.location.href = "admin_login.html";
 }
 </script>
@@ -223,271 +185,331 @@ if (!adminAuth || adminAuth.role !== "admin") {
 <body>
 
 <div class="sidebar">
+
   <h2>AI Trade Admin</h2>
+
   <a href="dashboard.html">仪表板</a>
-  <a href="trade_management.html">交易管理</a>
-  <a href="user_management.html" class="active">用户管理</a>
+  <a href="trade_management.html" class="active">交易管理</a>
+  <a href="user_management.html">用户管理</a>
   <a href="kyc.html">KYC审核</a>
   <a href="order_management.html">订单管理</a>
   <a href="withdraw_management.html">提现管理</a>
   <a href="customer_service.html">客服管理</a>
+
 </div>
 
 <div class="main">
 
-  <h1>用户管理</h1>
+  <h1>交易管理</h1>
 
   <div class="top-grid">
+
     <div class="card">
-      <p>总用户数</p>
-      <h2 id="totalUsers">0</h2>
+      <p>总交易订单</p>
+      <h2 id="totalTrades">0</h2>
     </div>
+
     <div class="card">
-      <p>今日充值</p>
-      <h2 id="todayRecharge">0 USDT</h2>
+      <p>运行中</p>
+      <h2 id="runningTrades">0</h2>
     </div>
+
     <div class="card">
-      <p>今日提现</p>
-      <h2 id="todayWithdraw">0 USDT</h2>
+      <p>已完成</p>
+      <h2 id="completedTrades">0</h2>
     </div>
+
     <div class="card">
-      <p>活跃用户</p>
-      <h2 id="activeUsers">0</h2>
+      <p>总投入</p>
+      <h2 id="totalVolume">0 USDT</h2>
     </div>
+
   </div>
 
   <div class="search">
-    <input type="text" id="searchInput" placeholder="搜索 UID / 用户名 / 邮箱" oninput="searchUsers()">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="搜索 UID / 用户 / 产品 / 类型 / 状态"
+      oninput="searchTrades()"
+    >
   </div>
 
   <div class="table-box">
+
     <table>
+
       <thead>
         <tr>
+          <th>订单ID</th>
           <th>UID</th>
-          <th>用户名</th>
-          <th>邮箱</th>
-          <th>余额</th>
-          <th>总收益</th>
+          <th>用户</th>
+          <th>交易类型</th>
+          <th>产品</th>
+          <th>投入金额</th>
+          <th>收益率</th>
+          <th>收益</th>
           <th>状态</th>
-          <th>KYC</th>
-          <th>注册时间</th>
-          <th>操作</th>
+          <th>开始时间</th>
         </tr>
       </thead>
-      <tbody id="userTableBody">
-        <tr><td colspan="9" class="loading">加载用户数据中...</td></tr>
-      </tbody>
+
+      <tbody id="tradeTable"></tbody>
+
     </table>
+
   </div>
 
 </div>
 
 <script>
-// ==================== 配置 ====================
-const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
-const ADMIN_TOKEN = "AI_ADMIN_2026";
 
-// ==================== 格式化金额 ====================
-function formatMoney(value){
-  return Number(value || 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-}
+const API_BASE =
+"https://ai-trading-system-j5jf.onrender.com";
 
-// ==================== 加载用户列表 ====================
-async function loadUsers() {
-  const tbody = document.getElementById("userTableBody");
-  tbody.innerHTML = `<tr><td colspan="9" class="loading">加载用户数据中...</td></tr>`;
+let trades = [];
 
-  try {
-    const response = await fetch(`${API_BASE}/api/users`, {
-      headers: { "admin-token": ADMIN_TOKEN }
-    });
-    const result = await response.json();
+async function loadTrades(){
 
-    if (result.success && result.data) {
-      renderUserTable(result.data);
-      updateStats(result.data, result.stats);
-    } else {
-      tbody.innerHTML = `<tr><td colspan="9" class="empty">加载失败：${result.message || '未知错误'}</td></tr>`;
+  try{
+
+    const response =
+    await fetch(
+      API_BASE + "/api/admin/trade-orders"
+    );
+
+    const result =
+    await response.json();
+
+    if(result.success){
+
+      trades = result.data || [];
+
+    }else{
+
+      trades = [];
     }
-  } catch (error) {
-    console.error("请求错误:", error);
-    tbody.innerHTML = `<tr><td colspan="9" class="empty">网络错误，请检查服务器连接</td></tr>`;
+
+    renderTrades();
+
+  }catch(err){
+
+    console.log(err);
+    alert("交易数据加载失败");
+
   }
 }
 
-// ==================== 渲染表格 ====================
-function renderUserTable(users) {
-  const tbody = document.getElementById("userTableBody");
-  
-  if (!users || users.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty">暂无用户数据</td></tr>`;
+async function setRate(id){
+
+  const input =
+  document.getElementById("rate-" + id);
+
+  const rate =
+  Number(input.value);
+
+  if(isNaN(rate)){
+    alert("请输入收益率");
     return;
   }
 
-  let activeCount = 0;
-  
-  tbody.innerHTML = users.map(user => {
-    const balance = (user.availableBalance !== undefined) ? user.availableBalance : (user.asset || 0);
-    const statusClass = user.status === 'active' ? 'status-active' : (user.status === 'frozen' ? 'status-frozen' : 'status-blacklisted');
-    const statusText = user.status === 'active' ? '正常' : (user.status === 'frozen' ? '冻结' : '拉黑');
-    
-    if (user.status === 'active') activeCount++;
-    
-    return `
+  const response =
+  await fetch(
+    API_BASE + "/api/admin/ai-quant/set-rate/" + id,
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        rate: rate
+      })
+    }
+  );
+
+  const result =
+  await response.json();
+
+  if(result.success){
+
+    alert("收益率设置成功");
+    loadTrades();
+
+  }else{
+
+    alert(result.message || "设置失败");
+
+  }
+}
+
+function formatUSDT(value){
+
+  return Number(value || 0)
+  .toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  }) + " USDT";
+}
+
+function formatRate(rate){
+
+  return Number(rate || 0)
+  .toFixed(2) + "%";
+}
+
+function getStatusText(status){
+
+  if(status === "Running"){
+    return "运行中";
+  }
+
+  if(status === "Completed"){
+    return "已完成";
+  }
+
+  return status || "未知";
+}
+
+function getStatusClass(status){
+
+  if(status === "Completed"){
+    return "completed";
+  }
+
+  return "running";
+}
+
+function updateStats(){
+
+  document.getElementById("totalTrades").innerText =
+  trades.length;
+
+  document.getElementById("runningTrades").innerText =
+  trades.filter(item => item.status === "Running").length;
+
+  document.getElementById("completedTrades").innerText =
+  trades.filter(item => item.status === "Completed").length;
+
+  const totalVolume =
+  trades.reduce((sum,item)=>{
+    return sum + Number(item.amount || 0);
+  },0);
+
+  document.getElementById("totalVolume").innerText =
+  formatUSDT(totalVolume);
+}
+
+function renderTrades(){
+
+  const tbody =
+  document.getElementById("tradeTable");
+
+  tbody.innerHTML = "";
+
+  if(trades.length === 0){
+
+    tbody.innerHTML = `
       <tr>
-        <td>${user.uid || '-'}</td>
-        <td>${escapeHtml(user.name || '-')}</td>
-        <td>${escapeHtml(user.email || '-')}</td>
-        <td>${formatMoney(balance)} USDT</td>
-        <td>${formatMoney(user.totalProfit || 0)} USDT</td>
-        <td class="${statusClass}">${statusText}</td>
-        <td>${user.kyc || '未审核'}</td>
-        <td>${user.createdAt ? new Date(user.createdAt).toLocaleString() : '-'}</td>
-        <td>
-          ${user.status !== 'blacklisted' ? `<button class="action-btn freeze-btn" onclick="freezeUser('${user._id}')">冻结</button>` : ''}
-          ${user.status === 'frozen' ? `<button class="action-btn unfreeze-btn" onclick="unfreezeUser('${user._id}')">解冻</button>` : ''}
-          ${user.status !== 'blacklisted' ? `<button class="action-btn blacklist-btn" onclick="blacklistUser('${user._id}')">拉黑</button>` : ''}
-          ${user.status === 'blacklisted' ? `<button class="action-btn restore-btn" onclick="restoreUser('${user._id}')">恢复</button>` : ''}
+        <td colspan="10" class="empty">
+          暂无交易订单
         </td>
       </tr>
     `;
-  }).join('');
-  
-  document.getElementById("activeUsers").innerText = activeCount;
+
+    updateStats();
+    return;
+  }
+
+  trades.forEach(item=>{
+
+    const tr =
+    document.createElement("tr");
+
+    const profitClass =
+    Number(item.profit || 0) >= 0
+    ? "profit-positive"
+    : "profit-negative";
+
+    tr.innerHTML = `
+      <td>${item.id || item._id || ""}</td>
+
+      <td>${item.uid || ""}</td>
+
+      <td>${item.user || item.username || item.name || ""}</td>
+
+      <td>${item.type || "Token Yield"}</td>
+
+      <td>${item.coin || item.planName || item.product || ""}</td>
+
+      <td>${formatUSDT(item.amount)}</td>
+
+      <td>
+        ${formatRate(item.rate)}
+
+        <br><br>
+
+        <input
+          id="rate-${item.id || item._id}"
+          type="number"
+          step="0.01"
+          placeholder="收益率%"
+          style="width:90px;padding:6px;border-radius:6px;border:none;"
+        >
+
+        <br>
+
+        <button
+          class="action-btn refresh-btn"
+          onclick="setRate('${item.id || item._id}')"
+        >
+          设置
+        </button>
+      </td>
+
+      <td class="${profitClass}">
+        ${formatUSDT(item.profit)}
+      </td>
+
+      <td class="${getStatusClass(item.status)}">
+        ${getStatusText(item.status)}
+      </td>
+
+      <td>${item.time || item.createdAt || ""}</td>
+    `;
+
+    tbody.appendChild(tr);
+
+  });
+
+  updateStats();
 }
 
-// ==================== 更新统计卡片 ====================
-function updateStats(users, stats) {
-  document.getElementById("totalUsers").innerText = users.length;
-  document.getElementById("todayRecharge").innerText = formatMoney(stats?.todayRecharge || 0) + " USDT";
-  document.getElementById("todayWithdraw").innerText = formatMoney(stats?.todayWithdraw || 0) + " USDT";
-}
+function searchTrades(){
 
-// ==================== 搜索过滤 ====================
-function searchUsers() {
-  const keyword = document.getElementById("searchInput").value.toLowerCase();
-  const rows = document.querySelectorAll("#userTableBody tr");
-  
-  rows.forEach(row => {
-    if (row.cells && row.cells.length > 0) {
-      const text = row.innerText.toLowerCase();
-      row.style.display = text.includes(keyword) ? "" : "none";
-    }
+  const keyword =
+  document.getElementById("searchInput").value.toLowerCase();
+
+  const rows =
+  document.querySelectorAll("#tradeTable tr");
+
+  rows.forEach(row=>{
+
+    const text =
+    row.innerText.toLowerCase();
+
+    row.style.display =
+    text.includes(keyword)
+    ? ""
+    : "none";
+
   });
 }
 
-// ==================== XSS防护 ====================
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
-}
 
-// ==================== 冻结用户 ====================
-async function freezeUser(userId) {
-  if (!confirm("确定要冻结该用户吗？冻结后用户无法登录和交易。")) return;
-  
-  try {
-    const response = await fetch(`${API_BASE}/api/users/${userId}/freeze`, {
-      method: "PUT",
-      headers: { "admin-token": ADMIN_TOKEN }
-    });
-    const result = await response.json();
-    
-    if (result.success) {
-      alert("用户已冻结");
-      loadUsers();
-    } else {
-      alert("操作失败: " + (result.message || "未知错误"));
-    }
-  } catch (error) {
-    console.error("冻结失败:", error);
-    alert("网络错误，操作失败");
-  }
-}
+loadTrades();
 
-// ==================== 解冻用户 ====================
-async function unfreezeUser(userId) {
-  if (!confirm("确定要解冻该用户吗？")) return;
-  
-  try {
-    const response = await fetch(`${API_BASE}/api/users/${userId}/restore`, {
-      method: "PUT",
-      headers: { "admin-token": ADMIN_TOKEN }
-    });
-    const result = await response.json();
-    
-    if (result.success) {
-      alert("用户已解冻");
-      loadUsers();
-    } else {
-      alert("操作失败: " + (result.message || "未知错误"));
-    }
-  } catch (error) {
-    console.error("解冻失败:", error);
-    alert("网络错误，操作失败");
-  }
-}
+setInterval(loadTrades,10000);
 
-// ==================== 拉黑用户 ====================
-async function blacklistUser(userId) {
-  if (!confirm("确定要拉黑该用户吗？拉黑后用户永久无法登录。")) return;
-  
-  try {
-    const response = await fetch(`${API_BASE}/api/users/${userId}/blacklist`, {
-      method: "PUT",
-      headers: { "admin-token": ADMIN_TOKEN }
-    });
-    const result = await response.json();
-    
-    if (result.success) {
-      alert("用户已拉黑");
-      loadUsers();
-    } else {
-      alert("操作失败: " + (result.message || "未知错误"));
-    }
-  } catch (error) {
-    console.error("拉黑失败:", error);
-    alert("网络错误，操作失败");
-  }
-}
-
-// ==================== 恢复用户 ====================
-async function restoreUser(userId) {
-  if (!confirm("确定要恢复该用户吗？")) return;
-  
-  try {
-    const response = await fetch(`${API_BASE}/api/users/${userId}/restore`, {
-      method: "PUT",
-      headers: { "admin-token": ADMIN_TOKEN }
-    });
-    const result = await response.json();
-    
-    if (result.success) {
-      alert("用户已恢复");
-      loadUsers();
-    } else {
-      alert("操作失败: " + (result.message || "未知错误"));
-    }
-  } catch (error) {
-    console.error("恢复失败:", error);
-    alert("网络错误，操作失败");
-  }
-}
-
-// ==================== 页面启动 ====================
-loadUsers();
-
-// 每30秒自动刷新
-setInterval(loadUsers, 30000);
 </script>
 
 </body>
