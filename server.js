@@ -1073,13 +1073,16 @@ function verifyAdmin(req, res, next){
   next();
 }
 
-function getUserLevel(asset) {
-  if (asset >= 1000000) return "Daily Quant";
-  if (asset >= 800000) return "Elite Quant";
-  if (asset >= 300000) return "Institutional Quant";
-  if (asset >= 100000) return "Pro Quant";
-  if (asset >= 50000) return "Quantum Quant";
-  if (asset >= 10000) return "Advanced Quant";
+function getUserLevel(asset, lockedAsset) {
+  // 总资产 = 可用余额 + 锁定余额
+  const totalAsset = Number(asset || 0) + Number(lockedAsset || 0);
+  
+  if (totalAsset >= 1000000) return "Daily Quant";
+  if (totalAsset >= 800000) return "Elite Quant";
+  if (totalAsset >= 300000) return "Institutional Quant";
+  if (totalAsset >= 100000) return "Pro Quant";
+  if (totalAsset >= 50000) return "Quantum Quant";
+  if (totalAsset >= 10000) return "Advanced Quant";
   return "Basic Quant";
 }
 
@@ -2073,10 +2076,46 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
       });
     }
 
+    // 最低提现额限制
+    if (withdrawAmount < 10) {
+      return res.json({
+        success: false,
+        message: "Minimum withdrawal amount is 10 USDT"
+      });
+    }
+
+    // 大额提现需要KYC验证
+    if (withdrawAmount >= 1000) {
+      if (!user.kyc || user.kyc !== "已通过") {
+        return res.json({
+          success: false,
+          message: "Withdrawals over 1000 USDT require KYC verification. Please complete KYC first.",
+          code: "KYC_REQUIRED"
+        });
+      }
+    }
+
     if (withdrawAmount > Number(user.asset || 0)) {
       return res.json({
         success: false,
         message: "Insufficient balance"
+      });
+    }
+
+    // 检查地址是否为空
+    if (!address || address.trim() === "") {
+      return res.json({
+        success: false,
+        message: "Withdrawal address is required"
+      });
+    }
+
+    // 检查网络类型
+    const validNetworks = ["TRC20", "ERC20", "BEP20", "BTC"];
+    if (!network || !validNetworks.includes(network)) {
+      return res.json({
+        success: false,
+        message: "Invalid network. Please select TRC20, ERC20, BEP20, or BTC"
       });
     }
 
@@ -2087,9 +2126,15 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
       user.records = [];
     }
 
-    user.records.push(
-      `Withdrawal submitted -${withdrawAmount} USDT`
-    );
+    // 记录提现信息
+    user.records.push({
+      message: `Withdrawal submitted -${withdrawAmount} USDT to ${address.substring(0, 10)}...`,
+      amount: withdrawAmount,
+      address: address,
+      network: network,
+      kycRequired: withdrawAmount >= 1000,
+      timestamp: new Date()
+    });
 
     await user.save();
 
@@ -2098,9 +2143,9 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
       userId: user._id,
       uid: user.uid,
       email: user.email,
-      address,
+      address: address,
       amount: withdrawAmount,
-      network,
+      network: network,
       time: new Date().toLocaleString(),
       status: "Pending"
     };
@@ -2110,12 +2155,14 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
     res.json({
       success: true,
       data: withdraw,
-      balance: user.asset
+      balance: user.asset,
+      message: withdrawAmount >= 1000 
+        ? "Withdrawal request submitted. It will be processed after KYC verification."
+        : "Withdrawal submitted successfully"
     });
 
   } catch (err) {
     console.log(err);
-
     res.json({
       success: false,
       message: "Withdrawal failed"
@@ -2125,81 +2172,56 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
 
 /* 获取提现列表 */
 app.get("/api/withdrawals", async (req, res) => {
-
-  const list =
-    await Withdrawal.find()
-    .sort({ createdAt: -1 });
-
-  res.json(list);
-
+  try {
+    const list = await Withdrawal.find().sort({ createdAt: -1 });
+    res.json(list);
+  } catch (err) {
+    console.log(err);
+    res.json([]);
+  }
 });
 
 /* 更新提现状态：拒绝时自动退款 */
-app.post(
-  "/api/withdraw/status",
-  verifyAdmin,
-  async (req, res) => {
+app.post("/api/withdraw/status", verifyAdmin, async (req, res) => {
   try {
-
     const { id, status } = req.body;
-
-    const item =
-    await Withdrawal.findById(id);
+    const item = await Withdrawal.findById(id);
 
     if (!item) {
-
       return res.json({
         success: false,
         message: "提现记录不存在"
       });
     }
 
-    if (
-      item.status === "Approved" ||
-      item.status === "Rejected"
-    ) {
-
+    if (item.status === "Approved" || item.status === "Rejected") {
       return res.json({
         success: false,
         message: "该提现已审核"
       });
     }
 
-    /* 如果拒绝提现 -> 自动退款 */
-
+    // 如果拒绝提现 -> 自动退款
     if (status === "Rejected") {
-
-      const user =
-      await User.findById(item.userId);
-
+      const user = await User.findById(item.userId);
       if (user) {
-
-        const refundAmount =
-        Number(item.amount || 0);
-
-        user.asset =
-        Number(user.asset || 0)
-        + refundAmount;
-
-        user.balance =
-        user.asset;
+        const refundAmount = Number(item.amount || 0);
+        user.asset = Number(user.asset || 0) + refundAmount;
+        user.balance = user.asset;
 
         if (!user.records) {
           user.records = [];
         }
-
-        user.records.push(
-          `Withdrawal rejected, refunded +${refundAmount} USDT`
-        );
-
+        user.records.push({
+          message: `Withdrawal rejected, refunded +${refundAmount} USDT`,
+          timestamp: new Date()
+        });
         await user.save();
       }
     }
 
-    /* 更新状态 */
-
+    // 更新状态
     item.status = status;
-
     await item.save();
 
     res.json({
@@ -2208,9 +2230,7 @@ app.post(
     });
 
   } catch (err) {
-
     console.log(err);
-
     res.json({
       success: false,
       message: "更新提现状态失败"

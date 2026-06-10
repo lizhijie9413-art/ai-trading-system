@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>KYC Verification</title>
 
 <style>
@@ -106,6 +106,14 @@ body{
   color:#ffc107;
   font-weight:700;
 }
+.approved{
+  background:rgba(0,245,160,.12);
+  color:#00f5a0;
+}
+.rejected{
+  background:rgba(255,77,109,.12);
+  color:#ff4d6d;
+}
 
 .verify-item{
   display:flex;
@@ -182,6 +190,11 @@ body{
   background:#2a2a2a;
   opacity:0.6;
   cursor:not-allowed;
+}
+
+.upload-btn.uploaded{
+  background:linear-gradient(90deg,#00c48c,#00f5a0);
+  color:#06121a;
 }
 
 .progress-card h3{
@@ -289,7 +302,6 @@ body{
   backdrop-filter:blur(10px);
   white-space:nowrap;
 }
-
 </style>
 </head>
 
@@ -349,7 +361,7 @@ body{
         id="idFile"
         hidden
         accept="image/*"
-        onchange="uploadFile(this,'Government ID')">
+        onchange="uploadFile(this,'Government ID', 'frontImage')">
 
       Upload
 
@@ -379,7 +391,7 @@ body{
         id="faceFile"
         hidden
         accept="image/*"
-        onchange="uploadFile(this,'Face Verification')">
+        onchange="uploadFile(this,'Face Verification', 'faceImage')">
 
       Upload
 
@@ -409,7 +421,7 @@ body{
         id="addressFile"
         hidden
         accept="image/*"
-        onchange="uploadFile(this,'Address Proof')">
+        onchange="uploadFile(this,'Address Proof', 'backImage')">
 
       Upload
 
@@ -498,11 +510,50 @@ function showToast(message, type = "info") {
     }, 2500);
 }
 
-// ==================== 上传文件（修复：使用正确的接口和认证头） ====================
-let uploadedCount = 0;
-const totalItems = 3;
+// ==================== 加载用户KYC状态 ====================
+async function loadKYCStatus() {
+    const user = getCurrentUser();
+    if (!user || !user.id) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/users/${user.id}`, {
+            headers: { "user-id": user.id }
+        });
+        const result = await response.json();
+        
+        if (result.success && result.user) {
+            const kycStatus = result.user.kyc || "未审核";
+            const statusEl = document.getElementById("statusText");
+            
+            if (kycStatus === "已通过") {
+                statusEl.innerHTML = "Approved ✓";
+                statusEl.className = "approved";
+                // 禁用所有上传按钮
+                document.querySelectorAll('.upload-btn').forEach(btn => {
+                    btn.style.opacity = "0.5";
+                    btn.style.pointerEvents = "none";
+                });
+            } else if (kycStatus === "已驳回") {
+                statusEl.innerHTML = "Rejected ✗";
+                statusEl.className = "rejected";
+            } else {
+                statusEl.innerHTML = "Pending Review";
+                statusEl.className = "pending";
+            }
+        }
+    } catch (err) {
+        console.log("Load KYC status error:", err);
+    }
+}
 
-async function uploadFile(input, type) {
+// ==================== 上传文件并创建KYC记录 ====================
+let uploadedItems = {
+    frontImage: false,
+    faceImage: false,
+    backImage: false
+};
+
+async function uploadFile(input, type, imageType) {
     if (!input.files || input.files.length === 0) return;
     
     const user = getCurrentUser();
@@ -539,36 +590,67 @@ async function uploadFile(input, type) {
     btn.style.pointerEvents = "none";
     
     try {
-        // 修复：使用正确的接口 /api/chat/upload
-        const res = await fetch(`${API_BASE}/api/chat/upload`, {
+        // 1. 上传图片
+        const uploadRes = await fetch(`${API_BASE}/api/chat/upload`, {
             method: "POST",
             body: formData
         });
         
-        const data = await res.json();
+        const uploadData = await uploadRes.json();
         
-        if (data.success) {
+        if (!uploadData.success) {
+            throw new Error("Upload failed");
+        }
+        
+        const imageUrl = uploadData.url;
+        
+        // 2. 创建或更新KYC记录
+        const kycRes = await fetch(`${API_BASE}/api/kyc/submit`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "user-id": user.id
+            },
+            body: JSON.stringify({
+                userId: user.id,
+                uid: user.uid,
+                name: user.name,
+                email: user.email,
+                [imageType]: imageUrl,
+                status: "未审核"
+            })
+        });
+        
+        const kycResult = await kycRes.json();
+        
+        if (kycResult.success) {
             btn.innerHTML = "✓ Uploaded";
-            btn.style.background = "linear-gradient(90deg,#00c48c,#00f5a0)";
-            btn.style.color = "#06121a";
+            btn.classList.add("uploaded");
             
-            uploadedCount++;
-            updateProgress();
+            uploadedItems[imageType] = true;
+            
+            // 计算进度
+            const completedCount = Object.values(uploadedItems).filter(v => v === true).length;
+            const percent = (completedCount / 3) * 100;
+            
+            updateProgress(percent, completedCount);
             
             showToast(`${type} uploaded successfully`, "success");
             
-            // 如果所有文件都上传完成，显示审核中
-            if (uploadedCount === totalItems) {
+            // 保存到本地
+            saveUploadStatus(completedCount);
+            
+            // 如果所有文件都上传完成
+            if (completedCount === 3) {
                 document.getElementById("statusText").innerHTML = "Under Review";
-                document.getElementById("statusText").style.background = "rgba(0,245,160,.12)";
-                document.getElementById("statusText").style.color = "#00f5a0";
+                document.getElementById("statusText").className = "pending";
                 showToast("All documents uploaded! Your KYC is under review.", "success");
             }
         } else {
             btn.innerHTML = originalText;
             btn.style.opacity = "1";
             btn.style.pointerEvents = "auto";
-            showToast(data.message || "Upload failed", "error");
+            showToast(kycResult.message || "Submission failed", "error");
         }
         
     } catch (error) {
@@ -581,10 +663,10 @@ async function uploadFile(input, type) {
 }
 
 // ==================== 更新进度 ====================
-function updateProgress() {
-    const percent = (uploadedCount / totalItems) * 100;
+function updateProgress(percent, completedCount) {
     const progressFill = document.getElementById("progressFill");
     const progressPercent = document.getElementById("progressPercent");
+    const estimatedSpan = document.getElementById("estimatedTime");
     
     if (progressFill) {
         progressFill.style.width = percent + "%";
@@ -594,74 +676,80 @@ function updateProgress() {
         progressPercent.innerText = Math.floor(percent) + "% Completed";
     }
     
-    // 如果100%完成，更新预估时间
-    if (uploadedCount === totalItems) {
-        const estimatedSpan = document.getElementById("estimatedTime");
-        if (estimatedSpan) {
-            estimatedSpan.innerText = "Review in progress";
-        }
+    if (completedCount === 3 && estimatedSpan) {
+        estimatedSpan.innerText = "Review in progress";
     }
+}
+
+// ==================== 保存上传状态到本地 ====================
+function saveUploadStatus(completedCount) {
+    localStorage.setItem("kyc_uploaded_count", completedCount);
+    localStorage.setItem("kyc_uploaded_items", JSON.stringify(uploadedItems));
 }
 
 // ==================== 加载已上传状态 ====================
 function loadUploadStatus() {
-    // 从localStorage读取已上传状态
     const saved = localStorage.getItem("kyc_uploaded_count");
-    if (saved) {
-        uploadedCount = parseInt(saved);
-        updateProgress();
-        
-        // 更新按钮状态
-        if (uploadedCount >= 1) {
-            const idBtn = document.getElementById("uploadIdBtn");
-            if (idBtn) {
-                idBtn.innerHTML = "✓ Uploaded";
-                idBtn.style.background = "linear-gradient(90deg,#00c48c,#00f5a0)";
-                idBtn.style.color = "#06121a";
+    const savedItems = localStorage.getItem("kyc_uploaded_items");
+    
+    if (savedItems) {
+        try {
+            const items = JSON.parse(savedItems);
+            uploadedItems = items;
+            
+            let completedCount = 0;
+            
+            if (uploadedItems.frontImage) {
+                document.getElementById("uploadIdBtn").innerHTML = "✓ Uploaded";
+                document.getElementById("uploadIdBtn").classList.add("uploaded");
+                completedCount++;
             }
+            if (uploadedItems.faceImage) {
+                document.getElementById("uploadFaceBtn").innerHTML = "✓ Uploaded";
+                document.getElementById("uploadFaceBtn").classList.add("uploaded");
+                completedCount++;
+            }
+            if (uploadedItems.backImage) {
+                document.getElementById("uploadAddressBtn").innerHTML = "✓ Uploaded";
+                document.getElementById("uploadAddressBtn").classList.add("uploaded");
+                completedCount++;
+            }
+            
+            if (completedCount > 0) {
+                const percent = (completedCount / 3) * 100;
+                updateProgress(percent, completedCount);
+            }
+            
+            if (completedCount === 3) {
+                document.getElementById("statusText").innerHTML = "Under Review";
+                document.getElementById("statusText").className = "pending";
+            }
+        } catch(e) {}
+    } else if (saved) {
+        // 兼容旧版本
+        const completedCount = parseInt(saved);
+        if (completedCount >= 1) {
+            document.getElementById("uploadIdBtn").innerHTML = "✓ Uploaded";
+            document.getElementById("uploadIdBtn").classList.add("uploaded");
         }
-        if (uploadedCount >= 2) {
-            const faceBtn = document.getElementById("uploadFaceBtn");
-            if (faceBtn) {
-                faceBtn.innerHTML = "✓ Uploaded";
-                faceBtn.style.background = "linear-gradient(90deg,#00c48c,#00f5a0)";
-                faceBtn.style.color = "#06121a";
-            }
+        if (completedCount >= 2) {
+            document.getElementById("uploadFaceBtn").innerHTML = "✓ Uploaded";
+            document.getElementById("uploadFaceBtn").classList.add("uploaded");
         }
-        if (uploadedCount >= 3) {
-            const addressBtn = document.getElementById("uploadAddressBtn");
-            if (addressBtn) {
-                addressBtn.innerHTML = "✓ Uploaded";
-                addressBtn.style.background = "linear-gradient(90deg,#00c48c,#00f5a0)";
-                addressBtn.style.color = "#06121a";
-            }
+        if (completedCount >= 3) {
+            document.getElementById("uploadAddressBtn").innerHTML = "✓ Uploaded";
+            document.getElementById("uploadAddressBtn").classList.add("uploaded");
             document.getElementById("statusText").innerHTML = "Under Review";
-            document.getElementById("statusText").style.background = "rgba(0,245,160,.12)";
-            document.getElementById("statusText").style.color = "#00f5a0";
+        }
+        if (completedCount > 0) {
+            updateProgress((completedCount / 3) * 100, completedCount);
         }
     }
 }
 
-// ==================== 保存上传状态 ====================
-function saveUploadStatus() {
-    localStorage.setItem("kyc_uploaded_count", uploadedCount);
-}
-
-// 监听上传计数变化
-function updateProgressAndSave() {
-    updateProgress();
-    saveUploadStatus();
-}
-
-// 重写 updateProgress
-const originalUpdateProgress = updateProgress;
-window.updateProgress = function() {
-    originalUpdateProgress();
-    saveUploadStatus();
-};
-
 // ==================== 页面启动 ====================
 loadUploadStatus();
+loadKYCStatus();
 </script>
 
 </body>

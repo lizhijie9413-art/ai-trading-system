@@ -166,7 +166,15 @@ if (!adminAuth || adminAuth.role !== "admin") {
 // ==================== 配置 ====================
 const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 const ADMIN_TOKEN = "AI_ADMIN_2026";
-const socket = io(API_BASE);
+
+// Socket.IO 连接（带错误处理）
+const socket = io(API_BASE, {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+    timeout: 10000
+});
 
 // ==================== 全局变量 ====================
 let users = [];
@@ -195,9 +203,20 @@ function escapeHtml(str) {
 
 // ==================== Socket事件 ====================
 socket.on("connect", () => {
-    console.log("客服后台已连接");
+    console.log("✅ 客服后台已连接, socket id:", socket.id);
+    document.getElementById("statusBar").innerHTML = "状态：已连接服务器 ✓";
     setServiceOnline();
     disableAI();
+});
+
+socket.on("connect_error", (err) => {
+    console.log("❌ Socket连接错误:", err.message);
+    document.getElementById("statusBar").innerHTML = "状态：连接失败，请检查网络或VPN ✗";
+});
+
+socket.on("disconnect", () => {
+    console.log("⚠️ Socket已断开");
+    document.getElementById("statusBar").innerHTML = "状态：连接已断开，正在重连...";
 });
 
 socket.on("receive_message", (data) => {
@@ -212,13 +231,11 @@ socket.on("receive_message", (data) => {
     renderMessages();
 });
 
-// ==================== 加载用户列表（修复：添加admin-token） ====================
+// ==================== 加载用户列表 ====================
 async function loadUsers(){
     try{
         const res = await fetch(`${API_BASE}/api/users`, {
-            headers: {
-                "admin-token": ADMIN_TOKEN
-            }
+            headers: { "admin-token": ADMIN_TOKEN }
         });
         const result = await res.json();
 
@@ -228,6 +245,7 @@ async function loadUsers(){
             const first = users[0];
             currentUserId = first._id || first.id;
             currentUserName = first.name || first.username || "Unknown";
+            document.getElementById("chatTitle").innerText = `正在与 ${currentUserName} 聊天`;
         }
 
         renderUsers();
@@ -239,10 +257,9 @@ async function loadUsers(){
     }
 }
 
-// ==================== 渲染用户列表（修复：添加XSS防护） ====================
+// ==================== 渲染用户列表 ====================
 function renderUsers(){
     const keyword = document.getElementById("searchInput").value.toLowerCase();
-
     const list = users.filter(u => {
         const text = `${u.uid || ""} ${u.name || ""} ${u.username || ""} ${u.email || ""}`.toLowerCase();
         return text.includes(keyword);
@@ -265,10 +282,9 @@ function renderUsers(){
             <div class="user-name">${escapeHtml(name)}</div>
             <div class="user-meta">UID: ${escapeHtml(uid)}</div>
             <div class="user-meta">${escapeHtml(email)}</div>
-            <div class="user-status">● 在线 / 可联系</div>
+            <div class="user-status">● 在线</div>
             <div class="unread" style="display:${unread ? "flex" : "none"}">${unread}</div>
         `;
-
         userList.appendChild(div);
     });
 }
@@ -317,19 +333,17 @@ function updateStatus(){
     document.getElementById("aiOnBtn").classList.toggle("active", aiSupportEnabled);
     document.getElementById("aiOffBtn").classList.toggle("active", !aiSupportEnabled);
 
-    document.getElementById("statusBar").innerText =
-        `状态：${serviceOnline ? "人工客服在线" : "人工客服离线"} ｜ ${aiSupportEnabled ? "AI托管开启" : "AI托管关闭"} ｜ 客服ID：${serviceId}`;
+    document.getElementById("statusBar").innerText = 
+        `状态：${serviceOnline ? "人工客服在线 👤" : "人工客服离线 💤"} ｜ ${aiSupportEnabled ? "AI托管开启 🤖" : "AI托管关闭 🔒"} ｜ 客服ID：${serviceId}`;
 }
 
 // ==================== 发送文字 ====================
 function sendMessage(){
     const message = input.value.trim();
-
     if(!currentUserId){
         alert("请先选择用户");
         return;
     }
-
     if(!message) return;
 
     socket.emit("send_message", {
@@ -340,7 +354,6 @@ function sendMessage(){
         type: "text",
         message: escapeHtml(message)
     });
-
     input.value = "";
 }
 
@@ -350,15 +363,13 @@ function handleEnter(event){
     }
 }
 
-// ==================== 发送图片（修复：使用API_BASE） ====================
+// ==================== 发送图片 ====================
 async function sendImage(){
     const file = document.getElementById("imageInput").files[0];
-
     if(!currentUserId){
         alert("请先选择用户");
         return;
     }
-
     if(!file) return;
 
     const formData = new FormData();
@@ -369,7 +380,6 @@ async function sendImage(){
             method: "POST",
             body: formData
         });
-
         const result = await res.json();
 
         if(!result.success){
@@ -386,7 +396,6 @@ async function sendImage(){
             imageUrl: result.url.startsWith("http") ? result.url : API_BASE + result.url,
             message: "[图片]"
         });
-
         document.getElementById("imageInput").value = "";
     } catch(err) {
         console.log(err);
@@ -394,17 +403,15 @@ async function sendImage(){
     }
 }
 
-// ==================== 渲染消息（修复：添加XSS防护） ====================
+// ==================== 渲染消息 ====================
 function renderMessages(){
     chatBody.innerHTML = "";
-
     if(!currentUserId){
         chatBody.innerHTML = "<div style='color:#aaa'>请选择一个用户会话</div>";
         return;
     }
 
     const list = chatRecords[currentUserId] || [];
-
     list.forEach(data => {
         const div = document.createElement("div");
         div.className = data.sender === "service" ? "message service" : "message user";
@@ -422,10 +429,8 @@ function renderMessages(){
                 <div class="msg-time">${escapeHtml(data.time || "Now")} ${data.serviceId ? "｜" + escapeHtml(data.serviceId) : ""}</div>
             </div>
         `;
-
         chatBody.appendChild(div);
     });
-
     chatBody.scrollTop = chatBody.scrollHeight;
 }
 
