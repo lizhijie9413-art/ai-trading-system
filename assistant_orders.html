@@ -284,6 +284,8 @@ body{
 </div>
 
 <script>
+const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
+
 let allOrders = [];
 let currentFilter = "all";
 
@@ -332,9 +334,17 @@ async function loadOrders(){
 
   try{
 
- const response = await fetch(
-    "https://www.quantai.fyi/api/ai/quant/orders/" +
-    localUser.id
+ const headers = {
+    "user-id": localUser.id
+  };
+
+  if (localUser.token) {
+    headers["Authorization"] = "Bearer " + localUser.token;
+  }
+
+  const response = await fetch(
+    API_BASE + "/api/ai/quant/orders/" + localUser.id,
+    { headers }
   );
 
 
