@@ -185,10 +185,53 @@ let serviceOnline = false;
 let aiSupportEnabled = true;
 let chatRecords = {};
 let unreadMap = {};
+let onlineUsers = {};
+let totalUnread = 0;
+const defaultTitle = document.title;
 
 const userList = document.getElementById("userList");
 const chatBody = document.getElementById("chatBody");
 const input = document.getElementById("messageInput");
+
+function updateTitleNotice(){
+    totalUnread = Object.values(unreadMap).reduce((sum, value) => sum + Number(value || 0), 0);
+    document.title = totalUnread > 0 ? "(" + totalUnread + ") New customer message" : defaultTitle;
+}
+
+function playNewMessageSound(){
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = 880;
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.36);
+    } catch (err) {
+        console.log("Notification sound blocked:", err.message);
+    }
+}
+
+function notifyNewMessage(data){
+    if(data.sender === "service") return;
+    playNewMessageSound();
+    if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("New customer message", {
+            body: (data.username || data.uid || "Customer") + ": " + (data.message || "[image]")
+        });
+    }
+}
+
+if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().catch(() => {});
+}
 
 // ==================== XSS防护（修复：确保输入是字符串） ====================
 function escapeHtml(str) {
@@ -219,6 +262,12 @@ socket.on("connect_error", (err) => {
 socket.on("disconnect", () => {
     console.log("⚠️ Socket已断开");
     document.getElementById("statusBar").innerHTML = "状态：连接已断开，正在重连...";
+});
+
+socket.on("user_status", (data) => {
+    if(!data || !data.userId) return;
+    onlineUsers[data.userId] = !!data.online;
+    renderUsers();
 });
 
 socket.on("receive_message", (data) => {
@@ -299,6 +348,7 @@ function switchUser(id, name, uid, email){
     currentUserId = id;
     currentUserName = name;
     unreadMap[id] = 0;
+    updateTitleNotice();
 
     document.getElementById("chatTitle").innerText = `正在与 ${escapeHtml(name)} 聊天`;
     document.getElementById("chatSubtitle").innerText = `用户UID: ${escapeHtml(uid)} ｜ 邮箱: ${escapeHtml(email)} ｜ 客服ID: ${serviceId}`;

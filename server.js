@@ -2613,6 +2613,7 @@ app.post("/api/reset-password", async (req, res) => {
 
 let aiSupportEnabled = true;
 let serviceOnline = false;
+const onlineSupportUsers = new Map();
 
 async function getAIReply(message) {
 
@@ -2642,6 +2643,31 @@ io.on("connection", (socket) => {
     aiSupportEnabled = value;
 
     console.log("AI客服状态:", aiSupportEnabled);
+  });
+
+  socket.on("user_online", (data = {}) => {
+    const userId = String(data.userId || data.user || "");
+    if (!userId) return;
+
+    socket.userId = userId;
+    onlineSupportUsers.set(userId, {
+      socketId: socket.id,
+      userId,
+      uid: data.uid || "",
+      username: data.username || data.name || "",
+      email: data.email || "",
+      onlineAt: new Date()
+    });
+
+    io.emit("user_status", { userId, online: true });
+  });
+
+  socket.on("user_offline", (data = {}) => {
+    const userId = String(data.userId || data.user || socket.userId || "");
+    if (!userId) return;
+
+    onlineSupportUsers.delete(userId);
+    io.emit("user_status", { userId, online: false });
   });
 
   socket.on("send_message", async (data) => {

@@ -296,6 +296,19 @@ const serviceId = "CS-001";
 const chatBody = document.getElementById("chatBody");
 const input = document.getElementById("messageInput");
 
+function emitUserOnline(){
+  socket.emit("user_online", {
+    userId: chatUserId,
+    uid: chatUid,
+    username: chatUsername,
+    email: localUser.email || ""
+  });
+}
+
+function emitUserOffline(){
+  socket.emit("user_offline", { userId: chatUserId });
+}
+
 // ==================== 本地存储消息记录 ====================
 let chatRecords = JSON.parse(localStorage.getItem("supportChatRecords_" + chatUserId) || "[]");
 let isTyping = false;
@@ -427,6 +440,7 @@ function handleEnter(event){
 
 // ==================== Socket事件 ====================
 socket.on("connect", () => {
+  emitUserOnline();
   console.log("✅ Socket连接成功, id:", socket.id);
   document.getElementById("supportStatus").innerHTML = "Online";
   document.getElementById("supportStatus").style.color = "#00f5a0";
