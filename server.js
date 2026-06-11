@@ -262,6 +262,51 @@ async function authenticateUser(req, res, next) {
   next();
 }
 
+app.post("/api/tts", authenticateUser, async (req, res) => {
+  try {
+    if (!openai) {
+      return res.status(503).json({
+        success: false,
+        message: "Voice service is not configured"
+      });
+    }
+
+    const input = String(req.body?.text || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 900);
+
+    if (!input) {
+      return res.status(400).json({
+        success: false,
+        message: "Text is required"
+      });
+    }
+
+    const speech = await openai.audio.speech.create({
+      model: "gpt-4o-mini-tts",
+      voice: "marin",
+      input,
+      instructions: "Speak like a calm, confident human financial assistant. Use natural pacing, warm tone, short pauses, and avoid a robotic announcer style.",
+      response_format: "mp3"
+    });
+
+    const audioBuffer = Buffer.from(await speech.arrayBuffer());
+
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(audioBuffer);
+  } catch (err) {
+    console.log("TTS error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Voice generation failed"
+    });
+  }
+});
+
+
 // 修复：添加用户认证
 app.get("/api/users/:id", authenticateUser, async (req, res) => {
   try {
@@ -1279,7 +1324,7 @@ const aiQuantRates = {
   "Daily Quant": {
     week1: { min: 8, max: 10 },
     afterWeek1: { min: 8, max: 10 },
-    weeklyLimit: 7,   // 或者按天1次也可改逻辑
+    dailyLimit: 1,
     minBalance: 1000000,
     maxBalance: Infinity
   }
@@ -1504,37 +1549,28 @@ const setting = aiQuantRates[level];
 
 if(strategy === "Short-Term AI Quant"){
 
-  const weekStart = new Date();
+  const dayStart = new Date(now);
+  dayStart.setHours(0,0,0,0);
 
-  weekStart.setDate(
-    now.getDate() - now.getDay()
-  );
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
 
-  weekStart.setHours(0,0,0,0);
+  const dailyCount =
+  await AIQuantOrder.countDocuments({
+    userId: user._id,
+    strategy: "Short-Term AI Quant",
+    level: level,
+    assistantType: "AI Assistant",
+    createdAt: {
+      $gte: dayStart,
+      $lt: dayEnd
+    }
+  });
 
- const weeklyCount =
-await AIQuantOrder.countDocuments({
-
-  userId: user._id,
-
-  strategy: "Short-Term AI Quant",
-
-  level: level,
-
-  assistantType: "AI Assistant",
-
-  createdAt: {
-    $gte: weekStart
-  }
-
-});
-
-  if(weeklyCount >= setting.weeklyLimit){
-
+  if(dailyCount >= 1){
     return res.json({
       success:false,
-      message:
-      "Weekly Short-Term AI Quant limit reached"
+      message:"Daily Short-Term AI Quant limit reached. Please try again tomorrow."
     });
   }
 }
@@ -1796,38 +1832,57 @@ const setting =
 
 const now = new Date();
 
-const weekStart = new Date();
+if (level === "Daily Quant") {
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
 
-weekStart.setDate(
-  now.getDate() - now.getDay()
-);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
 
-weekStart.setHours(0, 0, 0, 0);
-
-const weeklyCount =
-await AIQuantOrder.countDocuments({
-
-  userId: user._id,
-
-  level: { $ne: "AI Assistant" },
-
-  createdAt: {
-    $gte: weekStart
-  }
-
-});
-
-if (
-  weeklyCount >=
-  setting.weeklyLimit
-) {
-
-  return res.json({
-    success: false,
-    message:
-    "Weekly AI Quant trade limit reached"
+  const dailyCount =
+  await AIQuantOrder.countDocuments({
+    userId: user._id,
+    assistantType: { $ne: "AI Assistant" },
+    createdAt: {
+      $gte: dayStart,
+      $lt: dayEnd
+    }
   });
 
+  if (dailyCount >= (setting.dailyLimit || 1)) {
+    return res.json({
+      success: false,
+      message: "Daily Quant trade limit reached. Please try again tomorrow."
+    });
+  }
+} else {
+  const weekStart = new Date();
+
+  weekStart.setDate(
+    now.getDate() - now.getDay()
+  );
+
+  weekStart.setHours(0, 0, 0, 0);
+
+  const weeklyCount =
+  await AIQuantOrder.countDocuments({
+    userId: user._id,
+    assistantType: { $ne: "AI Assistant" },
+    createdAt: {
+      $gte: weekStart
+    }
+  });
+
+  if (
+    weeklyCount >=
+    setting.weeklyLimit
+  ) {
+    return res.json({
+      success: false,
+      message:
+      "Weekly AI Quant trade limit reached"
+    });
+  }
 }
 
     const userFirstOrder = await AIQuantOrder.findOne({
