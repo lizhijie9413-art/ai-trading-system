@@ -309,6 +309,47 @@ body::before{
     box-shadow:0 0 20px rgba(139,92,246,.4);
 }
 
+.details-btn{
+    width:100%;
+    height:46px;
+    margin-top:14px;
+    border-radius:16px;
+    border:1px solid rgba(56,189,248,.28);
+    background:rgba(56,189,248,.08);
+    color:#7dd3fc;
+    font-size:14px;
+    font-weight:900;
+    cursor:pointer;
+}
+
+.trade-details{
+    display:none;
+    margin-top:14px;
+    border-radius:18px;
+    border:1px solid rgba(56,189,248,.18);
+    background:rgba(2,6,23,.42);
+    overflow:hidden;
+}
+
+.trade-details.open{display:block;}
+
+.detail-row{
+    display:grid;
+    grid-template-columns:40px 1fr 1fr 64px 76px;
+    gap:8px;
+    padding:12px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    align-items:center;
+    font-size:12px;
+}
+
+.detail-row:last-child{border-bottom:none;}
+.detail-head{color:#94a3b8;font-weight:900;background:rgba(255,255,255,.04);}
+.detail-product{color:white;font-weight:800;}
+.detail-muted{color:#94a3b8;}
+.detail-up{color:#00f5a0;font-weight:900;}
+.detail-down{color:#ff4d6d;font-weight:900;}
+
 .empty{
     text-align:center;
     padding:60px 20px;
@@ -384,19 +425,19 @@ body::before{
 <!-- 统计卡片 - 显示盈亏明细 -->
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-label">总交易次数</div>
+        <div class="stat-label">Total Trades</div>
         <div class="stat-value purple" id="totalTrades">0</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">盈利次数</div>
+        <div class="stat-label">Profitable Trades</div>
         <div class="stat-value green" id="winTrades">0</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">亏损次数</div>
+        <div class="stat-label">Loss Trades</div>
         <div class="stat-value red" id="lossTrades">0</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">胜率</div>
+        <div class="stat-label">Win Rate</div>
         <div class="stat-value" id="winRate">0%</div>
     </div>
 </div>
@@ -419,15 +460,15 @@ body::before{
 
 <!-- 筛选标签 -->
 <div class="filter-tabs">
-    <button class="filter-btn active" data-filter="all">全部</button>
-    <button class="filter-btn" data-filter="Running">运行中</button>
-    <button class="filter-btn" data-filter="Completed">已完成</button>
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="Running">Running</button>
+    <button class="filter-btn" data-filter="Completed">Completed</button>
 </div>
 
 <div id="ordersContainer">
     <div class="empty">
         <i class="fa-solid fa-spinner fa-pulse"></i>
-        <div>加载订单中...</div>
+        <div>Loading orders...</div>
     </div>
 </div>
 
@@ -491,6 +532,66 @@ function getProfitClass(profit){
     if(num < 0) return "profit-negative";
     return "";
 }
+
+function escapeHtml(value){
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function renderSubTrades(order){
+    const trades = Array.isArray(order.subTrades) ? order.subTrades : [];
+    const orderId = order._id || order.id || "";
+
+    if(trades.length === 0){
+        return "";
+    }
+
+    const rows = trades.map((trade, index) => {
+        const rate = Number(trade.rate || 0);
+        const rateClass = rate >= 0 ? "detail-up" : "detail-down";
+        const direction = trade.direction || (rate >= 0 ? "Up" : "Down");
+        const result = trade.result || (rate >= 0 ? "Profit" : "Loss");
+
+        return `
+            <div class="detail-row">
+                <div class="detail-muted">#${trade.no || index + 1}</div>
+                <div>
+                    <div class="detail-product">${escapeHtml(trade.product || "-")}</div>
+                    <div class="detail-muted">${escapeHtml(trade.market || "-")}</div>
+                </div>
+                <div class="detail-muted">${escapeHtml(direction)}</div>
+                <div class="${rateClass}">${rate >= 0 ? "+" : ""}${rate.toFixed(2)}%</div>
+                <div class="${rateClass}">${escapeHtml(result)}</div>
+            </div>
+        `;
+    }).join("");
+
+    return `
+        <button class="details-btn" onclick="toggleTradeDetails('${orderId}')">View Details</button>
+        <div class="trade-details" id="details-${orderId}">
+            <div class="detail-row detail-head">
+                <div>No.</div>
+                <div>Product</div>
+                <div>Direction</div>
+                <div>Rate</div>
+                <div>Result</div>
+            </div>
+            ${rows}
+        </div>
+    `;
+}
+
+function toggleTradeDetails(orderId){
+    const box = document.getElementById("details-" + orderId);
+    if(box){
+        box.classList.toggle("open");
+    }
+}
+
 
 // ==================== 显示提示 ====================
 function showToast(message, type = "info") {
@@ -561,7 +662,7 @@ function renderOrders() {
         list = allOrders.filter(order => order.status === currentFilter);
     }
     
-    // 计算统计数据（只统计已完成的订单）
+    // 计算统计数据（只统计Completed的订单）
     const completedOrders = allOrders.filter(o => o.status === "Completed");
     const winOrders = completedOrders.filter(o => Number(o.profit || 0) > 0);
     const lossOrders = completedOrders.filter(o => Number(o.profit || 0) < 0);
@@ -576,7 +677,7 @@ function renderOrders() {
     document.getElementById("lossTrades").innerText = lossOrders.length;
     document.getElementById("winRate").innerText = winRate + "%";
     
-    // 更新总收益显示（只显示已完成的收益）
+    // 更新总收益显示（只显示Completed的收益）
     const totalProfitElement = document.getElementById("totalProfit");
     totalProfitElement.innerText = formatMoney(totalProfitAll);
     totalProfitElement.className = totalProfitAll >= 0 ? "summary-amount positive" : "summary-amount negative";
@@ -585,7 +686,7 @@ function renderOrders() {
     const container = document.getElementById("ordersContainer");
     
     if (list.length === 0) {
-        container.innerHTML = `<div class="empty"><i class="fa-regular fa-folder-open"></i><div>暂无订单</div></div>`;
+        container.innerHTML = `<div class="empty"><i class="fa-regular fa-folder-open"></i><div>No orders found</div></div>`;
         return;
     }
 
@@ -596,16 +697,17 @@ function renderOrders() {
         card.className = "statement-card";
 
         const statusClass = order.status === "Completed" ? "completed" : "running";
-        const statusText = order.status === "Completed" ? "已完成" : "运行中";
+        const statusText = order.status === "Completed" ? "Completed" : "Running";
         const profitNum = Number(order.profit || 0);
         const profitClass = getProfitClass(profitNum);
         const profitDisplay = profitNum >= 0 ? `+${formatMoney(profitNum)}` : `-${formatMoney(Math.abs(profitNum))}`;
+        const detailsHtml = renderSubTrades(order);
 
         let settleButton = "";
         if (order.status !== "Completed") {
             settleButton = `
                 <button class="settle-btn" onclick="settleOrder('${order._id}')">
-                    立即结算
+                    Settle Now
                 </button>
             `;
         }
@@ -617,30 +719,31 @@ function renderOrders() {
             </div>
             <div class="statement-grid">
                 <div class="statement-box">
-                    <span>产品</span>
+                    <span>Product</span>
                     <strong>${order.product || "-"}</strong>
                 </div>
                 <div class="statement-box">
-                    <span>投入金额</span>
+                    <span>Principal</span>
                     <strong class="blue">${formatMoney(order.amount)}</strong>
                 </div>
                 <div class="statement-box">
-                    <span>盈亏金额</span>
+                    <span>Profit / Loss</span>
                     <strong class="${profitClass}">${profitDisplay}</strong>
                 </div>
                 <div class="statement-box">
-                    <span>收益率</span>
+                    <span>Yield Rate</span>
                     <strong class="${profitClass}">${Number(order.profitRate || 0).toFixed(2)}%</strong>
                 </div>
                 <div class="statement-box">
-                    <span>开始时间</span>
+                    <span>Start Time</span>
                     <strong>${order.startTime ? new Date(order.startTime).toLocaleString() : "-"}</strong>
                 </div>
                 <div class="statement-box">
-                    <span>结束时间</span>
+                    <span>End Time</span>
                     <strong>${order.endTime ? new Date(order.endTime).toLocaleString() : "-"}</strong>
                 </div>
             </div>
+            ${detailsHtml}
             ${settleButton}
         `;
 
@@ -669,14 +772,14 @@ async function settleOrder(orderId) {
         const result = await response.json();
 
         if (result.success) {
-            showToast("结算成功！", "success");
+            showToast("Settlement successful!", "success");
             loadOrders(); // 刷新列表
         } else {
-            showToast(result.message || "结算失败", "error");
+            showToast(result.message || "Settlement failed", "error");
         }
     } catch (err) {
         console.error("Settle order error:", err);
-        showToast("网络错误，请重试", "error");
+        showToast("Network error. Please try again.", "error");
     }
 }
 
