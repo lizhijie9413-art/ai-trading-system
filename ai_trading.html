@@ -48,6 +48,20 @@ body::before{
 }
 
 .back-btn,
+top-icon{
+    width:52px;
+    height:52px;
+    border-radius:18px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(168,85,247,.22);
+    color:#c084fc;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    cursor:pointer;
+}
+
 .top-icon{
     width:52px;
     height:52px;
@@ -247,6 +261,8 @@ body::before{
 .orange-box{ background:rgba(255,170,0,.12); color:#ffb300; }
 .cyan-box{ background:rgba(0,255,255,.12); color:#00ffff; }
 .pink-box{ background:rgba(255,0,140,.12); color:#ff4fd8; }
+gold-box{ background:rgba(255,200,0,.12); color:#ffd000; }
+
 .gold-box{ background:rgba(255,200,0,.12); color:#ffd000; }
 
 .level-info h3{
@@ -477,7 +493,7 @@ body::before{
         <div class="stat">
             <span>AI Quant Status</span>
             <strong class="green">
-                ● Active
+                Active
             </strong>
         </div>
 
@@ -811,6 +827,24 @@ function updateTradeCounter(){
     }
 }
 
+function safeNumber(value){
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function formatMoneyPlain(value){
+  return safeNumber(value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function formatRoi(profit, asset){
+  const p = safeNumber(profit);
+  const a = safeNumber(asset);
+  if(a <= 0 || p === 0) return "0.00";
+  const roi = (p / a) * 100;
+  if(!Number.isFinite(roi)) return "0.00";
+  return Math.max(-999, Math.min(999, roi)).toFixed(2);
+}
+
 async function loadBalance(){
 
     if(!localUser || !localUser.id){
@@ -835,30 +869,16 @@ await fetch(
 
      console.log("USER BALANCE =", result.user.balance);
 
-        const balance = Number(result.user.availableBalance || result.user.balance || 0);
+        const balance = safeNumber(result.user.availableBalance || result.user.balance || result.user.asset || 0);
 
         document.getElementById("quantBalance").innerText =
         formatMoney(balance);
 
-        const totalProfit =
-Number(result.user.totalProfit || 0);
-
-const roiBase =
-balance - totalProfit;
-
-const roi =
-roiBase > 0
-? ((totalProfit / roiBase) * 100).toFixed(2)
-: "0.00";
+        const totalProfit = safeNumber(result.user.totalProfit || 0);
+const roi = formatRoi(totalProfit, balance);
 
 document.getElementById("quantProfit").innerText =
-"+$" +
-totalProfit.toLocaleString(undefined,{
-minimumFractionDigits:2,
-maximumFractionDigits:2
-})
-+
-" (+" + roi + "%)";
+"+$" + formatMoneyPlain(totalProfit) + " (+" + roi + "%)";
 
         detectLevel(balance);
 
@@ -905,10 +925,10 @@ const response = await fetch(
     method:"POST",
     headers:{
       "Content-Type":"application/json",
-      "user-id": localUser.id   // 添加认证头
+      "user-id": localUser.id
     },
     body:JSON.stringify({
-      amount: amount            // 不需要传userId了
+      amount: amount
     })
   }
 );
