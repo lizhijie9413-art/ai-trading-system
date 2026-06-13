@@ -536,11 +536,13 @@ for(let i=0;i<40;i++){
 }
 
 // ==================== 格式化函数 ====================
+function safeNumber(value){
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
 function money(n){
-  return "$" + Number(n || 0).toLocaleString(undefined,{
-    minimumFractionDigits:2,
-    maximumFractionDigits:2
-  });
+  return "$" + safeNumber(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
 function plusMoney(n){
@@ -549,8 +551,16 @@ function plusMoney(n){
 }
 
 function percent(n){
-  const num = Number(n || 0);
-  return (num >= 0 ? "+" : "") + num.toFixed(2) + "%";
+  const num = safeNumber(n);
+  return (num >= 0 ? "+" : "") + Math.max(-999, Math.min(999, num)).toFixed(2) + "%";
+}
+
+function roiPercent(profit, asset){
+  const p = safeNumber(profit);
+  const a = safeNumber(asset);
+  if(a <= 0 || p === 0) return 0;
+  const roi = (p / a) * 100;
+  return Number.isFinite(roi) ? Math.max(-999, Math.min(999, roi)) : 0;
 }
 
 // ==================== 数字动画 ====================
@@ -596,7 +606,7 @@ async function loadAssistantOrders(){
   box.innerHTML = assistantOrders.map(order => `
     <div class="holding-row">
       <div class="coin"><div class="coin-icon">AI</div><div><div class="coin-name">${order.product || "AI Assistant"}</div><div class="coin-sub">${order.status || "Running"}</div></div></div>
-      <div class="holding-value"><strong>${money(order.amount || 0)}</strong><span>+${Number(order.profitRate || 0).toFixed(2)}%</span></div>
+      <div class="holding-value"><strong>${money(order.amount || 0)}</strong><span>${percent(order.profitRate || 0)}</span></div>
     </div>
   `).join("");
 }
@@ -610,22 +620,19 @@ async function loadPortfolioBalance(){
   if(!result.success) return;
 
   const userData = result.data.user;
-  const balance = Number(userData.availableBalance || userData.balance || userData.asset || 0);
-  const lockedAsset = Number(userData.lockedBalance || userData.lockedAsset || 0);
-  const totalProfit = Number(userData.totalProfit || 0);
-  const tokenLocked = Number(userData.tokenLocked || 0);
-  const tokenProfit = Number(userData.tokenProfit || 0);
-  const tokenTodayProfit = Number(userData.tokenTodayProfit || 0);
+  const balance = safeNumber(userData.availableBalance || userData.balance || userData.asset || 0);
+  const lockedAsset = safeNumber(userData.lockedBalance || userData.lockedAsset || 0);
+  const totalProfit = safeNumber(userData.totalProfit || 0);
+  const tokenLocked = safeNumber(userData.tokenLocked || 0);
+  const tokenProfit = safeNumber(userData.tokenProfit || 0);
+  const tokenTodayProfit = safeNumber(userData.tokenTodayProfit || 0);
 
   const totalAssets = balance + lockedAsset;
   const totalProfitAll = totalProfit;
-  const roiBase = balance - totalProfitAll;
-  const totalReturn = roiBase > 0 ? (totalProfitAll / roiBase) * 100 : 0;
   const aiProfit = totalProfit - tokenProfit;
-  const aiBase = balance - aiProfit;
-  const aiReturn = aiBase > 0 ? (aiProfit / aiBase) * 100 : 0;
-  const tokenBase = balance - tokenProfit;
-  const tokenReturn = tokenBase > 0 ? (tokenProfit / tokenBase) * 100 : 0;
+  const totalReturn = roiPercent(totalProfitAll, totalAssets);
+  const aiReturn = roiPercent(aiProfit, totalAssets);
+  const tokenReturn = roiPercent(tokenProfit, totalAssets);
   const cashRate = totalAssets > 0 ? (balance / totalAssets) * 100 : 100;
   const aiRate = totalAssets > 0 ? ((lockedAsset - tokenLocked + aiProfit) / totalAssets) * 100 : 0;
   const tokenRate = totalAssets > 0 ? ((tokenLocked + tokenProfit) / totalAssets) * 100 : 0;
@@ -638,7 +645,7 @@ async function loadPortfolioBalance(){
   animateNumber('totalProfit', totalProfitAll, true);
   animateNumber('availableCash', balance, true);
   
-  document.getElementById("portfolioProfit").innerHTML = plusMoney(totalProfitAll) + " (" + percent(totalReturn) + ") Today ↗";
+  document.getElementById("portfolioProfit").innerHTML = plusMoney(totalProfitAll) + " (" + percent(totalReturn) + ") Today";
   document.getElementById("allocationPercent").innerHTML = totalAssets > 0 ? "100%" : "0%";
   document.getElementById("cryptoPercent").innerHTML = "0%";
   document.getElementById("aiFundPercent").innerHTML = aiRate.toFixed(0) + "%";

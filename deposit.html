@@ -691,6 +691,25 @@ function copyText(id){
 <script>
 const localUser = JSON.parse(localStorage.getItem("user"));
 
+
+function safeNumber(value){
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function formatMoneyPlain(value){
+  return safeNumber(value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function formatRoi(profit, asset){
+  const p = safeNumber(profit);
+  const a = safeNumber(asset);
+  if(a <= 0 || p === 0) return "0.00";
+  const roi = (p / a) * 100;
+  if(!Number.isFinite(roi)) return "0.00";
+  return Math.max(-999, Math.min(999, roi)).toFixed(2);
+}
+
 async function loadAssets(){
 
   if(!localUser || !localUser.id) return;
@@ -708,29 +727,12 @@ const res = await fetch(
 
     localStorage.setItem("user", JSON.stringify(user));
 
-    const balance = Number(user.balance || 0);
-    const totalProfit = Number(user.totalProfit || 0);
-
-    document.getElementById("totalAssets").innerText =
-      "$" + balance.toLocaleString(undefined,{
-        minimumFractionDigits:2,
-        maximumFractionDigits:2
-      });
-
-    const roiBase = balance - totalProfit;
-
-    const roi =
-      roiBase > 0
-        ? ((totalProfit / roiBase) * 100).toFixed(2)
-        : "0.00";
+    const balance = safeNumber(user.availableBalance || user.balance || user.asset || 0);
+    const totalProfit = safeNumber(user.totalProfit || 0);
+    const roi = formatRoi(totalProfit, balance);
 
     document.getElementById("assetProfit").innerText =
-      "+$" +
-      totalProfit.toLocaleString(undefined,{
-        minimumFractionDigits:2,
-        maximumFractionDigits:2
-      }) +
-      " (+" + roi + "%) Today";
+      "+$" + formatMoneyPlain(totalProfit) + " (+" + roi + "%) Today";
   }
 }
 

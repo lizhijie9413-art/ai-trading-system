@@ -386,6 +386,25 @@ body::before{
 
 <script>
 
+
+function safeNumber(value){
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function formatMoneyPlain(value){
+  return safeNumber(value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function formatRoi(profit, asset){
+  const p = safeNumber(profit);
+  const a = safeNumber(asset);
+  if(a <= 0 || p === 0) return "0.00";
+  const roi = (p / a) * 100;
+  if(!Number.isFinite(roi)) return "0.00";
+  return Math.max(-999, Math.min(999, roi)).toFixed(2);
+}
+
 async function loadTradeBalance(){
 
   const localUser =
@@ -406,7 +425,7 @@ await fetch(
   if(result.success){
 
     const balance =
-    Number(result.user.balance || 0);
+    safeNumber(result.user.availableBalance || result.user.balance || result.user.asset || 0);
 
     document.getElementById("tradeTotalAssets")
     .innerText =
@@ -415,29 +434,11 @@ await fetch(
       maximumFractionDigits:2
     });
 
-  const totalProfit =
-Number(result.user.totalProfit || 0);
+  const totalProfit = safeNumber(result.user.totalProfit || 0);
+const roi = formatRoi(totalProfit, balance);
 
-const lockedAsset =
-Number(result.user.lockedAsset || 0);
-
-const roiBase =
-balance - totalProfit;
-
-const roi =
-roiBase > 0
-? ((totalProfit / roiBase) * 100).toFixed(2)
-: "0.00";
-
-document.getElementById("tradeProfit")
-.innerText =
-"+$" +
-totalProfit.toLocaleString(undefined,{
-minimumFractionDigits:2,
-maximumFractionDigits:2
-})
-+
-" (+" + roi + "%)";
+document.getElementById("tradeProfit").innerText =
+"+$" + formatMoneyPlain(totalProfit) + " (+" + roi + "%)";
 }  
 
 }
