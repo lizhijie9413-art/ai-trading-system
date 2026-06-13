@@ -557,9 +557,10 @@ async function loadProfile(){
   if(!result.success) return;
   
   const userData = result.data.user;
-  const balance = safeNumber(userData.availableBalance || userData.balance || userData.asset || 0);
+  const availableBalance = safeNumber(userData.availableBalance || userData.balance || userData.asset || 0);
+  const lockedBalance = safeNumber(userData.lockedBalance || userData.lockedAsset || userData.aiLocked || userData.tokenLocked || 0);
+  const balance = availableBalance + lockedBalance;
   const totalProfit = safeNumber(userData.totalProfit || 0);
-  const todayProfit = safeNumber(userData.todayProfit || 0);
   
   animateNumber('totalAssets', balance);
   document.getElementById("profileName").innerText = userData.name || "User";
@@ -571,9 +572,9 @@ async function loadProfile(){
   else if(balance >= 10000) vip = "♛ Gold Member";
   document.getElementById("vipLevel").innerHTML = vip;
   
-  const roi = formatRoi(todayProfit, balance);
-  const profitSign = todayProfit >= 0 ? "+" : "-";
-  document.getElementById("profileProfit").innerHTML = profitSign + "$" + formatMoneyPlain(Math.abs(todayProfit)) + " (" + profitSign + roi + "%) Today";
+  const roi = formatRoi(totalProfit, balance);
+  const profitSign = totalProfit >= 0 ? "+" : "-";
+  document.getElementById("profileProfit").innerHTML = profitSign + "$" + formatMoneyPlain(Math.abs(totalProfit)) + " (" + profitSign + roi + "%) Total";
   
   // 保存最新用户信息到本地
   const updatedUser = { ...user, ...userData };

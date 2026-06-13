@@ -1345,7 +1345,9 @@ async function loadHomeBalance(){
         const result = await response.json();
 
         if(result.success && result.user){
-            const balance = safeNumber(result.user.availableBalance || result.user.balance || result.user.asset || 0);
+            const availableBalance = safeNumber(result.user.availableBalance || result.user.balance || result.user.asset || 0);
+            const lockedBalance = safeNumber(result.user.lockedBalance || result.user.lockedAsset || result.user.aiLocked || result.user.tokenLocked || 0);
+            const balance = availableBalance + lockedBalance;
             const totalProfit = safeNumber(result.user.totalProfit || 0);
             const roi = formatRoi(totalProfit, balance);
 
