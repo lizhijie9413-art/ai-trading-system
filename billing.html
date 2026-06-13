@@ -526,6 +526,14 @@ function formatMoney(value){
     });
 }
 
+function formatPercent(value, decimals = 2, showPlus = false){
+    const num = Number(value);
+    if(!Number.isFinite(num)) return decimals === 1 ? "0.0%" : "0.00%";
+    const prefix = showPlus && num > 0 ? "+" : "";
+    return prefix + num.toFixed(decimals) + "%";
+}
+
+
 function getProfitClass(profit){
     const num = Number(profit || 0);
     if(num > 0) return "profit-positive";
@@ -564,7 +572,7 @@ function renderSubTrades(order){
                     <div class="detail-muted">${escapeHtml(trade.market || "-")}</div>
                 </div>
                 <div class="detail-muted">${escapeHtml(direction)}</div>
-                <div class="${rateClass}">${rate >= 0 ? "+" : ""}${rate.toFixed(2)}%</div>
+                <div class="${rateClass}">${formatPercent(rate, 2, true)}</div>
                 <div class="${rateClass}">${escapeHtml(result)}</div>
             </div>
         `;
@@ -675,7 +683,7 @@ function renderOrders() {
     document.getElementById("totalTrades").innerText = allOrders.length;
     document.getElementById("winTrades").innerText = winOrders.length;
     document.getElementById("lossTrades").innerText = lossOrders.length;
-    document.getElementById("winRate").innerText = winRate + "%";
+    document.getElementById("winRate").innerText = formatPercent(winRate, 1);
     
     // 更新总收益显示（只显示Completed的收益）
     const totalProfitElement = document.getElementById("totalProfit");
@@ -732,7 +740,7 @@ function renderOrders() {
                 </div>
                 <div class="statement-box">
                     <span>Yield Rate</span>
-                    <strong class="${profitClass}">${Number(order.profitRate || 0).toFixed(2)}%</strong>
+                    <strong class="${profitClass}">${formatPercent(order.profitRate)}</strong>
                 </div>
                 <div class="statement-box">
                     <span>Start Time</span>

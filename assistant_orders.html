@@ -296,6 +296,12 @@ function money(n){
   });
 }
 
+function formatPercent(value, decimals = 2){
+  const num = Number(value);
+  if(!Number.isFinite(num)) return "0.00%";
+  return num.toFixed(decimals) + "%";
+}
+
 function plusMoney(n){
   const num = Number(n || 0);
   return (num >= 0 ? "+" : "-") + money(Math.abs(num));
@@ -440,7 +446,7 @@ function renderOrders(){
 
           <div class="box">
             <span>Profit Rate</span>
-            <b class="profit">+${Number(order.profitRate || 0).toFixed(2)}%</b>
+            <b class="profit">+${formatPercent(order.profitRate)}</b>
           </div>
 
           <div class="box">
@@ -470,7 +476,7 @@ function renderOrders(){
             : subTrades.map(item => `
               <div class="sub-row">
                 <span>${item.product || "AI Market"} · ${item.direction || ""}</span>
-                <b class="profit">${Number(item.rate || 0).toFixed(2)}%</b>
+                <b class="profit">${formatPercent(item.rate)}</b>
               </div>
             `).join("")
           }

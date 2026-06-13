@@ -527,6 +527,28 @@ function showToast(message, type){
 }
 
 // ==================== 加载个人资料 ====================
+
+function safeNumber(value){
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+}
+
+function formatMoneyPlain(value){
+    return safeNumber(value).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function formatRoi(profit, asset){
+    const p = safeNumber(profit);
+    const a = safeNumber(asset);
+    if(a <= 0 || p === 0) return "0.00";
+    const roi = (p / a) * 100;
+    if(!Number.isFinite(roi)) return "0.00";
+    return Math.max(-999, Math.min(999, roi)).toFixed(2);
+}
+
 async function loadProfile(){
   const user = getCurrentUser();
   if(!user || !user.id) return;
@@ -535,8 +557,9 @@ async function loadProfile(){
   if(!result.success) return;
   
   const userData = result.data.user;
-  const balance = Number(userData.availableBalance || userData.balance || userData.asset || 0);
-  const totalProfit = Number(userData.totalProfit || 0);
+  const balance = safeNumber(userData.availableBalance || userData.balance || userData.asset || 0);
+  const totalProfit = safeNumber(userData.totalProfit || 0);
+  const todayProfit = safeNumber(userData.todayProfit || 0);
   
   animateNumber('totalAssets', balance);
   document.getElementById("profileName").innerText = userData.name || "User";
@@ -548,9 +571,9 @@ async function loadProfile(){
   else if(balance >= 10000) vip = "♛ Gold Member";
   document.getElementById("vipLevel").innerHTML = vip;
   
-  const roiBase = balance - totalProfit;
-  const roi = roiBase > 0 ? ((totalProfit / roiBase) * 100).toFixed(2) : "0.00";
-  document.getElementById("profileProfit").innerHTML = "+$" + totalProfit.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + " (+" + roi + "%) Today";
+  const roi = formatRoi(todayProfit, balance);
+  const profitSign = todayProfit >= 0 ? "+" : "-";
+  document.getElementById("profileProfit").innerHTML = profitSign + "$" + formatMoneyPlain(Math.abs(todayProfit)) + " (" + profitSign + roi + "%) Today";
   
   // 保存最新用户信息到本地
   const updatedUser = { ...user, ...userData };

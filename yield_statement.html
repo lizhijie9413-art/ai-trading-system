@@ -270,6 +270,13 @@ function formatMoney(value){
     });
 }
 
+function formatPercent(value, decimals = 2){
+    const num = Number(value);
+    if(!Number.isFinite(num)) return decimals === 1 ? "0.0%" : "0.00%";
+    return num.toFixed(decimals) + "%";
+}
+
+
 function formatDate(dateStr){
     if(!dateStr) return "-";
     return new Date(dateStr).toLocaleString();
@@ -380,7 +387,7 @@ function renderOrders(orders){
                     </div>
                     <div class="statement-box">
                         <span>Yield Rate</span>
-                        <strong class="purple">${rate}%</strong>
+                        <strong class="purple">${formatPercent(rate)}</strong>
                     </div>
                     <div class="statement-box">
                         <span>Duration</span>
