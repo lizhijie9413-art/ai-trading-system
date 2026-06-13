@@ -591,13 +591,16 @@ async function loadAssistantOrders(){
 
   const result = await apiRequest(`/api/ai/quant/orders/${user.id}`);
   const box = document.getElementById("assistantOrders");
+  const orders = result.success && result.data && result.data.success && Array.isArray(result.data.data)
+    ? result.data.data
+    : [];
 
-  if(!result.success || !result.data || result.data.length === 0){
-    box.innerHTML = `<div class="holding-row"><div class="coin"><div class="coin-icon">AI</div><div><div class="coin-name">Assistant Trading</div><div class="coin-sub">No Active Order</div></div></div><div class="holding-value"><strong>$0.00</strong><span>+0.00%</span></div></div>`;
-    return;
-  }
+  const assistantOrders = orders.filter(order =>
+    order.assistantType === "AI Assistant" ||
+    order.level === "AI Assistant" ||
+    order.strategy === "Short-Term AI Quant"
+  );
 
-  const assistantOrders = result.data.filter(order => order.assistantType === "AI Assistant");
   if(assistantOrders.length === 0){
     box.innerHTML = `<div class="holding-row"><div class="coin"><div class="coin-icon">AI</div><div><div class="coin-name">Assistant Trading</div><div class="coin-sub">No Active Order</div></div></div><div class="holding-value"><strong>$0.00</strong><span>+0.00%</span></div></div>`;
     return;
@@ -605,10 +608,38 @@ async function loadAssistantOrders(){
 
   box.innerHTML = assistantOrders.map(order => `
     <div class="holding-row">
-      <div class="coin"><div class="coin-icon">AI</div><div><div class="coin-name">${order.product || "AI Assistant"}</div><div class="coin-sub">${order.status || "Running"}</div></div></div>
+      <div class="coin"><div class="coin-icon">AI</div><div><div class="coin-name">${escapeHtml(order.product || order.strategy || "AI Assistant")}</div><div class="coin-sub">${escapeHtml(order.status || "Running")}</div></div></div>
       <div class="holding-value"><strong>${money(order.amount || 0)}</strong><span>${percent(order.profitRate || 0)}</span></div>
     </div>
   `).join("");
+}
+
+async function loadTokenYieldSummary(){
+  const result = await apiRequest("/api/token-yield/orders");
+  const orders = result.success && result.data && result.data.success && Array.isArray(result.data.data)
+    ? result.data.data
+    : [];
+
+  if(orders.length === 0) return null;
+
+  const activeOrders = orders.filter(order => order.status !== "Completed");
+  const source = activeOrders.length ? activeOrders : orders;
+  const principal = source.reduce((sum, order) => sum + safeNumber(order.amount || 0), 0);
+  const profit = source.reduce((sum, order) => sum + safeNumber(order.profit || 0), 0);
+  const today = source.reduce((sum, order) => {
+    const days = Math.max(1, safeNumber(order.days || 0));
+    return sum + (safeNumber(order.profit || 0) / days);
+  }, 0);
+  const rate = principal > 0 ? (profit / principal) * 100 : 0;
+
+  return {
+    principal,
+    profit,
+    today,
+    rate: Number.isFinite(rate) ? rate : 0,
+    active: activeOrders.length > 0,
+    count: source.length
+  };
 }
 
 // ==================== 加载投资组合数据 ====================
@@ -617,24 +648,25 @@ async function loadPortfolioBalance(){
   if(!user || !user.id) return;
 
   const result = await apiRequest(`/api/users/${user.id}`);
-  if(!result.success) return;
+  if(!result.success || !result.data || !result.data.user) return;
 
+  const tokenSummary = await loadTokenYieldSummary();
   const userData = result.data.user;
   const balance = safeNumber(userData.availableBalance || userData.balance || userData.asset || 0);
   const lockedAsset = safeNumber(userData.lockedBalance || userData.lockedAsset || 0);
   const totalProfit = safeNumber(userData.totalProfit || 0);
-  const tokenLocked = safeNumber(userData.tokenLocked || 0);
-  const tokenProfit = safeNumber(userData.tokenProfit || 0);
-  const tokenTodayProfit = safeNumber(userData.tokenTodayProfit || 0);
+  const tokenLocked = tokenSummary ? tokenSummary.principal : safeNumber(userData.tokenLocked || 0);
+  const tokenProfit = tokenSummary ? tokenSummary.profit : safeNumber(userData.tokenProfit || 0);
+  const tokenTodayProfit = tokenSummary ? tokenSummary.today : safeNumber(userData.tokenTodayProfit || 0);
 
   const totalAssets = balance + lockedAsset;
   const totalProfitAll = totalProfit;
   const aiProfit = totalProfit - tokenProfit;
   const totalReturn = roiPercent(totalProfitAll, totalAssets);
   const aiReturn = roiPercent(aiProfit, totalAssets);
-  const tokenReturn = roiPercent(tokenProfit, totalAssets);
+  const tokenReturn = tokenSummary ? tokenSummary.rate : roiPercent(tokenProfit, tokenLocked || totalAssets);
   const cashRate = totalAssets > 0 ? (balance / totalAssets) * 100 : 100;
-  const aiRate = totalAssets > 0 ? ((lockedAsset - tokenLocked + aiProfit) / totalAssets) * 100 : 0;
+  const aiRate = totalAssets > 0 ? Math.max(0, ((lockedAsset - tokenLocked + aiProfit) / totalAssets) * 100) : 0;
   const tokenRate = totalAssets > 0 ? ((tokenLocked + tokenProfit) / totalAssets) * 100 : 0;
   const isAiActive = (lockedAsset - tokenLocked) > 0;
   const isTokenActive = tokenLocked > 0;
