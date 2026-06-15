@@ -459,6 +459,24 @@ function addMessage(text,type){
 }
 
 let preferredAIVoice = null;
+let currentAIAudio = null;
+
+function cleanVoiceText(text){
+    return String(text || "")
+    .replace(/<br\s*\/?>/gi,". ")
+    .replace(/<button[\s\S]*?<\/button>/gi," ")
+    .replace(/<[^>]*>/g," ")
+    .replace(/&nbsp;/g," ")
+    .replace(/&amp;/g," and ")
+    .replace(/(\d+(?:\.\d+)?)\s*%\s*[-–—]\s*(\d+(?:\.\d+)?)\s*%/g,"$1 percent to $2 percent")
+    .replace(/(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)/g,"$1 to $2")
+    .replace(/%/g," percent")
+    .replace(/USDT/g,"U S D T")
+    .replace(/[•]+/g," ")
+    .replace(/\s+/g," ")
+    .trim()
+    .slice(0, 650);
+}
 
 function pickNaturalVoice(){
     if(!window.speechSynthesis) return null;
@@ -494,18 +512,10 @@ if(window.speechSynthesis){
     pickNaturalVoice();
 }
 
-function speakAI(text){
+function speakBrowserAI(text){
     if(!window.speechSynthesis) return;
 
-    const cleanText =
-    text
-    .replace(/<br\s*\/?>/gi,". ")
-    .replace(/<[^>]*>/g," ")
-    .replace(/&nbsp;/g," ")
-    .replace(/&amp;/g," and ")
-    .replace(/\s+/g," ")
-    .trim();
-
+    const cleanText = cleanVoiceText(text);
     if(!cleanText) return;
 
     window.speechSynthesis.cancel();
@@ -533,18 +543,61 @@ function speakAI(text){
         utterance.pitch = 0.96;
         utterance.volume = 0.92;
 
-        utterance.onend = () => {
-            setTimeout(speakNext, line.length > 80 ? 180 : 110);
-        };
-
-        utterance.onerror = () => {
-            setTimeout(speakNext, 120);
-        };
+        utterance.onend = () => setTimeout(speakNext, line.length > 80 ? 180 : 110);
+        utterance.onerror = () => setTimeout(speakNext, 120);
 
         window.speechSynthesis.speak(utterance);
     }
 
     speakNext();
+}
+
+async function speakAI(text){
+    const cleanText = cleanVoiceText(text);
+    if(!cleanText) return;
+
+    try{
+        if(window.speechSynthesis) window.speechSynthesis.cancel();
+
+        if(currentAIAudio){
+            currentAIAudio.pause();
+            if(currentAIAudio.src && currentAIAudio.src.startsWith("blob:")){
+                URL.revokeObjectURL(currentAIAudio.src);
+            }
+            currentAIAudio = null;
+        }
+
+        const localUser = JSON.parse(localStorage.getItem("user") || "null");
+        const headers = {"Content-Type":"application/json"};
+
+        if(localUser && localUser.id) headers["user-id"] = localUser.id;
+        if(localUser && localUser.token) headers["Authorization"] = "Bearer " + localUser.token;
+
+        const response = await fetch("https://ai-trading-system-j5jf.onrender.com/api/tts", {
+            method:"POST",
+            headers,
+            body:JSON.stringify({text:cleanText})
+        });
+
+        if(!response.ok) throw new Error("TTS request failed");
+
+        const audioBlob = await response.blob();
+        if(!audioBlob || audioBlob.size < 500) throw new Error("Empty TTS audio");
+
+        const audioUrl = URL.createObjectURL(audioBlob);
+        currentAIAudio = new Audio(audioUrl);
+        currentAIAudio.volume = 0.96;
+        currentAIAudio.onended = () => URL.revokeObjectURL(audioUrl);
+        currentAIAudio.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            speakBrowserAI(cleanText);
+        };
+
+        await currentAIAudio.play();
+    }catch(err){
+        console.log("OpenAI voice fallback:", err);
+        speakBrowserAI(cleanText);
+    }
 }
 
 let aiPlanStep = "";
@@ -623,6 +676,7 @@ function aiReply(message){
             one:{
                 name:"Short-Term AI Quant",
                 duration:"60 - 120 Minutes",
+                limit:"Daily Limit: 1 execution",
                 focus:randomItem(shortFocus),
                 returns:randomItem(shortReturns),
                 risk:"Medium",
@@ -661,6 +715,7 @@ function aiReply(message){
         </div>
 
         Risk Level: ${aiPlanOptions.one.risk}<br>
+        ${aiPlanOptions.one.limit}<br>
         Strategy Focus: ${aiPlanOptions.one.focus}<br><br>
 
         <div class="recommend-card">

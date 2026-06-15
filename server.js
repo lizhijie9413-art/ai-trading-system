@@ -329,6 +329,7 @@ app.get("/api/users/:id", authenticateUser, async (req, res) => {
         balance: user.asset || user.balance || 0,
         records: user.records || [],
         lockedAsset: user.lockedAsset || 0,
+        vipAsset: user.vipAsset || 0,
         totalProfit: user.totalProfit || 0,
         todayProfit: user.todayProfit || 0,
 
@@ -803,6 +804,32 @@ app.post("/api/users", verifyAdmin, async (req, res) => {
   });
 
   res.json({ success: true, data: user });
+});
+
+app.delete("/api/users/:id", verifyAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "User deleted"
+    });
+  } catch (err) {
+    console.log("Delete user error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Delete user failed"
+    });
+  }
 });
 
 app.get("/api/chat/history/:userId", authenticateUser, async (req, res) => {
