@@ -768,6 +768,55 @@ let stats = {
   monthWithdraw: 0
 };
 
+function calculateFinanceStats(users) {
+  const result = {
+    todayRecharge: 0,
+    monthRecharge: 0,
+    todayWithdraw: 0,
+    monthWithdraw: 0
+  };
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  for (const user of users || []) {
+    const records = Array.isArray(user.records) ? user.records : [];
+
+    for (const record of records) {
+      if (!record || typeof record !== "object") continue;
+
+      const type = record.type;
+      if (type !== "admin_recharge" && type !== "admin_withdraw") continue;
+
+      const amount = Number(record.amount || 0);
+      const recordDate = new Date(record.timestamp || record.createdAt || record.time || 0);
+      if (!amount || Number.isNaN(recordDate.getTime())) continue;
+
+      if (type === "admin_recharge") {
+        if (recordDate >= todayStart) result.todayRecharge += amount;
+        if (recordDate >= monthStart) result.monthRecharge += amount;
+      }
+
+      if (type === "admin_withdraw") {
+        if (recordDate >= todayStart) result.todayWithdraw += amount;
+        if (recordDate >= monthStart) result.monthWithdraw += amount;
+      }
+    }
+  }
+
+  return result;
+}
+
+function mergeRuntimeAndPersistedStats(persistedStats) {
+  return {
+    todayRecharge: Math.max(Number(stats.todayRecharge || 0), Number(persistedStats.todayRecharge || 0)),
+    monthRecharge: Math.max(Number(stats.monthRecharge || 0), Number(persistedStats.monthRecharge || 0)),
+    todayWithdraw: Math.max(Number(stats.todayWithdraw || 0), Number(persistedStats.todayWithdraw || 0)),
+    monthWithdraw: Math.max(Number(stats.monthWithdraw || 0), Number(persistedStats.monthWithdraw || 0))
+  };
+}
+
 let tickets = [
   {
     id: "TCK1001",
@@ -791,7 +840,12 @@ app.get("/", (req, res) => {
 /* 用户 */
 app.get("/api/users", verifyAdmin, async (req, res) => {
   const users = await User.find();
-  res.json({ success: true, data: users, stats });
+  const persistedStats = calculateFinanceStats(users);
+  res.json({
+    success: true,
+    data: users,
+    stats: mergeRuntimeAndPersistedStats(persistedStats)
+  });
 });
 
 app.post("/api/users", verifyAdmin, async (req, res) => {
@@ -886,7 +940,13 @@ app.put("/api/users/:id/recharge", verifyAdmin, async (req, res) => {
     user.vipAsset = totalAsset;
   }
 
-  user.records.push(`充值 ${amount} USDT`);
+  if (!Array.isArray(user.records)) user.records = [];
+  user.records.push({
+    type: "admin_recharge",
+    amount,
+    message: `Admin recharge +${amount} USDT`,
+    timestamp: new Date()
+  });
 
   stats.todayRecharge += amount;
   stats.monthRecharge += amount;
@@ -953,7 +1013,13 @@ app.put("/api/users/:id/withdraw", verifyAdmin, async (req, res) => {
   }
 
   user.asset -= amount;
-  user.records.push(`提现 ${amount} USDT`);
+  if (!Array.isArray(user.records)) user.records = [];
+  user.records.push({
+    type: "admin_withdraw",
+    amount,
+    message: `Admin withdraw -${amount} USDT`,
+    timestamp: new Date()
+  });
 
   stats.todayWithdraw += amount;
   stats.monthWithdraw += amount;
