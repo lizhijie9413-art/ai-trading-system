@@ -259,6 +259,17 @@ tr:hover{
   font-weight:bold;
 }
 
+.delete-btn{
+  background:#b71c1c;
+  color:white;
+  padding:8px 14px;
+  border-radius:6px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  margin-left:5px;
+}
+
 button:hover{
   opacity:0.85;
   transform:translateY(-1px);
@@ -495,9 +506,11 @@ function renderTable() {
     let actionButtons = '';
     if (user.status !== 'blacklisted') {
       actionButtons = `<button class="freeze-btn" onclick="freezeUser('${user._id}')">${user.status === 'frozen' ? '解冻' : '冻结'}</button>
-                       <button class="blacklist-btn" onclick="blacklistUser('${user._id}')">拉黑</button>`;
+                       <button class="blacklist-btn" onclick="blacklistUser('${user._id}')">拉黑</button>
+                       <button class="delete-btn" onclick="deleteUser('${user._id}')">删除</button>`;
     } else {
-      actionButtons = `<button class="restore-btn" onclick="restoreUser('${user._id}')">恢复</button>`;
+      actionButtons = `<button class="restore-btn" onclick="restoreUser('${user._id}')">恢复</button>
+                       <button class="delete-btn" onclick="deleteUser('${user._id}')">删除</button>`;
     }
     
     return `
@@ -615,6 +628,33 @@ async function restoreUser(userId) {
   const result = await response.json();
   if (result.success) { alert("恢复成功"); loadUsers(); }
   else { alert(result.message || "恢复失败"); }
+}
+
+// ==================== 删除用户 ====================
+async function deleteUser(userId) {
+  const user = users.find(u => u._id === userId);
+  const label = user ? ((user.uid || "") + " " + (user.name || user.email || "")) : userId;
+
+  if (!confirm("确定要删除这个用户吗？\n" + label + "\n\n删除后用户将无法登录。")) return;
+
+  const confirmText = prompt("这是危险操作。请输入 DELETE 确认删除：");
+  if (confirmText !== "DELETE") {
+    alert("已取消删除");
+    return;
+  }
+
+  const response = await fetch(`${API_BASE}/api/users/${userId}`, {
+    method: "DELETE",
+    headers: { "admin-token": ADMIN_TOKEN }
+  });
+  const result = await response.json();
+
+  if (result.success) {
+    alert("用户删除成功");
+    loadUsers();
+  } else {
+    alert(result.message || "删除失败");
+  }
 }
 
 // ==================== 新增用户 ====================
