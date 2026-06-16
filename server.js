@@ -659,6 +659,15 @@ const UserSchema = new mongoose.Schema({
     default: []
   },
 
+  financeStats: {
+    dayKey: String,
+    monthKey: String,
+    todayRecharge: { type: Number, default: 0 },
+    monthRecharge: { type: Number, default: 0 },
+    todayWithdraw: { type: Number, default: 0 },
+    monthWithdraw: { type: Number, default: 0 }
+  },
+
   vipAsset: {
   type: Number,
   default: 0
@@ -768,6 +777,82 @@ let stats = {
   monthWithdraw: 0
 };
 
+function getFinanceDateKeys(date = new Date()) {
+  const d = new Date(date);
+  return {
+    dayKey: d.toISOString().slice(0, 10),
+    monthKey: d.toISOString().slice(0, 7)
+  };
+}
+
+function scanFinanceRecords(user) {
+  const result = {
+    todayRecharge: 0,
+    monthRecharge: 0,
+    todayWithdraw: 0,
+    monthWithdraw: 0
+  };
+
+  const { dayKey, monthKey } = getFinanceDateKeys();
+  const records = Array.isArray(user.records) ? user.records : [];
+
+  for (const record of records) {
+    if (!record || typeof record !== "object") continue;
+    const amount = Number(record.amount || 0);
+    if (!amount) continue;
+
+    const recordDate = new Date(record.timestamp || record.createdAt || record.time || 0);
+    if (Number.isNaN(recordDate.getTime())) continue;
+
+    const recordKeys = getFinanceDateKeys(recordDate);
+
+    if (record.type === "admin_recharge") {
+      if (recordKeys.dayKey === dayKey) result.todayRecharge += amount;
+      if (recordKeys.monthKey === monthKey) result.monthRecharge += amount;
+    }
+
+    if (record.type === "admin_withdraw") {
+      if (recordKeys.dayKey === dayKey) result.todayWithdraw += amount;
+      if (recordKeys.monthKey === monthKey) result.monthWithdraw += amount;
+    }
+  }
+
+  return result;
+}
+
+function normalizeUserFinanceStats(user) {
+  const { dayKey, monthKey } = getFinanceDateKeys();
+  const current = user.financeStats || {};
+  const scanned = scanFinanceRecords(user);
+
+  user.financeStats = {
+    dayKey,
+    monthKey,
+    todayRecharge: current.dayKey === dayKey ? Number(current.todayRecharge || 0) : scanned.todayRecharge,
+    monthRecharge: current.monthKey === monthKey ? Number(current.monthRecharge || 0) : scanned.monthRecharge,
+    todayWithdraw: current.dayKey === dayKey ? Number(current.todayWithdraw || 0) : scanned.todayWithdraw,
+    monthWithdraw: current.monthKey === monthKey ? Number(current.monthWithdraw || 0) : scanned.monthWithdraw
+  };
+
+  return user.financeStats;
+}
+
+function addUserFinanceStat(user, kind, amount) {
+  const financeStats = normalizeUserFinanceStats(user);
+
+  if (kind === "recharge") {
+    financeStats.todayRecharge += amount;
+    financeStats.monthRecharge += amount;
+  }
+
+  if (kind === "withdraw") {
+    financeStats.todayWithdraw += amount;
+    financeStats.monthWithdraw += amount;
+  }
+
+  user.financeStats = financeStats;
+}
+
 function calculateFinanceStats(users) {
   const result = {
     todayRecharge: 0,
@@ -776,33 +861,12 @@ function calculateFinanceStats(users) {
     monthWithdraw: 0
   };
 
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
   for (const user of users || []) {
-    const records = Array.isArray(user.records) ? user.records : [];
-
-    for (const record of records) {
-      if (!record || typeof record !== "object") continue;
-
-      const type = record.type;
-      if (type !== "admin_recharge" && type !== "admin_withdraw") continue;
-
-      const amount = Number(record.amount || 0);
-      const recordDate = new Date(record.timestamp || record.createdAt || record.time || 0);
-      if (!amount || Number.isNaN(recordDate.getTime())) continue;
-
-      if (type === "admin_recharge") {
-        if (recordDate >= todayStart) result.todayRecharge += amount;
-        if (recordDate >= monthStart) result.monthRecharge += amount;
-      }
-
-      if (type === "admin_withdraw") {
-        if (recordDate >= todayStart) result.todayWithdraw += amount;
-        if (recordDate >= monthStart) result.monthWithdraw += amount;
-      }
-    }
+    const financeStats = normalizeUserFinanceStats(user);
+    result.todayRecharge += Number(financeStats.todayRecharge || 0);
+    result.monthRecharge += Number(financeStats.monthRecharge || 0);
+    result.todayWithdraw += Number(financeStats.todayWithdraw || 0);
+    result.monthWithdraw += Number(financeStats.monthWithdraw || 0);
   }
 
   return result;
@@ -948,6 +1012,8 @@ app.put("/api/users/:id/recharge", verifyAdmin, async (req, res) => {
     timestamp: new Date()
   });
 
+  addUserFinanceStat(user, "recharge", amount);
+
   stats.todayRecharge += amount;
   stats.monthRecharge += amount;
 
@@ -1020,6 +1086,8 @@ app.put("/api/users/:id/withdraw", verifyAdmin, async (req, res) => {
     message: `Admin withdraw -${amount} USDT`,
     timestamp: new Date()
   });
+
+  addUserFinanceStat(user, "withdraw", amount);
 
   stats.todayWithdraw += amount;
   stats.monthWithdraw += amount;
