@@ -1925,36 +1925,32 @@ const setting =
 
 const now = new Date();
 
-if (level === "Daily Quant") {
-  const dayStart = new Date(now);
-  dayStart.setHours(0, 0, 0, 0);
+const dayStart = new Date(now);
+dayStart.setHours(0, 0, 0, 0);
 
-  const dayEnd = new Date(dayStart);
-  dayEnd.setDate(dayEnd.getDate() + 1);
+const dayEnd = new Date(dayStart);
+dayEnd.setDate(dayEnd.getDate() + 1);
 
-  const dailyCount =
-  await AIQuantOrder.countDocuments({
-    userId: user._id,
-    assistantType: { $ne: "AI Assistant" },
-    createdAt: {
-      $gte: dayStart,
-      $lt: dayEnd
-    }
-  });
-
-  if (dailyCount >= (setting.dailyLimit || 1)) {
-    return res.json({
-      success: false,
-      message: "Daily Quant trade limit reached. Please try again tomorrow."
-    });
+const dailyCount =
+await AIQuantOrder.countDocuments({
+  userId: user._id,
+  assistantType: { $ne: "AI Assistant" },
+  createdAt: {
+    $gte: dayStart,
+    $lt: dayEnd
   }
-} else {
-  const weekStart = new Date();
+});
 
-  weekStart.setDate(
-    now.getDate() - now.getDay()
-  );
+if (dailyCount >= 1) {
+  return res.json({
+    success: false,
+    message: "AI Quant Trading is limited to 1 trade per day. Please try again tomorrow."
+  });
+}
 
+if (setting.weeklyLimit) {
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0, 0, 0, 0);
 
   const weeklyCount =
@@ -1966,14 +1962,10 @@ if (level === "Daily Quant") {
     }
   });
 
-  if (
-    weeklyCount >=
-    setting.weeklyLimit
-  ) {
+  if (weeklyCount >= setting.weeklyLimit) {
     return res.json({
       success: false,
-      message:
-      "Weekly AI Quant trade limit reached"
+      message: "Weekly AI Quant trade limit reached"
     });
   }
 }

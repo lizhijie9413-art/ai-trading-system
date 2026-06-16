@@ -693,9 +693,21 @@ const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
 
 let currentLevel = "Basic Quant";
 let maxTrades = 2;
+let todayTrades = 0;
 
 const localUser =
 JSON.parse(localStorage.getItem("user"));
+
+function getDateKey(date){
+    return new Date(date).toLocaleDateString("en-CA");
+}
+
+function getWeekStart(date){
+    const d = new Date(date);
+    d.setDate(d.getDate() - d.getDay());
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
 
 const tradeKey =
 "usedTrades_" +
@@ -795,14 +807,18 @@ function updateTradeCounter(){
 
     const btn = document.getElementById("runTradeBtn");
     const remaining = maxTrades - usedTrades;
+    const todayRemaining = 1 - todayTrades;
 
     document.getElementById("tradeCounter").innerText =
-        maxTrades === 999999 ? "Unlimited" : remaining + " / " + maxTrades;
+        maxTrades === 999999 ? "Unlimited" : Math.max(0, remaining) + " / " + maxTrades;
 
     document.getElementById("currentLevelText").innerText =
         quantLevels[currentLevel].short;
 
-    if(maxTrades !== 999999 && remaining <= 0){
+    if(todayRemaining <= 0){
+        btn.disabled = true;
+        btn.innerText = "Daily Limit Reached";
+    }else if(maxTrades !== 999999 && remaining <= 0){
         btn.disabled = true;
         btn.innerText = "Trade Limit Reached";
     }else{
@@ -828,6 +844,45 @@ function formatRoi(profit, asset){
   const roi = (p / a) * 100;
   if(!Number.isFinite(roi)) return "0.00";
   return Math.max(-999, Math.min(999, roi)).toFixed(2);
+}
+
+async function syncTodayTradeCount(){
+    if(!localUser || !localUser.id) return;
+
+    try{
+        const response = await fetch(
+            API_BASE + "/api/ai/quant/orders/" + localUser.id,
+            {
+                headers: {
+                    "user-id": localUser.id
+                }
+            }
+        );
+
+        const result = await response.json();
+        if(!result.success || !Array.isArray(result.data)) return;
+
+        const today = getDateKey(new Date());
+        const weekStart = getWeekStart(new Date());
+        const aiQuantOrders = result.data.filter(order => {
+            if(order.assistantType === "AI Assistant") return false;
+            const createdAt = order.createdAt || order.startTime;
+            return !!createdAt;
+        });
+
+        todayTrades = aiQuantOrders.filter(order =>
+            getDateKey(order.createdAt || order.startTime) === today
+        ).length;
+
+        const periodCount = aiQuantOrders.filter(order =>
+            new Date(order.createdAt || order.startTime) >= weekStart
+        ).length;
+
+        usedTrades = Math.min(periodCount, maxTrades);
+        localStorage.setItem(tradeKey, usedTrades);
+    }catch(err){
+        console.log("Failed to sync AI Quant counts:", err);
+    }
 }
 
 async function loadBalance(){
