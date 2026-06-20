@@ -1265,6 +1265,7 @@ const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
   status: String,
   startTime: Date,
   endTime: Date,
+  completedAt: Date,
   createdAt: {
     type: Date,
     default: Date.now
@@ -2227,7 +2228,10 @@ app.post("/api/ai/quant/settle/:id", authenticateUser, async (req, res) => {
     );
 
     order.status = "Completed";
-
+    order.completedAt = now;
+    if (!Array.isArray(order.subTrades) || order.subTrades.length === 0) {
+      order.subTrades = generateSubTrades(order.profitRate || order.finalRate || 0, order.strategy);
+    }
 
     await user.save();
     await order.save();
@@ -3159,6 +3163,10 @@ async function settleExpiredTokenYieldOrders(){
       );
 
       order.status = "Completed";
+      order.completedAt = now;
+      if (!Array.isArray(order.subTrades) || order.subTrades.length === 0) {
+        order.subTrades = generateSubTrades(order.profitRate || order.finalRate || 0, order.strategy);
+      }
 
       await user.save();
       await order.save();

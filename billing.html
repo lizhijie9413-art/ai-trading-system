@@ -709,6 +709,10 @@ function renderOrders() {
         const profitNum = Number(order.profit || 0);
         const profitClass = getProfitClass(profitNum);
         const profitDisplay = profitNum >= 0 ? `+${formatMoney(profitNum)}` : `-${formatMoney(Math.abs(profitNum))}`;
+        const tradeCount = Array.isArray(order.subTrades) ? order.subTrades.length : 0;
+        const completedTime = order.status === "Completed"
+            ? (order.completedAt || order.endTime || order.updatedAt)
+            : null;
         const detailsHtml = renderSubTrades(order);
 
         let settleButton = "";
@@ -743,12 +747,16 @@ function renderOrders() {
                     <strong class="${profitClass}">${formatPercent(order.profitRate)}</strong>
                 </div>
                 <div class="statement-box">
+                    <span>Trade Count</span>
+                    <strong>${tradeCount}</strong>
+                </div>
+                <div class="statement-box">
                     <span>Start Time</span>
                     <strong>${order.startTime ? new Date(order.startTime).toLocaleString() : "-"}</strong>
                 </div>
                 <div class="statement-box">
-                    <span>End Time</span>
-                    <strong>${order.endTime ? new Date(order.endTime).toLocaleString() : "-"}</strong>
+                    <span>${order.status === "Completed" ? "Completed Time" : "End Time"}</span>
+                    <strong>${completedTime ? new Date(completedTime).toLocaleString() : (order.endTime ? new Date(order.endTime).toLocaleString() : "-")}</strong>
                 </div>
             </div>
             ${detailsHtml}
