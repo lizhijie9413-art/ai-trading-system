@@ -414,12 +414,11 @@ function renderOrders(){
 
   box.innerHTML = list.map(order => {
 
-    const statusClass =
-    order.status === "Completed"
-    ? "completed"
-    : "running";
-
-    const subTrades = order.subTrades || [];
+    const isCompleted = order.status === "Completed";
+    const statusClass = isCompleted ? "completed" : "running";
+    const profitRateDisplay = isCompleted ? "+" + formatPercent(order.profitRate) : "Pending";
+    const profitDisplay = isCompleted ? plusMoney(order.profit || 0) : "Pending";
+    const subTrades = isCompleted && Array.isArray(order.subTrades) ? order.subTrades : [];
 
     return `
       <div class="order-card">
@@ -446,12 +445,12 @@ function renderOrders(){
 
           <div class="box">
             <span>Profit Rate</span>
-            <b class="profit">+${formatPercent(order.profitRate)}</b>
+            <b class="${isCompleted ? "profit" : ""}">${profitRateDisplay}</b>
           </div>
 
           <div class="box">
             <span>Profit</span>
-            <b class="profit">${plusMoney(order.profit || 0)}</b>
+            <b class="${isCompleted ? "profit" : ""}">${profitDisplay}</b>
           </div>
 
           <div class="box">
@@ -472,7 +471,7 @@ function renderOrders(){
         <div class="sub-trades" id="detail-${order._id}">
           ${
             subTrades.length === 0
-            ? `<div class="sub-row"><span>No execution details</span><b>-</b></div>`
+            ? `<div class="sub-row"><span>${isCompleted ? "No execution details" : "Execution pending"}</span><b>-</b></div>`
             : subTrades.map(item => `
               <div class="sub-row">
                 <span>${item.product || "AI Market"} · ${item.direction || ""}</span>

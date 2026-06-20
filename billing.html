@@ -704,16 +704,20 @@ function renderOrders() {
         const card = document.createElement("div");
         card.className = "statement-card";
 
-        const statusClass = order.status === "Completed" ? "completed" : "running";
-        const statusText = order.status === "Completed" ? "Completed" : "Running";
-        const profitNum = Number(order.profit || 0);
-        const profitClass = getProfitClass(profitNum);
-        const profitDisplay = profitNum >= 0 ? `+${formatMoney(profitNum)}` : `-${formatMoney(Math.abs(profitNum))}`;
-        const tradeCount = Array.isArray(order.subTrades) ? order.subTrades.length : 0;
-        const completedTime = order.status === "Completed"
+        const isCompleted = order.status === "Completed";
+        const statusClass = isCompleted ? "completed" : "running";
+        const statusText = isCompleted ? "Completed" : "Running";
+        const profitNum = isCompleted ? Number(order.profit || 0) : 0;
+        const profitClass = isCompleted ? getProfitClass(profitNum) : "";
+        const profitDisplay = isCompleted
+            ? (profitNum >= 0 ? `+${formatMoney(profitNum)}` : `-${formatMoney(Math.abs(profitNum))}`)
+            : "Pending";
+        const yieldDisplay = isCompleted ? formatPercent(order.profitRate) : "Pending";
+        const tradeCount = isCompleted && Array.isArray(order.subTrades) ? order.subTrades.length : 0;
+        const completedTime = isCompleted
             ? (order.completedAt || order.endTime || order.updatedAt)
             : null;
-        const detailsHtml = renderSubTrades(order);
+        const detailsHtml = isCompleted ? renderSubTrades(order) : "";
 
         let settleButton = "";
         if (order.status !== "Completed") {
@@ -744,11 +748,11 @@ function renderOrders() {
                 </div>
                 <div class="statement-box">
                     <span>Yield Rate</span>
-                    <strong class="${profitClass}">${formatPercent(order.profitRate)}</strong>
+                    <strong class="${profitClass}">${yieldDisplay}</strong>
                 </div>
                 <div class="statement-box">
                     <span>Trade Count</span>
-                    <strong>${tradeCount}</strong>
+                    <strong>${isCompleted ? tradeCount : "Pending"}</strong>
                 </div>
                 <div class="statement-box">
                     <span>Start Time</span>

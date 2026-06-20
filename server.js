@@ -1257,6 +1257,7 @@ const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
   profitRate: Number,
   profit: Number,
   finalRate: Number,
+  manualRate: Number,
 
   subTrades: {
   type: Array,
@@ -1271,6 +1272,18 @@ const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
     default: Date.now
   }
 }));
+
+function publicAIQuantOrder(order) {
+  const obj = typeof order.toObject === "function" ? order.toObject() : { ...order };
+  if (obj.status !== "Completed") {
+    obj.profit = 0;
+    obj.profitRate = 0;
+    obj.finalRate = 0;
+    obj.subTrades = [];
+    obj.completedAt = null;
+  }
+  return obj;
+}
 
 const TokenYieldOrder = mongoose.model("TokenYieldOrder", new mongoose.Schema({
 
@@ -1354,9 +1367,9 @@ app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
 
         amount: order.amount || 0,
 
-        profit: order.profit || 0,
+        profit: order.status === "Completed" ? (order.profit || 0) : 0,
 
-        rate: order.profitRate || 0,
+        rate: order.status === "Completed" ? (order.profitRate || 0) : 0,
 
         status: order.status || "",
 
@@ -1646,6 +1659,67 @@ if(strategy === "Long-Term AI Wealth Plan"){
   return list;
 }
 
+
+async function prepareAIQuantSettlement(order) {
+  let profitRate = Number(order.manualRate || 0);
+
+  if (!profitRate) {
+    if (order.assistantType === "AI Assistant") {
+      if (order.strategy === "Short-Term AI Quant") {
+        const setting = aiQuantRates[order.level] || aiQuantRates["Basic Quant"];
+        const firstOrder = await AIQuantOrder.findOne({
+          userId: order.userId,
+          strategy: "Short-Term AI Quant",
+          level: order.level,
+          assistantType: "AI Assistant"
+        }).sort({ createdAt: 1 });
+
+        let rateRange = setting.week1;
+        if (firstOrder) {
+          const daysPassed = (new Date() - new Date(firstOrder.createdAt)) / (1000 * 60 * 60 * 24);
+          if (daysPassed >= 7) {
+            rateRange = setting.afterWeek1;
+          }
+        }
+
+        profitRate = Number(randomBetween(rateRange.min, rateRange.max).toFixed(2));
+      } else if (order.strategy === "Mid-Term Smart Growth") {
+        profitRate = Number(randomBetween(12, 18).toFixed(2));
+      } else if (order.strategy === "Long-Term AI Wealth Plan") {
+        profitRate = Number(randomBetween(25, 40).toFixed(2));
+      } else {
+        profitRate = Number(randomBetween(8, 10).toFixed(2));
+      }
+    } else {
+      const setting = aiQuantRates[order.level] || aiQuantRates["Basic Quant"];
+      const firstOrder = await AIQuantOrder.findOne({
+        userId: order.userId,
+        level: order.level,
+        assistantType: { $ne: "AI Assistant" }
+      }).sort({ createdAt: 1 });
+
+      let rateRange = setting.week1;
+      if (firstOrder) {
+        const daysPassed = (new Date() - new Date(firstOrder.createdAt)) / (1000 * 60 * 60 * 24);
+        if (daysPassed >= 7) {
+          rateRange = setting.afterWeek1;
+        }
+      }
+
+      profitRate = Number(randomBetween(rateRange.min, rateRange.max).toFixed(2));
+    }
+  }
+
+  const profit = Number((Number(order.amount || 0) * profitRate / 100).toFixed(2));
+
+  order.profitRate = profitRate;
+  order.finalRate = profitRate;
+  order.profit = profit;
+  order.subTrades = generateSubTrades(profitRate, order.strategy);
+
+  return { profitRate, profit };
+}
+
 /* AI Assistant 方案交易 */
 
 // 修复：添加用户认证
@@ -1758,42 +1832,8 @@ if(firstOrder){
   }
 }
 
-   let profitRate = 0;
-
-if(strategy === "Short-Term AI Quant"){
-
-  profitRate =
-  Number(
-    randomBetween(
-      rateRange.min,
-      rateRange.max
-    ).toFixed(2)
-  );
-}
-
-if(strategy === "Mid-Term Smart Growth"){
-
-  profitRate =
-  Number(
-    randomBetween(12, 18).toFixed(2)
-  );
-}
-
-if(strategy === "Long-Term AI Wealth Plan"){
-
-  profitRate =
-  Number(
-    randomBetween(25, 40).toFixed(2)
-  );
-}
-
-    const profit =
-    Number(
-      (
-        tradeAmount *
-        profitRate / 100
-      ).toFixed(2)
-    );
+   const profitRate = 0;
+    const profit = 0;
 
     let durationMinutes = 120;
 
@@ -1820,31 +1860,7 @@ if(strategy === "Long-Term AI Wealth Plan"){
       durationMinutes * 60 * 1000
     );
 
-    const subTrades =
-generateSubTrades(
-  profitRate,
-  strategy
-);
-
-subTrades.forEach(item => {
-
-  item.showAfterMinutes =
-  Math.floor(
-    Math.random() * (durationMinutes - 10)
-  ) + 5;
-
-  item.showTime =
-  new Date(
-    now.getTime() +
-    item.showAfterMinutes * 60 * 1000
-  );
-
-});
-
-subTrades.sort((a,b)=>{
-  return new Date(a.showTime)
-  - new Date(b.showTime);
-});
+    const subTrades = [];
 
 const hour = new Date().getHours();
 
@@ -1927,7 +1943,7 @@ availableMarkets[
     res.json({
   success:true,
   message:"AI Assistant started",
-  order,
+  order: publicAIQuantOrder(order),
   balance: user.asset
   });
 
@@ -2039,37 +2055,9 @@ if (setting.weeklyLimit) {
   }
 }
 
-    const userFirstOrder = await AIQuantOrder.findOne({
-    userId: user._id,
-  level: level
-   }).sort({ createdAt: 1 });
-    let rateRange = setting.week1;
-
-    if (userFirstOrder) {
-      const firstTime = new Date(userFirstOrder.createdAt);
-      const daysPassed = (now - firstTime) / (1000 * 60 * 60 * 24);
-
-      if (daysPassed >= 7) {
-        rateRange = setting.afterWeek1;
-      }
-    }
-
-   const profitRate =
-Number(
-  randomBetween(
-    rateRange.min,
-    rateRange.max
-  ).toFixed(2)
-);
-
-const subTrades =
-generateSubTrades(profitRate);
-
-const profit =
-Number(
-  (tradeAmount * profitRate / 100)
-  .toFixed(2)
-);
+    const profitRate = 0;
+const subTrades = [];
+const profit = 0;
 
    const hour = new Date().getHours();
 
@@ -2102,23 +2090,6 @@ new Date(
   now.getTime() +
   durationMinutes * 60 * 1000
 );
-
-subTrades.forEach(item => {
-  item.showAfterMinutes =
-  Math.floor(
-    Math.random() * (durationMinutes - 10)
-  ) + 5;
-
-  item.showTime =
-  new Date(
-    now.getTime() +
-    item.showAfterMinutes * 60 * 1000
-  );
-});
-
-subTrades.sort((a, b) => {
-  return new Date(a.showTime) - new Date(b.showTime);
-});
 
     const order = await AIQuantOrder.create({
       userId: user._id,
@@ -2158,7 +2129,7 @@ await user.save();
 res.json({
   success: true,
   message: "AI Quant trade started",
-  order
+  order: publicAIQuantOrder(order)
 });
 
   } catch (error) {
@@ -2217,8 +2188,9 @@ app.post("/api/ai/quant/settle/:id", authenticateUser, async (req, res) => {
     }
 
     // 修复：正确结算（解锁本金并返还利润）
+    await prepareAIQuantSettlement(order);
     const amount = order.amount;
-    const profit = order.profit;
+    const profit = Number(order.profit || 0);
     user.lockedAsset = Math.max(0, (user.lockedAsset || 0) - amount);
     user.asset = Number(user.asset || 0) + amount + profit;
     user.balance = user.asset;
@@ -2239,7 +2211,7 @@ app.post("/api/ai/quant/settle/:id", authenticateUser, async (req, res) => {
     res.json({
       success: true,
       message: "AI Quant trade completed",
-      order,
+      order: publicAIQuantOrder(order),
       balance: user.asset
     });
 
@@ -2285,30 +2257,15 @@ app.post("/api/admin/ai-quant/set-rate/:id", verifyAdmin, async (req, res) => {
     const finalRate =
     Number(rate || 0);
 
-    const profit =
-    Number(
-      (
-        Number(order.amount || 0)
-        *
-        finalRate
-        / 100
-      ).toFixed(2)
-    );
+    order.manualRate = finalRate;
 
-    order.profitRate =
-    finalRate;
+    order.profitRate = 0;
 
-    order.finalRate =
-    finalRate;
+    order.finalRate = 0;
 
-    order.profit =
-    profit;
+    order.profit = 0;
 
-    order.subTrades =
-generateSubTrades(
-  finalRate,
-  order.strategy
-);
+    order.subTrades = [];
 
     await order.save();
 
@@ -2344,7 +2301,7 @@ app.get("/api/ai/quant/orders/:userId", authenticateUser, async (req, res) => {
 
   res.json({
     success: true,
-    data: orders
+    data: orders.map(publicAIQuantOrder)
   });
 });
 
@@ -3195,6 +3152,7 @@ async function settleExpiredAIQuantOrders(){
       if(!user) continue;
 
       const amount = Number(order.amount || 0);
+      await prepareAIQuantSettlement(order);
       const profit = Number(order.profit || 0);
 
       // 修复：正确结算
@@ -3215,6 +3173,7 @@ async function settleExpiredAIQuantOrders(){
 
 );
       order.status = "Completed";
+      order.completedAt = now;
 
       await user.save();
       await order.save();
