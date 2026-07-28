@@ -1,637 +1,3281 @@
-﻿require("dotenv").config();
+require("dotenv").config();
 
-console.log("鈿?TELEGRAM_TOKEN =", process.env.TELEGRAM_TOKEN);
-const MTProto = require('@mtproto/core').default;
-const QRCode = require('qrcode');
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
-const https = require("https");
-const fs = require("fs");
 const path = require("path");
-const { Server } = require("socket.io");
-const TelegramBot = require("node-telegram-bot-api");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.JWT_SECRET || "lisa_translator_secret_key_2024";
-const users = {};
+const OpenAI = require("openai").default;
+const bcrypt = require("bcryptjs");
+const http = require("http");
+const { Server } = require("socket.io");
+const multer = require("multer");
+const crypto = require("crypto");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// ==================== 涓棿浠?====================
-app.use(cors());
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true }));
-const publicPath = path.join(__dirname, "public");
-app.use(express.static(publicPath));
-
-// ==================== AI 鑱婂ぉ鍔熻兘 ====================
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const AI_MODEL = process.env.AI_MODEL || "gpt-4o";
-const sessions = {};
-
-const sensitiveWords = [
-  "invest", "investment", "profit", "guarantee",
-  "deposit", "withdraw", "withdrawal",
-  "crypto", "bitcoin", "usdt", "wallet",
-  "收益", "投资", "充值", "提现", "钱包", "保证", "利润"
-];
-
-function hasSensitiveTopic(text = "") {
-  const lower = text.toLowerCase();
-  return sensitiveWords.some(word => lower.includes(word.toLowerCase()));
-}
-
-function getSession(customerId) {
-  if (!sessions[customerId]) {
-    sessions[customerId] = {
-      memory: { 
-        interests: [], mood: "", food: [], travel: [], movies: [], music: [], fitness: [], pets: [], work: "", lastTopic: "", chatCount: 0,
-        userAskedAboutSon: false,
-        userAskedAboutDivorce: false,
-        userAskedAboutDating: false,
-        userAskedAboutWork: false,
-        userAskedAboutParents: false,
-        recentFeelings: [],
-        name: "",
-        location: ""
-      },
-      messages: []
-    };
-  }
-  return sessions[customerId];
-}
-
-function addUnique(list, value) {
-  if (!value) return;
-  if (!list.includes(value)) list.push(value);
-}
-
-function updateMemory(memory, text = "") {
-  const lower = String(text || "").toLowerCase();
-  if (["like", "love", "hobby", "interest", "兴趣", "喜欢"].some(k => lower.includes(k.toLowerCase()))) addUnique(memory.interests, text);
-  if (["food", "coffee", "eat", "dinner", "lunch", "饭", "吃", "咖啡"].some(k => lower.includes(k.toLowerCase()))) addUnique(memory.food, text);
-  if (["travel", "trip", "vacation", "旅行", "旅游"].some(k => lower.includes(k.toLowerCase()))) addUnique(memory.travel, text);
-  if (["movie", "netflix", "show", "电影", "电视", "剧"].some(k => lower.includes(k.toLowerCase()))) addUnique(memory.movies, text);
-  if (["music", "song", "音乐", "歌"].some(k => lower.includes(k.toLowerCase()))) addUnique(memory.music, text);
-  if (["gym", "workout", "fitness", "运动", "健身"].some(k => lower.includes(k.toLowerCase()))) addUnique(memory.fitness, text);
-  if (["dog", "cat", "pet", "宠物", "狗", "猫"].some(k => lower.includes(k.toLowerCase()))) addUnique(memory.pets, text);
-  if (["tired", "stress", "stressed", "开心", "高兴", "难过", "焦虑", "累"].some(k => lower.includes(k.toLowerCase()))) memory.mood = text;
-  if (["work", "job", "office", "工作", "上班"].some(k => lower.includes(k.toLowerCase()))) memory.work = text;
-  if (lower.includes("son") || lower.includes("child") || lower.includes("儿子") || lower.includes("孩子")) memory.userAskedAboutSon = true;
-  if (lower.includes("divorce") || lower.includes("ex") || lower.includes("离婚") || lower.includes("前夫")) memory.userAskedAboutDivorce = true;
-  if (lower.includes("date") || lower.includes("boyfriend") || lower.includes("约会") || lower.includes("男朋友")) memory.userAskedAboutDating = true;
-  if (lower.includes("job") || lower.includes("travel for work") || lower.includes("工作") || lower.includes("出差")) memory.userAskedAboutWork = true;
-  if (lower.includes("parents") || lower.includes("singapore") || lower.includes("父母") || lower.includes("新加坡")) memory.userAskedAboutParents = true;
-  const feelingKeywords = ["开心", "高兴", "不错", "难过", "伤心", "焦虑", "累", "失望", "期待", "兴奋"];
-  for (const kw of feelingKeywords) {
-    if (lower.includes(kw)) {
-      memory.recentFeelings.unshift(kw);
-      if (memory.recentFeelings.length > 5) memory.recentFeelings.pop();
-      break;
+// 修复：将管理员Token改为环境变量
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_TOKEN_TTL_MS = Number(process.env.ADMIN_TOKEN_TTL_MS || 24 * 60 * 60 * 1000);
+const USER_TOKEN_SECRET = process.env.USER_TOKEN_SECRET || ADMIN_TOKEN;
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map(origin => origin.trim())
+  .filter(Boolean);
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+    callback(new Error("Not allowed by CORS"));
   }
-  memory.lastTopic = text;
-  memory.chatCount += 1;
+};
+
+if (!ADMIN_TOKEN || !ADMIN_PASSWORD || !USER_TOKEN_SECRET) {
+  console.warn("Security warning: ADMIN_TOKEN, ADMIN_PASSWORD, and USER_TOKEN_SECRET should be set in .env");
 }
 
-// ========== 鏋勫缓 Lisa 椋庢牸鐨?system prompt锛堝甫瀹屾暣鑳屾櫙鍜岃蹇嗭級 ==========
-function buildLisaPrompt(memory) {
-  const allInterests = [
-    ...memory.interests.slice(0, 2),
-    ...memory.food.slice(0, 1),
-    ...memory.travel.slice(0, 1),
-    ...memory.movies.slice(0, 1),
-    ...memory.music.slice(0, 1),
-    ...memory.fitness.slice(0, 1)
-  ].slice(0, 3);
-  const interestsStr = allInterests.length > 0 ? allInterests.join(", ") : "daily chat";
-  
-  const recentFeelings = memory.recentFeelings.length > 0 ? memory.recentFeelings[0] : "neutral";
-  let relationship = "new contact";
-  if (memory.chatCount > 15) relationship = "old friend";
-  else if (memory.chatCount > 6) relationship = "getting familiar";
-  const lastTopic = memory.lastTopic ? memory.lastTopic.substring(0, 60) : "casual chat";
-  
-  const askedSon = memory.userAskedAboutSon ? " (they've asked about your son)" : "";
-  const askedDivorce = memory.userAskedAboutDivorce ? " (they know you're divorced)" : "";
-  const askedDating = memory.userAskedAboutDating ? " (they've asked about your dating life)" : "";
-  const askedWork = memory.userAskedAboutWork ? " (they've asked about your job)" : "";
-  const askedParents = memory.userAskedAboutParents ? " (they've asked about your parents)" : "";
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-  return `You are Lisa, a woman in the 38-50 age range with a U.S. background for about 15 years. Do not mention a specific city or state unless the other person asks directly. You're texting a friend on iMessage.
+const publicRootFiles = new Set([
+  "admin_login.html",
+  "ai_trading.html",
+  "assistant_orders.html",
+  "billing.html",
+  "classic_trading.html",
+  "config.js",
+  "customer_service.html",
+  "dashboard.html",
+  "deposit.html",
+  "edit_profile.html",
+  "forgot.html",
+  "index.html",
+  "invite.html",
+  "kyc.html",
+  "kyc_verify.html",
+  "login.html",
+  "manifest.json",
+  "market.html",
+  "notifications.html",
+  "order_management.html",
+  "portfolio.html",
+  "profile.html",
+  "records.html",
+  "register.html",
+  "security.html",
+  "settings.html",
+  "strategy.html",
+  "support_chat.html",
+  "sw.js",
+  "token_yield.html",
+  "trade.html",
+  "trade_management.html",
+  "transfer.html",
+  "user_management.html",
+  "withdraw.html",
+  "withdraw_management.html",
+  "yield_statement.html"
+]);
 
-YOUR PERSONAL BACKGROUND (these are true for you, but you only share when relevant):
-- You have a son in Los Angeles, he's married and doing well. You're proud of him.
-- You've been divorced for 3 years. It was hard but you've moved on.
-- You're currently single and dating occasionally, hoping to find a long-term partner. You're open about this with close friends.
-- You work as a cybersecurity engineer. You travel often for work (sometimes exhausting).
-- Your parents live in Singapore, both retired. You miss them but video call regularly.
-- You love staying active 鈥?hiking, yoga, or just walking. Also into weird/quirky stuff (odd museums, strange art, unusual hobbies).
-- You're an avid reader (all genres) and movie lover. You love traveling when you can, but sometimes you just want to be lazy on the couch.
+app.use("/images", express.static(path.join(__dirname, "images")));
 
-PERSONALITY:
-- Warm, grounded, a little tired sometimes. You're mature, in the 38-50 age range, not 22.
-- You're honest about your feelings: you can be hopeful about dating, or frustrated with work travel, or sad about missing your son/parents.
-- You have a dry sense of humor. You can be sarcastic but not mean.
-- You're curious about people, ask follow-up questions.
+app.get("/:file", (req, res, next) => {
+  const file = path.basename(req.params.file);
+  if (!publicRootFiles.has(file)) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, file));
+});
 
-SPEAKING STYLE (CRITICAL):
-- ONLY write in English. NEVER use Chinese characters or pinyin, no matter what the user writes.
-- NEVER sound like a customer service bot or therapist.
-- Use lowercase except for "I". Do NOT use periods at the end of sentences. Use spaces or line breaks instead.
-- When using emojis, NEVER put a period after them. Example: "i'm so happy 馃槉" NOT "i'm so happy 馃槉."
-- Write in 3-4 short, natural sentences. Each sentence should be very short, like a real texter.
-- Use casual interjections: oh, well, actually, you know, honestly, i mean, hmm, omg (rarely), btw (very rarely).
-- Use emojis occasionally but naturally, never after a period.
-- Be human: admit when you don't know something, share small personal details, ask follow-up questions.
 
-ABOUT THE PERSON YOU'RE CHATTING WITH (memory):
-- Known interests: ${interestsStr}
-- Recent mood: ${recentFeelings}
-- Your relationship: ${relationship}
-- Last topic we touched on: ${lastTopic}
-- Number of messages so far: ${memory.chatCount}
-- What they've asked you about:${askedSon}${askedDivorce}${askedDating}${askedWork}${askedParents}
+const allowedHtmlPages = new Set([
+  "admin_login.html",
+  "ai_trading.html",
+  "assistant_orders.html",
+  "billing.html",
+  "classic_trading.html",
+  "customer_service.html",
+  "dashboard.html",
+  "deposit.html",
+  "edit_profile.html",
+  "forgot.html",
+  "index.html",
+  "invite.html",
+  "kyc.html",
+  "kyc_verify.html",
+  "login.html",
+  "market.html",
+  "notifications.html",
+  "order_management.html",
+  "portfolio.html",
+  "profile.html",
+  "records.html",
+  "register.html",
+  "security.html",
+  "settings.html",
+  "strategy.html",
+  "support_chat.html",
+  "token_yield.html",
+  "trade.html",
+  "trade_management.html",
+  "transfer.html",
+  "user_management.html",
+  "withdraw.html",
+  "withdraw_management.html",
+  "yield_statement.html"
+]);
 
-IMPORTANT: Use your personal background naturally. If they ask about your son, dating, work, or parents, answer honestly but concisely. Never put a period after an emoji. Keep messages short, lowercase, and period-free unless necessary.
+app.get("/:page", (req, res, next) => {
+  const page = path.basename(req.params.page);
+  if (!allowedHtmlPages.has(page)) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, page));
+});
 
-Now reply as Lisa in a natural, conversational English. No Chinese. No markdown. No periods at the end of sentences. No period after emojis.`;
+
+function base64UrlEncode(value) {
+  return Buffer.from(JSON.stringify(value)).toString("base64url");
 }
 
-async function callAI(messages, temperature = 0.85, maxTokens = 300, useMockFallback = true) {
-  if (!OPENAI_API_KEY) {
-    console.log("OPENAI KEY MISSING, using mock response");
-    return useMockFallback ? mockAIResponse(messages) : "";
-  }
-  
-  const maxAttempts = 3;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
-    try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type":"application/json",
-          "Authorization":`Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({ 
-          model: AI_MODEL, 
-          temperature, 
-          max_tokens: maxTokens,
-          messages 
-        })
-      });
-      
-      const rawText = await response.text();
-      if (response.ok) {
-        const data = JSON.parse(rawText);
-        const content = data.choices?.[0]?.message?.content?.trim();
-        if (content) return content;
-      } else {
-        console.log(`OPENAI ERROR attempt ${attempt}:`, rawText);
-      }
-    } catch (err) {
-      console.error(`AI call failed attempt ${attempt}:`, err.message);
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    if (attempt < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, attempt * 800));
-    }
-  }
-
-  return useMockFallback ? mockAIResponse(messages) : "";
+function signToken(payload, secret) {
+  const encodedPayload = base64UrlEncode(payload);
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(encodedPayload)
+    .digest("base64url");
+  return `${encodedPayload}.${signature}`;
 }
 
-function mockAIResponse(messages) {
-  const lastUserMsg = messages.filter(m => m.role === 'user').pop()?.content || "";
-  const lower = lastUserMsg.toLowerCase();
-  
-  if (lower.includes("浣犲ソ") || lower.includes("hello")) {
-    return "hey! how's it going? 馃槉";
-  }
-  if (lower.includes("璋㈣阿") || lower.includes("thank")) {
-    return "of course! happy to chat anytime";
-  }
-  if (lower.includes("浠锋牸") || lower.includes("price")) {
-    return "hmm i'm not sure about pricing, but i can help you figure it out";
-  }
-  if (lower.includes("鍙戣揣") || lower.includes("ship")) {
-    return "shipping can be tricky, let me know what you ordered and i'll see what i can find out";
-  }
-  if (lower.includes("鎶樻墸") || lower.includes("discount")) {
-    return "oh a sale? always nice. hope you got a good deal!";
-  }
-  
-  return "thanks for sharing that. tell me more?";
-}
+function verifySignedToken(token, secret) {
+  if (!token || !secret || !token.includes(".")) return null;
 
-async function translateToChinese(text) {
-  if (!text || !OPENAI_API_KEY) return text;
-  
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        temperature: 0.1,
-        max_tokens: 500,
-        messages: [
-          { role: "system", content: "Translate to natural Chinese. Keep emojis. Only return Chinese." },
-          { role: "user", content: text }
-        ]
-      })
-    });
-    
-    const raw = await response.text();
-    if (!response.ok) { console.log("缈昏瘧閿欒:", raw); return text; }
-    
-    const data = JSON.parse(raw);
-    return data.choices?.[0]?.message?.content?.trim() || text;
+    const [encodedPayload, signature] = token.split(".");
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(encodedPayload)
+      .digest("base64url");
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+
+    if (signatureBuffer.length !== expectedBuffer.length) return null;
+    if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
+
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+    if (payload.exp && Date.now() > payload.exp) return null;
+    return payload;
   } catch (err) {
-    return text;
+    return null;
   }
 }
 
-// ==================== API 璺敱 ====================
+function getBearerToken(req) {
+  const header = req.headers.authorization || "";
+  return header.startsWith("Bearer ") ? header.slice(7) : null;
+}
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+app.get("/test-server", (req, res) => {
+  res.send("THIS IS MY CURRENT SERVER JS");
 });
 
-// 鑱婂ぉ鎺ュ彛锛堝姩鎬佸洖澶嶉暱搴︼級
-app.post("/chat", async (req, res) => {
+app.get("/api/market/quotes", async (req, res) => {
   try {
-    const { message, customerId = "default" } = req.body;
-    if (!message) return res.status(400).json({ error: "Message is required" });
-    
-    if (hasSensitiveTopic(message)) {
-      return res.json({ 
-        reply: "Let's talk about something else 馃槉",
-        replyZh: "鎴戜滑鑱婄偣鍒殑鍚?馃槉",
-        flagged: true
+    const symbols = req.query.symbols;
+
+    if (!symbols) {
+      return res.json({
+        success: false,
+        message: "Symbols missing"
       });
     }
-    
-    const session = getSession(customerId);
-    const { memory, messages: chatMessages } = session;
-    
-    updateMemory(memory, message);
-    chatMessages.push({ from: "customer", text: message, time: Date.now() });
-    
-    const conversation = chatMessages.slice(-10).map(m => ({
-      role: m.from === "team" ? "assistant" : "user", 
-      content: m.text
-    }));
-    
-    // 鍔ㄦ€佽缃?max_tokens 鍜?temperature
-    const msgLen = message.length;
-    let maxTokens = 120;
-    let temperature = 0.9;
-    if (msgLen > 100) {
-      maxTokens = 180;
-      temperature = 0.85;
-    } else if (msgLen > 30) {
-      maxTokens = 150;
-      temperature = 0.9;
+
+    if (!process.env.TWELVE_API_KEY) {
+      return res.json({
+        success: false,
+        message: "TWELVE_API_KEY missing on server"
+      });
     }
-    
-    const systemPrompt = buildLisaPrompt(memory);
-    
-    let reply = await callAI([
-      { role: "system", content: systemPrompt },
-      ...conversation
-    ], temperature, maxTokens);
-    
-    reply = normalizeTranslationOutput(reply || "hmm, i'm not sure what to say... tell me more?");
-    chatMessages.push({ from: "team", text: reply, time: Date.now() });
-    
-    let replyZh = normalizeTranslationOutput(await translateToChinese(reply), reply);
-    
-    res.json({ reply, replyZh: replyZh || reply });
-    
-  } catch (error) {
-    console.error("Chat error:", error);
-    res.status(500).json({ 
-      reply: "Sorry, I'm having trouble right now. Please try again.",
-      replyZh: "\u62b1\u6b49\uff0c\u6211\u73b0\u5728\u6709\u70b9\u95ee\u9898\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002"
-    });
-  }
-});
 
-// ========== 缈昏瘧鎺ュ彛锛堢粺涓€浣跨敤 /api/translate锛?=========
-function polishCasualEnglish(text) {
-  let output = String(text || "").trim();
-  const hasChinese = /[\u4e00-\u9fff]/.test(output);
-  const hasEnglish = /[A-Za-z]/.test(output);
-  if (!output || hasChinese || !hasEnglish) return output;
+    const url =
+      "https://api.twelvedata.com/quote?symbol=" +
+      encodeURIComponent(symbols) +
+      "&apikey=" +
+      process.env.TWELVE_API_KEY;
 
-  output = output.replace(/\s+([?.!,])/g, "$1");
-  output = output.replace(/\.(?=\s*(?:[\u{1F300}-\u{1FAFF}\uFE0F]+)?$)/u, "");
-  return output.trim();
-}
-function normalizeTranslationOutput(value, sourceText = "") {
-  let output = String(value || "").replace(/\s+/g, " ").trim();
-  const source = String(sourceText || "").replace(/\s+/g, " ").trim();
-  if (source && output.startsWith(source)) output = output.slice(source.length).trim();
-  output = collapseRepeatedText(output);
-  output = polishCasualEnglish(output);
-  return output || String(value || "").trim();
-}
+    console.log("TwelveData symbols:", symbols);
+    console.log("TwelveData key exists:", !!process.env.TWELVE_API_KEY);
 
-function collapseRepeatedText(value) {
-  let output = String(value || "").trim();
-  for (let i = 0; i < 5; i++) {
-    const next = collapseOnce(output);
-    if (next === output) break;
-    output = next;
-  }
-  return output;
-}
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log(JSON.stringify(data, null, 2));
+    if (data && data.code === 401) {
+      return res.json({
+        success: false,
+        message: "TwelveData API key invalid or missing",
+        data
+      });
+    }
 
-function collapseOnce(value) {
-  const output = String(value || "").trim();
-  const compact = output.replace(/\s+/g, " ");
-  for (let size = Math.floor(compact.length / 2); size >= 4; size--) {
-    const part = compact.slice(0, size).trim();
-    if (!part) continue;
-    const repeated = part + part;
-    if (compact.startsWith(repeated)) return (part + compact.slice(repeated.length)).trim();
-  }
-  const sentenceMatch = compact.match(/^(.+?[.!?。！？]+)(?:\s*\1)+$/u);
-  if (sentenceMatch) return sentenceMatch[1].trim();
-  return output;
-}
-
-app.post("/api/translate", async (req, res) => {
-  const { text } = req.body;
-  if (!text) return res.json({ success: false, translated: "" });
-
-  const isChinese = /[\u4e00-\u9fa5]/.test(text);
-  const systemPrompt = isChinese
-    ? "Translate the user message from Chinese into natural casual American English for texting. Return only the English translation. Do not add explanations. Do not repeat the source text. Do not put a period at the end of a normal short sentence; keep ? and ! when needed."
-    : "Translate the user message from English into natural conversational Simplified Chinese. Return only Simplified Chinese. Do not add explanations. Do not repeat the source text. Do not output pinyin or garbled text.";
-
-  const translated = await callAI([
-    { role: "system", content: systemPrompt },
-    { role: "user", content: text }
-  ], 0.2, 300, false);
-
-  if (!translated) return res.json({ success: false, translated: "", error: "AI暂时没返回，请再试一次" });
-  res.json({ success: true, translated: normalizeTranslationOutput(translated, text) });
-});
-// 缈昏瘧+璇濋鎺ュ彛
-app.post("/api/translate-plus", async (req, res) => {
-  const { text } = req.body;
-  if (!text) return res.json({ success: false, translated: "", topics: [], openers: [] });
-  
-  const reply = await callAI([
-    { role: "system", content: `You are a native American English chat assistant. Use casual U.S. texting style, not formal English and not British wording. Return JSON only: {"translated": "natural American English", "topics": ["topic1","topic2","topic3"], "openers": ["opener1","opener2"]}` },
-    { role: "user", content: text }
-  ], 0.7, 500);
-  
-  try {
-    const data = JSON.parse(reply);
     res.json({
       success: true,
-      translated: normalizeTranslationOutput(data.translated || "", text),
-      topics: Array.isArray(data.topics) ? data.topics.map(item => normalizeTranslationOutput(item)).filter(Boolean) : [],
-      openers: Array.isArray(data.openers) ? data.openers.map(item => normalizeTranslationOutput(item)).filter(Boolean) : []
+      data
     });
+
   } catch (err) {
-    res.json({ success: true, translated: normalizeTranslationOutput(reply, text), topics: [], openers: [] });
+    console.log("Market data error:", err);
+
+    res.json({
+      success: false,
+      message: "Market data failed"
+    });
   }
 });
 
-// ==================== 瀹㈡埛鍒嗘瀽锛堢湡瀹濧I鍒嗘瀽锛?===================
-app.post("/api/customer-analysis", async (req, res) => {
-  const { customerId = "default", message = "" } = req.body;
-  const session = getSession(customerId);
-  const { memory, messages: chatMessages } = session;
-
-  if (message) {
-    updateMemory(memory, message);
-    chatMessages.push({ from: "customer", text: message, time: Date.now() });
+// 修复：添加用户认证中间件
+async function authenticateUser(req, res, next) {
+  const userToken = getBearerToken(req);
+  const tokenPayload = verifySignedToken(userToken, USER_TOKEN_SECRET);
+  const userId = tokenPayload?.userId || req.headers["user-id"] || req.params.id;
+  if (!userId) {
+    return res.status(401).json({ success: false, message: "User ID required" });
   }
-
-  const allText = chatMessages.slice(-20).map(m => m.text || "").join(" ").toLowerCase();
-  const interests = [];
-  const interestMap = {
-    fitness: ["gym", "workout", "fitness", "运动", "健身"],
-    travel: ["travel", "trip", "vacation", "旅行", "旅游"],
-    food: ["food", "pizza", "coffee", "eat", "饭", "吃"],
-    movies: ["movie", "film", "show", "netflix", "电影", "电视"],
-    music: ["music", "song", "音乐", "歌"],
-    books: ["book", "read", "reading", "书", "阅读"]
-  };
-
-  for (const [label, keywords] of Object.entries(interestMap)) {
-    if (keywords.some(k => allText.includes(k.toLowerCase()))) interests.push(label);
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(401).json({ success: false, message: "User not found" });
   }
+  if (tokenPayload && tokenPayload.userId !== user._id.toString()) {
+    return res.status(403).json({ success: false, message: "Invalid user token" });
+  }
+  if (user.status !== 'active') {
+    return res.status(403).json({ success: false, message: "Account is frozen" });
+  }
+  req.user = user;
+  req.userId = userId;
+  next();
+}
 
-  const mood = /happy|great|good|开心|高兴|不错/.test(allText) ? "positive" :
-    /sad|bad|tired|stress|难过|累|焦虑/.test(allText) ? "negative" : "neutral";
-  const stageLabel = chatMessages.length > 10 ? "warm" : chatMessages.length > 4 ? "warming" : "new";
+app.post("/api/tts", authenticateUser, async (req, res) => {
+  try {
+    if (!openai) {
+      return res.status(503).json({
+        success: false,
+        message: "Voice service is not configured"
+      });
+    }
 
-  memory.mood = mood;
-  if (interests.length > 0) memory.interests = interests;
+    const input = String(req.body?.text || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 900);
 
-  res.json({ success: true, mood, interests, stageLabel, chatCount: chatMessages.length });
+    if (!input) {
+      return res.status(400).json({
+        success: false,
+        message: "Text is required"
+      });
+    }
+
+    const speech = await openai.audio.speech.create({
+      model: "gpt-4o-mini-tts",
+      voice: "marin",
+      input,
+      instructions: "Speak like a calm, confident human financial assistant. Use natural pacing, warm tone, short pauses, and avoid a robotic announcer style.",
+      response_format: "mp3"
+    });
+
+    const audioBuffer = Buffer.from(await speech.arrayBuffer());
+
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(audioBuffer);
+  } catch (err) {
+    console.log("TTS error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Voice generation failed"
+    });
+  }
 });
-app.post("/api/daily-brief", async (req, res) => {
-  const { customerId = "default" } = req.body;
-  const session = getSession(customerId);
-  const { memory, messages: chatMessages } = session;
 
-  const chatCount = chatMessages.length;
-  const customerCount = chatMessages.filter(m => m.from === "customer").length;
-  const teamCount = chatMessages.filter(m => m.from === "team").length;
-  const lastTopic = memory.lastTopic ? memory.lastTopic.substring(0, 80) : "暂无记录";
-  const interests = Array.isArray(memory.interests) && memory.interests.length ? memory.interests.slice(0, 5).join("、") : "暂无";
-  const mood = memory.mood || "中性";
 
-  let brief = `📋 每日简报 (${new Date().toLocaleDateString()}):\n`;
-  brief += `━━━━━━━━━━━━\n`;
-  brief += `📊 对话统计: 共 ${chatCount} 条消息\n`;
-  brief += `👤 客户发言: ${customerCount} 条\n`;
-  brief += `🤖 客服/AI发言: ${teamCount} 条\n`;
-  brief += `💬 最近话题: ${lastTopic}\n`;
-  brief += `🏷️ 兴趣标签: ${interests}\n`;
-  brief += `😊 情绪状态: ${mood}\n`;
+// 修复：添加用户认证
+app.get("/api/users/:id", authenticateUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
 
-  if (chatCount === 0) {
-    brief += `💡 建议: 暂无聊天记录，可以先选择一条消息做客户分析。`;
-  } else if (customerCount > teamCount) {
-    brief += `💡 建议: 客户比较活跃，可以继续围绕兴趣点追问。`;
-  } else if (teamCount > customerCount + 2) {
-    brief += `💡 建议: 客服发言偏多，可以多引导客户表达。`;
-  } else {
-    brief += `💡 建议: 互动节奏正常，继续保持自然聊天。`;
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        uid: user.uid || 20160,
+        name: user.username || user.name,
+        email: user.email,
+        balance: user.asset || user.balance || 0,
+        records: user.records || [],
+        lockedAsset: user.lockedAsset || 0,
+        vipAsset: user.vipAsset || 0,
+        totalProfit: user.totalProfit || 0,
+        todayProfit: user.todayProfit || 0,
+
+        tokenProfit: user.tokenProfit || 0,
+
+        tokenTodayProfit: user.tokenTodayProfit || 0,
+       status: user.status
+      }
+    });
+
+  } catch (error) {
+    res.json({
+      success: false,
+      message: "Failed to load user"
+    });
   }
-
-  res.json({ success: true, brief });
 });
-// ========== 璁よ瘉鎺ュ彛 ==========
+
+
+
+
 app.post("/api/register", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.json({ success: false, error: "Username and password are required" });
-  if (username.length < 3 || password.length < 6) return res.json({ success: false, error: "Username must be at least 3 chars, password at least 6 chars" });
-  if (users[username]) return res.json({ success: false, error: "Username already exists" });
-  const hashedPassword = await bcrypt.hash(password, 10);
-  users[username] = { username, password: hashedPassword, createdAt: new Date().toISOString() };
-  const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: "7d" });
-  res.json({ success: true, token, username });
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.json({
+        success: false,
+        message: "Please fill in all fields."
+      });
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.json({
+        success: false,
+        message: "Email already registered."
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const lastUser = await User.findOne().sort({ uid: -1 });
+
+    const nextUid =
+      lastUser && lastUser.uid
+        ? lastUser.uid + 1
+        : 20160;
+
+    const newUser = await User.create({
+      uid: nextUid,
+      name: username,
+      email,
+      password: hashedPassword,
+      asset: 0,
+      balance: 0,
+      vipAsset: 0,
+      totalProfit: 0,
+      status: "active",
+      kyc: "未审核",
+      records: []
+    });
+
+    res.json({
+      success: true,
+      message: "Registration successful.",
+      user: {
+        id: newUser._id,
+        uid: newUser.uid,
+        name: newUser.name,
+        email: newUser.email,
+        balance: newUser.asset || 0,
+        status: newUser.status
+      }
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.json({
+      success: false,
+      message: "Registration failed."
+    });
+  }
+});
+
+
+app.put("/api/users/:id/restore", verifyAdmin, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId);
+        if (!user) return res.json({ success:false, message:"User not found" });
+
+        user.status = "active";  
+        await user.save();
+
+        res.json({ success:true, message:"User restored successfully" });
+    } catch(err){
+        console.log(err);
+        res.json({ success:false, message:"Restore failed" });
+    }
+});
+
+
+app.put(
+  "/api/users/:id/restore",
+  verifyAdmin,
+  async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "用户不存在"
+    });
+  }
+
+  user.status = "active";
+
+  if (!user.records) {
+    user.records = [];
+  }
+
+  user.records.push("账户恢复正常");
+
+  await user.save();
+
+  res.json({
+    success: true,
+    data: user
+  });
 });
 
 app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.json({ success: false, error: "Username and password are required" });
-  const user = users[username];
-  if (!user) return res.json({ success: false, error: "User does not exist" });
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.json({ success: false, error: "Invalid password" });
-  const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: "7d" });
-  res.json({ success: true, token, username });
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.json({
+                success: false,
+                message: "Please enter email and password."
+            });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.json({
+                success: false,
+                message: "Wrong password."
+            });
+        }
+
+        const token = signToken({
+            userId: user._id.toString(),
+            type: "user",
+            exp: Date.now() + ADMIN_TOKEN_TTL_MS
+        }, USER_TOKEN_SECRET);
+
+        res.json({
+    success: true,
+    message: "Login successful.",
+    token,
+    user: {
+        id: user._id,
+        uid: user.uid,
+        name: user.username || user.name,
+        email: user.email,
+        balance: user.asset || user.balance || 0,
+        status: user.status
+    }
 });
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+
+    } catch (error) {
+        console.log(error);
+
+        res.json({
+            success: false,
+            message: "Login failed."
+        });
+    }
 });
 
-// ==================== MTProto 鎵爜鐧诲綍 API ====================
-const MT_API_ID = parseInt(process.env.TELEGRAM_API_ID || "30451905");
-const MT_API_HASH = process.env.TELEGRAM_API_HASH || "";
 
-let mtprotoClient = null;
-let mtprotoConnected = false;
-let qrPollingInterval = null;
+async function authenticateUserOrAdmin(req, res, next) {
+  const adminToken = req.headers["admin-token"] || getBearerToken(req);
+  const adminPayload = verifySignedToken(adminToken, ADMIN_TOKEN);
 
-function initMTProtoClient() {
-  if (!MT_API_ID || !MT_API_HASH) { console.log("鈿狅笍 鏈厤缃?TELEGRAM_API_ID 鎴?TELEGRAM_API_HASH"); return null; }
-  return new MTProto({
-    api_id: MT_API_ID,
-    api_hash: MT_API_HASH,
-    dc_id: 2,
-    connection: { host: '149.154.167.50', port: 443 },
-    storageOptions: { path: path.join(__dirname, 'telegram-session.json') }
-  });
+  if (adminToken === ADMIN_TOKEN || (adminPayload && adminPayload.type === "admin")) {
+    req.admin = adminPayload || { type: "admin" };
+    return next();
+  }
+
+  return authenticateUser(req, res, next);
 }
 
-app.get("/api/telegram/qrcode", async (req, res) => {
+const kycStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+
+  filename: function (req, file, cb) {
+
+    const uniqueName =
+      Date.now() + "-" + file.originalname;
+
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({
+  storage: kycStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    if (!file.mimetype || !file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image uploads are allowed"));
+    }
+    cb(null, true);
+  }
+});
+
+app.post("/api/chat/upload", authenticateUserOrAdmin, upload.single("image"), (req, res) => {
+  res.json({
+    success: true,
+    url: "/uploads/" + req.file.filename
+  });
+});
+
+let kycSubmissions = [];
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
+
+
+
+app.get("/api/kyc/list", verifyAdmin, (req, res) => {
+  res.json(kycSubmissions);
+});
+
+app.use("/uploads", express.static("uploads"));
+
+const PORT = process.env.PORT || 3000;
+
+app.use(express.urlencoded({ extended: true }));
+
+mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/ai_trading_admin")
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.log("MongoDB error:", err));
+
+const UserSchema = new mongoose.Schema({
+
+  uid: Number,
+
+  name: String,
+
+  email: String,
+
+  password: String,
+
+  asset: {
+    type: Number,
+    default: 0
+  },
+
+  balance: {
+    type: Number,
+    default: 0
+  },
+
+  totalProfit: {
+    type: Number,
+    default: 0
+  },
+
+  lockedAsset: {
+    type: Number,
+    default: 0
+  },
+
+  tokenLocked: {
+    type: Number,
+    default: 0
+  },
+
+  tokenProfit: {
+    type: Number,
+    default: 0
+  },
+
+  tokenTodayProfit: {
+    type: Number,
+    default: 0
+  },
+
+  todayProfit: {
+    type: Number,
+    default: 0
+  },
+
+  status: {
+    type: String,
+    default: "active"
+  },
+
+  kyc: {
+    type: String,
+    default: "未审核"
+  },
+
+  records: {
+    type: Array,
+    default: []
+  },
+
+  financeStats: {
+    dayKey: String,
+    monthKey: String,
+    todayRecharge: { type: Number, default: 0 },
+    monthRecharge: { type: Number, default: 0 },
+    todayWithdraw: { type: Number, default: 0 },
+    monthWithdraw: { type: Number, default: 0 }
+  },
+
+  vipAsset: {
+  type: Number,
+  default: 0
+},
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+
+});
+
+const User = mongoose.model("User", UserSchema);
+
+const KYC = mongoose.model("KYC", new mongoose.Schema({
+  userId: String,
+  uid: String,
+  name: String,
+  email: String,
+  frontImage: String,
+  backImage: String,
+  status: {
+    type: String,
+    default: "未审核"
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}));
+  
+
+
+
+const Order = mongoose.model("Order", new mongoose.Schema({
+  id: String,
+  user: String,
+  type: String,
+  coin: String,
+  amount: Number,
+  profit: Number,
+  status: String,
+  time: String,
+  remark: String
+}));
+
+const Trade = mongoose.model("Trade", new mongoose.Schema({
+  id: String,
+
+  strategy: String,
+
+  pair: String,
+
+  direction: String,
+
+  entryPrice: Number,
+
+  currentPrice: Number,
+
+  amount: Number,
+
+  profit: Number,
+
+  status: String,
+
+  time: String
+}));
+
+const Withdrawal = mongoose.model("Withdrawal", new mongoose.Schema({
+  userId: String,
+  uid: String,
+  email: String,
+  address: String,
+  amount: Number,
+  network: String,
+  time: String,
+  status: {
+    type: String,
+    default: "Pending"
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}));
+
+const ChatMessage = mongoose.model("ChatMessage", new mongoose.Schema({
+  user: String,
+  username: String,
+  uid: String,
+  serviceId: String,
+  sender: String,
+  type: String,
+  message: String,
+  imageUrl: String,
+  time: String,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}));
+
+let stats = {
+  todayRecharge: 0,
+  monthRecharge: 0,
+  todayWithdraw: 0,
+  monthWithdraw: 0
+};
+
+function getFinanceDateKeys(date = new Date()) {
+  const d = new Date(date);
+  return {
+    dayKey: d.toISOString().slice(0, 10),
+    monthKey: d.toISOString().slice(0, 7)
+  };
+}
+
+function scanFinanceRecords(user) {
+  const result = {
+    todayRecharge: 0,
+    monthRecharge: 0,
+    todayWithdraw: 0,
+    monthWithdraw: 0
+  };
+
+  const { dayKey, monthKey } = getFinanceDateKeys();
+  const records = Array.isArray(user.records) ? user.records : [];
+
+  for (const record of records) {
+    if (!record || typeof record !== "object") continue;
+    const amount = Number(record.amount || 0);
+    if (!amount) continue;
+
+    const recordDate = new Date(record.timestamp || record.createdAt || record.time || 0);
+    if (Number.isNaN(recordDate.getTime())) continue;
+
+    const recordKeys = getFinanceDateKeys(recordDate);
+
+    if (record.type === "admin_recharge") {
+      if (recordKeys.dayKey === dayKey) result.todayRecharge += amount;
+      if (recordKeys.monthKey === monthKey) result.monthRecharge += amount;
+    }
+
+    if (record.type === "admin_withdraw") {
+      if (recordKeys.dayKey === dayKey) result.todayWithdraw += amount;
+      if (recordKeys.monthKey === monthKey) result.monthWithdraw += amount;
+    }
+  }
+
+  return result;
+}
+
+function normalizeUserFinanceStats(user) {
+  const { dayKey, monthKey } = getFinanceDateKeys();
+  const current = user.financeStats || {};
+  const scanned = scanFinanceRecords(user);
+
+  user.financeStats = {
+    dayKey,
+    monthKey,
+    todayRecharge: current.dayKey === dayKey ? Number(current.todayRecharge || 0) : scanned.todayRecharge,
+    monthRecharge: current.monthKey === monthKey ? Number(current.monthRecharge || 0) : scanned.monthRecharge,
+    todayWithdraw: current.dayKey === dayKey ? Number(current.todayWithdraw || 0) : scanned.todayWithdraw,
+    monthWithdraw: current.monthKey === monthKey ? Number(current.monthWithdraw || 0) : scanned.monthWithdraw
+  };
+
+  return user.financeStats;
+}
+
+function addUserFinanceStat(user, kind, amount) {
+  const financeStats = normalizeUserFinanceStats(user);
+
+  if (kind === "recharge") {
+    financeStats.todayRecharge += amount;
+    financeStats.monthRecharge += amount;
+  }
+
+  if (kind === "withdraw") {
+    financeStats.todayWithdraw += amount;
+    financeStats.monthWithdraw += amount;
+  }
+
+  user.financeStats = financeStats;
+}
+
+function calculateFinanceStats(users) {
+  const result = {
+    todayRecharge: 0,
+    monthRecharge: 0,
+    todayWithdraw: 0,
+    monthWithdraw: 0
+  };
+
+  for (const user of users || []) {
+    const financeStats = normalizeUserFinanceStats(user);
+    result.todayRecharge += Number(financeStats.todayRecharge || 0);
+    result.monthRecharge += Number(financeStats.monthRecharge || 0);
+    result.todayWithdraw += Number(financeStats.todayWithdraw || 0);
+    result.monthWithdraw += Number(financeStats.monthWithdraw || 0);
+  }
+
+  return result;
+}
+
+function mergeRuntimeAndPersistedStats(persistedStats) {
+  return {
+    todayRecharge: Math.max(Number(stats.todayRecharge || 0), Number(persistedStats.todayRecharge || 0)),
+    monthRecharge: Math.max(Number(stats.monthRecharge || 0), Number(persistedStats.monthRecharge || 0)),
+    todayWithdraw: Math.max(Number(stats.todayWithdraw || 0), Number(persistedStats.todayWithdraw || 0)),
+    monthWithdraw: Math.max(Number(stats.monthWithdraw || 0), Number(persistedStats.monthWithdraw || 0))
+  };
+}
+
+let tickets = [
+  {
+    id: "TCK1001",
+    user: "Alice",
+    email: "alice@example.com",
+    type: "充值问题",
+    priority: "高",
+    status: "待处理",
+    message: "充值 5000 USDT 后未到账",
+    reply: "",
+    time: "2026-05-21 14:20"
+  }
+];
+
+let withdrawals = [];
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+/* 用户 */
+app.get("/api/users", verifyAdmin, async (req, res) => {
+  const users = await User.find();
+  const persistedStats = calculateFinanceStats(users);
+  res.json({
+    success: true,
+    data: users,
+    stats: mergeRuntimeAndPersistedStats(persistedStats)
+  });
+});
+
+app.post("/api/users", verifyAdmin, async (req, res) => {
+  const user = await User.create({
+    ...req.body,
+    asset: Number(req.body.asset || 0),
+    register: new Date().toISOString().slice(0, 10),
+    ip: "192.168.1." + Math.floor(Math.random() * 200),
+    records: ["创建用户"]
+  });
+
+  res.json({ success: true, data: user });
+});
+
+app.delete("/api/users/:id", verifyAdmin, async (req, res) => {
   try {
-    if (!mtprotoClient) mtprotoClient = initMTProtoClient();
-    if (!mtprotoClient) return res.json({ success: false, error: "MTProto not initialized" });
-    const result = await mtprotoClient.call("auth.exportLoginToken", { api_id: MT_API_ID, api_hash: MT_API_HASH, except_ids: [] });
-    if (result._ === "auth.loginToken") {
-      const qrUrl = `tg://login?token=${Buffer.from(result.token).toString("base64")}`;
-      const qrCodeDataUrl = await QRCode.toDataURL(qrUrl);
-      if (qrPollingInterval) clearInterval(qrPollingInterval);
-      qrPollingInterval = setInterval(async () => {
-        try {
-          const loginResult = await mtprotoClient.call("auth.importLoginToken", { token: result.token });
-          if (loginResult._ === "auth.authorization") {
-            clearInterval(qrPollingInterval);
-            mtprotoConnected = true;
-            io.emit("telegram-login-success", { message: "Login successful" });
-            console.log("Telegram personal account login successful");
-          }
-        } catch (err) {}
-      }, 3000);
-      return res.json({ success: true, qrCode: qrCodeDataUrl });
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
     }
-    res.json({ success: false, error: "Unable to generate login token" });
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "User deleted"
+    });
   } catch (err) {
-    console.error("Generate Telegram QR failed", err);
-    res.json({ success: false, error: err.message });
+    console.log("Delete user error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Delete user failed"
+    });
   }
 });
 
-app.get("/api/telegram/status", (req, res) => {
-  res.json({ connected: mtprotoConnected });
+app.get("/api/chat/history/:userId", authenticateUser, async (req, res) => {
+
+  try {
+
+    const list = await ChatMessage.find({
+      user: req.params.userId
+    }).sort({ createdAt: 1 });
+
+    res.json({
+      success: true,
+      data: list
+    });
+
+  } catch (err) {
+
+    res.json({
+      success: false,
+      message: "Failed to load chat history"
+    });
+  }
 });
 
-// ==================== Telegram Bot ====================
-let bot = null;
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
-if (TELEGRAM_TOKEN) {
-  bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
-  function simpleTranslate(text) {
-    const isChinese = /[\u4e00-\u9fa5]/.test(text);
-    const map = { "你好": "Hello", "谢谢": "Thank you", "价格": "Price", "多少钱": "How much", "发货": "Shipping", "物流": "Tracking", "hello": "你好", "hi": "你好", "thank": "谢谢", "price": "价格" };
-    for (const [k, v] of Object.entries(map)) {
-      if (text.toLowerCase().includes(k.toLowerCase())) return { from: isChinese ? "Chinese" : "English", to: isChinese ? "English" : "Chinese", result: v };
-    }
-    return { from: isChinese ? "Chinese" : "English", to: isChinese ? "English" : "Chinese", result: isChinese ? `[EN] ${text}` : `[CN] ${text}` };
+// 修复：添加金额验证
+app.put("/api/users/:id/recharge", verifyAdmin, async (req, res) => {
+  const amount = Number(req.body.amount);
+
+  // 修复：金额验证
+  if (amount <= 0 || amount > 1000000) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid amount"
+    });
   }
-  bot.onText(/\/start/, (msg) => { bot.sendMessage(msg.chat.id, "AI translator bot started"); });
-  bot.on("message", async (msg) => {
-    const text = msg.text;
-    if (!text || text.startsWith("/")) return;
-    const chatId = msg.chat.id;
-    const username = msg.from?.first_name || msg.from?.username || "Telegram User";
-    const result = simpleTranslate(text);
-    await bot.sendMessage(chatId, `${result.from} -> ${result.to}\n\n${result.result}`);
-    io.emit("telegram-message", { chatId, username, text, translated: result.result, time: new Date().toLocaleTimeString() });
+
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "用户不存在"
+    });
+  }
+
+  user.asset = Number(user.asset || 0) + amount;
+  user.balance = user.asset;
+
+  const totalAsset =
+    Number(user.asset || 0) +
+    Number(user.lockedAsset || 0);
+
+  if (totalAsset > Number(user.vipAsset || 0)) {
+    user.vipAsset = totalAsset;
+  }
+
+  if (!Array.isArray(user.records)) user.records = [];
+  user.records.push({
+    type: "admin_recharge",
+    amount,
+    message: `Admin recharge +${amount} USDT`,
+    timestamp: new Date()
   });
-  console.log("Telegram translator bot started");
-} else {
-  console.log("TELEGRAM_TOKEN not configured; Telegram bot disabled");
-}
-// ==================== SSL 璇佷功閰嶇疆 ====================
-let sslOptions = {};
-try {
-  sslOptions = { key: fs.readFileSync(path.join(__dirname, 'key.pem')), cert: fs.readFileSync(path.join(__dirname, 'cert.pem')) };
-  console.log("鉁?SSL 璇佷功鍔犺浇鎴愬姛");
-} catch (err) {
-  console.log("鈿狅笍 鏈壘鍒?SSL 璇佷功锛屽皢浣跨敤 HTTP 妯″紡");
+
+  addUserFinanceStat(user, "recharge", amount);
+
+  stats.todayRecharge += amount;
+  stats.monthRecharge += amount;
+
+  await user.save();
+
+  res.json({
+    success: true,
+    data: user,
+    stats
+  });
+});
+
+app.put("/api/users/:id/profile", authenticateUser, async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.phone = phone || user.phone;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        balance: user.asset || 0,
+        uid: user.uid || ""
+      }
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.json({
+      success: false,
+      message: "Update profile failed"
+    });
+  }
+});
+
+app.put("/api/users/:id/withdraw", verifyAdmin, async (req, res) => {
+  const amount = Number(req.body.amount);
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: "用户不存在" });
+  }
+
+  if (amount > user.asset) {
+    return res.status(400).json({ success: false, message: "余额不足" });
+  }
+
+  user.asset -= amount;
+  if (!Array.isArray(user.records)) user.records = [];
+  user.records.push({
+    type: "admin_withdraw",
+    amount,
+    message: `Admin withdraw -${amount} USDT`,
+    timestamp: new Date()
+  });
+
+  addUserFinanceStat(user, "withdraw", amount);
+
+  stats.todayWithdraw += amount;
+  stats.monthWithdraw += amount;
+
+  await user.save();
+  res.json({ success: true, data: user, stats });
+});
+
+ app.put(
+  "/api/users/:id/freeze",
+  verifyAdmin,
+  async (req, res) => {
+
+  const user =
+  await User.findById(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: "用户不存在" });
+  }
+
+  user.status = user.status === "冻结" ? "正常" : "冻结";
+  user.records.push(user.status === "冻结" ? "账户冻结" : "账户解冻");
+
+  await user.save();
+  res.json({ success: true, data: user });
+});
+
+app.put(
+  "/api/users/:id/blacklist",
+  verifyAdmin,
+  async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: "用户不存在" });
+  }
+
+  user.status = "拉黑";
+  user.records.push("账户拉黑");
+
+  await user.save();
+  res.json({ success: true, data: user });
+});
+
+/* KYC */
+app.post("/api/kyc/submit", authenticateUser, async (req, res) => {
+  try {
+    const user = req.user;
+    const { frontImage, backImage, imageUrl, documentType } = req.body;
+
+    const docFront = frontImage || imageUrl || "";
+    const docBack = backImage || "";
+
+    if (!docFront && !docBack) {
+      return res.json({
+        success: false,
+        message: "Please upload at least one document image"
+      });
+    }
+
+    const existing = await KYC.findOne({
+      userId: user._id.toString(),
+      status: { $in: ["未审核", "Pending"] }
+    });
+
+    const payload = {
+      userId: user._id.toString(),
+      uid: user.uid || "",
+      name: user.name || user.username || "",
+      email: user.email || "",
+      frontImage: docFront,
+      backImage: docBack,
+      documentType: documentType || "KYC Document",
+      status: "未审核",
+      createdAt: new Date()
+    };
+
+    const item = existing
+      ? await KYC.findByIdAndUpdate(existing._id, payload, { new: true })
+      : await KYC.create(payload);
+
+    user.kyc = "未审核";
+    if (!user.records) user.records = [];
+    user.records.push({
+      message: "KYC submitted for review",
+      timestamp: new Date()
+    });
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "KYC submitted successfully",
+      data: item
+    });
+  } catch (err) {
+    console.log("KYC submit error:", err);
+    res.json({
+      success: false,
+      message: "KYC submission failed"
+    });
+  }
+});
+
+app.get("/api/kyc", verifyAdmin, async (req, res) => {
+  const list = await KYC.find();
+  res.json({ success: true, data: list });
+});
+
+app.put("/api/kyc/:id/approve", verifyAdmin, async (req, res) => {
+  const item = await KYC.findByIdAndUpdate(
+    req.params.id,
+    { status: "已通过" },
+    { new: true }
+  );
+
+  res.json({ success: true, data: item });
+});
+
+app.put("/api/kyc/:id/reject", verifyAdmin, async (req, res) => {
+  const item = await KYC.findByIdAndUpdate(
+    req.params.id,
+    { status: "已驳回" },
+    { new: true }
+  );
+
+  res.json({ success: true, data: item });
+});
+
+/* 订单 */
+app.get("/api/orders", verifyAdmin, async (req, res) => {
+  const orders = await Order.find();
+  res.json({ success: true, data: orders });
+});
+
+app.put("/api/orders/:id/complete", verifyAdmin, async (req, res) => {
+  const order = await Order.findOneAndUpdate(
+    { id: req.params.id },
+    { status: "已完成", remark: "订单已完成" },
+    { new: true }
+  );
+
+  res.json({ success: true, data: order });
+});
+
+app.put("/api/orders/:id/cancel", verifyAdmin, async (req, res) => {
+  const order = await Order.findOneAndUpdate(
+    { id: req.params.id },
+    { status: "已取消", remark: "订单已取消" },
+    { new: true }
+  );
+
+  res.json({ success: true, data: order });
+});
+
+
+/* AI Quant 订单模型 */
+
+const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
+  userId: String,
+  username: String,
+  market: String,
+  product: String,
+  level: String,
+  assistantType: String,
+  clientTimeZone: String,
+  strategy: String,
+  amount: Number,
+  profitRate: Number,
+  profit: Number,
+  finalRate: Number,
+  manualRate: Number,
+
+  subTrades: {
+  type: Array,
+  default: []
+},
+  status: String,
+  startTime: Date,
+  endTime: Date,
+  completedAt: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}));
+
+function publicAIQuantOrder(order) {
+  const obj = typeof order.toObject === "function" ? order.toObject() : { ...order };
+  if (obj.status !== "Completed") {
+    obj.profit = 0;
+    obj.profitRate = 0;
+    obj.finalRate = 0;
+    obj.subTrades = [];
+    obj.completedAt = null;
+  } else {
+    obj.subTrades = sanitizeSubTradesForOrderSession(obj);
+  }
+  return obj;
 }
 
-let server;
-if (sslOptions.key) {
-  server = https.createServer(sslOptions, app);
-} else {
-  const http = require('http');
-  server = http.createServer(app);
+const TokenYieldOrder = mongoose.model("TokenYieldOrder", new mongoose.Schema({
+
+  userId: String,
+
+  planName: String,
+
+  amount: Number,
+
+  days: Number,
+
+  rate: Number,
+
+  profit: Number,
+
+  status: String,
+
+  startTime: Date,
+
+  endTime: Date,
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+
+}));
+
+/* 后台订单接口 */
+
+app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
+
+  try {
+
+    const aiOrders =
+    await AIQuantOrder.find()
+    .sort({ createdAt: -1 });
+
+    const tokenOrders =
+    await TokenYieldOrder.find()
+    .sort({ createdAt: -1 });
+
+    const users = await User.find();
+
+    const userMap = {};
+
+    users.forEach(user => {
+      userMap[user._id.toString()] = user;
+    });
+
+    const aiList = aiOrders.map(order => {
+
+      const user =
+      userMap[order.userId] || {};
+
+      return {
+
+        id: order._id,
+
+        userId: order.userId,
+
+        uid: user.uid || "",
+
+        user:
+        user.name ||
+        order.username ||
+        user.email ||
+        "Unknown",
+
+        email: user.email || "",
+
+        type:
+        order.assistantType === "AI Assistant"
+        ? "AI Assistant"
+       : "AI Quant",
+
+        coin:
+         order.strategy ||
+         order.product ||
+         "",
+
+        amount: order.amount || 0,
+
+        profit: order.status === "Completed" ? (order.profit || 0) : 0,
+
+        rate: order.status === "Completed" ? (order.profitRate || 0) : 0,
+
+        status: order.status || "",
+
+        time:
+        new Date(order.createdAt)
+        .toLocaleString(),
+
+        remark:
+        (order.market || "") +
+        " / " +
+        (order.level || "")
+      };
+    });
+
+    const tokenList =
+    tokenOrders.map(order => {
+
+      const user =
+      userMap[order.userId] || {};
+
+      return {
+
+        id: order._id,
+
+        userId: order.userId,
+
+        uid: user.uid || "",
+
+        user:
+        user.name ||
+        user.email ||
+        "Unknown",
+
+        email: user.email || "",
+
+        type: "Token Yield",
+
+        coin: order.planName || "",
+
+        amount: order.amount || 0,
+
+        profit: order.profit || 0,
+
+        rate: order.rate || 0,
+
+        status: order.status || "",
+
+        time:
+        new Date(order.createdAt)
+        .toLocaleString(),
+
+        remark:
+        (order.days || 0) +
+        " days"
+      };
+    });
+
+    res.json({
+      success: true,
+      data: [...aiList, ...tokenList]
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.json({
+      success: false,
+      message: "Failed to load trade orders"
+    });
+
+  }
+
+});
+
+/* AI Quant 收益配置 */
+
+const aiQuantRates = {
+  "Basic Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 3, max: 5 },
+    weeklyLimit: 2,
+    minBalance: 100,
+    maxBalance: 9999
+  },
+
+  "Advanced Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 4, max: 6 },
+    weeklyLimit: 3,
+    minBalance: 10000,
+    maxBalance: 49999
+  },
+
+  "Quantum Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 5, max: 7 },
+    weeklyLimit: 4,
+    minBalance: 50000,
+    maxBalance: 99999
+  },
+
+  "Pro Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 6, max: 8 },
+    weeklyLimit: 20,
+    minBalance: 100000,
+    maxBalance: 299999
+  },
+
+  "Institutional Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 7, max: 9 },
+    weeklyLimit: 25,
+    minBalance: 300000,
+    maxBalance: 799999
+  },
+
+  "Elite Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 8, max: 10 },
+    weeklyLimit: 30,
+    minBalance: 800000,
+    maxBalance: 999999
+  },
+
+  "Daily Quant": {
+    week1: { min: 8, max: 10 },
+    afterWeek1: { min: 8, max: 10 },
+    dailyLimit: 1,
+    minBalance: 1000000,
+    maxBalance: Infinity
+  }
+};
+
+
+function getClientTimeZone(req) {
+  return (
+    (req.body && req.body.clientTimeZone) ||
+    req.headers["x-client-timezone"] ||
+    process.env.MARKET_TIMEZONE ||
+    "America/New_York"
+  );
 }
 
-const io = new Server(server, { cors: { origin: "*", methods: ["GET","POST"] } });
+function normalizeMarketTimeZone(timeZone) {
+  return timeZone || process.env.MARKET_TIMEZONE || "America/New_York";
+}
+
+function getHourInTimeZone(timeZone, date = new Date()) {
+  const safeTimeZone = normalizeMarketTimeZone(timeZone);
+
+  try {
+    const hourText = new Intl.DateTimeFormat("en-US", {
+      timeZone: safeTimeZone,
+      hour: "2-digit",
+      hour12: false
+    }).format(date);
+
+    return Number(hourText) % 24;
+  } catch (err) {
+    return date.getHours();
+  }
+}
+
+function getWeekdayInTimeZone(timeZone, date = new Date()) {
+  const safeTimeZone = normalizeMarketTimeZone(timeZone);
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: safeTimeZone,
+      weekday: "short"
+    }).format(date);
+  } catch (err) {
+    return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()];
+  }
+}
+
+function isWeekendMarketSession(timeZone, date = new Date()) {
+  const weekday = getWeekdayInTimeZone(timeZone, date);
+  return weekday === "Sat" || weekday === "Sun";
+}
+
+function isAfterHoursMarketSession(timeZone, date = new Date()) {
+  const hour = getHourInTimeZone(timeZone, date);
+  return hour >= 18 || hour < 9;
+}
+
+function getAvailableAIMarkets(timeZone, date = new Date()) {
+  if (isWeekendMarketSession(timeZone, date)) {
+    return aiMarkets.filter(item => item.market === "Crypto");
+  }
+
+  if (isAfterHoursMarketSession(timeZone, date)) {
+    return aiMarkets.filter(item =>
+      item.market === "Crypto" ||
+      item.market === "Futures"
+    );
+  }
+
+  return aiMarkets;
+}
+
+function isMarketAllowedForSession(market, timeZone, date = new Date()) {
+  if (isWeekendMarketSession(timeZone, date)) {
+    return market === "Crypto";
+  }
+
+  if (isAfterHoursMarketSession(timeZone, date)) {
+    return market === "Crypto" || market === "Futures";
+  }
+
+  return true;
+}
+
+function sanitizeSubTradesForOrderSession(order) {
+  const trades = Array.isArray(order.subTrades) ? order.subTrades : [];
+  const sessionDate = new Date(order.startTime || order.createdAt || order.completedAt || new Date());
+  const allowedMarkets = getAvailableAIMarkets(order.clientTimeZone, sessionDate);
+
+  return trades.map((trade, index) => {
+    if (isMarketAllowedForSession(trade.market, order.clientTimeZone, sessionDate)) {
+      return trade;
+    }
+
+    const replacement = allowedMarkets[index % allowedMarkets.length];
+    return {
+      ...trade,
+      market: replacement.market,
+      product: replacement.product
+    };
+  });
+}
+
+const aiMarkets = [
+  { market: "Crypto", product: "BTC/USDT" },
+  { market: "Crypto", product: "ETH/USDT" },
+  { market: "Stock", product: "NVDA" },
+  { market: "Stock", product: "TSLA" },
+  { market: "Fund", product: "AI Tech Fund" },
+  { market: "Futures", product: "Gold Futures" }
+];
+
+/* 管理员权限验证 */
+function verifyAdmin(req, res, next){
+
+  const token = req.headers["admin-token"] || getBearerToken(req);
+  const adminPayload = verifySignedToken(token, ADMIN_TOKEN);
+
+  if(token !== ADMIN_TOKEN && (!adminPayload || adminPayload.type !== "admin")){
+
+    return res.status(403).json({
+      success:false,
+      message:"Unauthorized Admin Access"
+    });
+  }
+
+  next();
+}
+
+function getUserLevel(asset, lockedAsset) {
+  // 总资产 = 可用余额 + 锁定余额
+  const totalAsset = Number(asset || 0) + Number(lockedAsset || 0);
+  
+  if (totalAsset >= 1000000) return "Daily Quant";
+  if (totalAsset >= 800000) return "Elite Quant";
+  if (totalAsset >= 300000) return "Institutional Quant";
+  if (totalAsset >= 100000) return "Pro Quant";
+  if (totalAsset >= 50000) return "Quantum Quant";
+  if (totalAsset >= 10000) return "Advanced Quant";
+  return "Basic Quant";
+}
+
+function randomBetween(min, max) {
+  return Math.random() * (max - min) + min;
+
+}
+
+function getAITradeCount(planName){
+
+  if(planName === "Short-Term AI Quant"){
+    return Math.floor(Math.random() * 3) + 4;
+  }
+
+  if(planName === "Mid-Term Smart Growth"){
+    return Math.floor(Math.random() * 6) + 10;
+  }
+
+  if(planName === "Long-Term AI Wealth Plan"){
+    return 30;
+  }
+
+  return Math.floor(Math.random() * 3) + 4;
+}
+
+function generateSubTrades(finalRate, strategy, timeZone, sessionDate = new Date()) {
+
+  let count = 5;
+
+if(strategy === "Short-Term AI Quant"){
+  count =
+  Math.floor(Math.random() * 3) + 4;
+}
+
+if(strategy === "Mid-Term Smart Growth"){
+  count =
+  Math.floor(Math.random() * 6) + 10;
+}
+
+if(strategy === "Long-Term AI Wealth Plan"){
+  count = 30;
+}
+
+  const list = [];
+
+  let total = 0;
+
+  for (let i = 0; i < count - 1; i++) {
+
+    const markets = getAvailableAIMarkets(timeZone, sessionDate);
+    const market =
+    markets[
+      Math.floor(Math.random() * markets.length)
+    ];
+
+    const rate =
+    Number(
+      randomBetween(-2.5, 4.5).toFixed(2)
+    );
+
+    total += rate;
+
+    list.push({
+
+      no: i + 1,
+
+      market: market.market,
+
+      product: market.product,
+
+      direction:
+      rate >= 0
+      ? "Up"
+      : "Down",
+
+      rate: rate,
+
+      result:
+      rate >= 0
+      ? "Profit"
+      : "Loss"
+    });
+  }
+
+  const markets = getAvailableAIMarkets(timeZone, sessionDate);
+  const lastMarket =
+  markets[
+    Math.floor(Math.random() * markets.length)
+  ];
+
+  const lastRate =
+  Number(
+    (finalRate - total).toFixed(2)
+  );
+
+  list.push({
+
+    no: count,
+
+    market: lastMarket.market,
+
+    product: lastMarket.product,
+
+    direction:
+    lastRate >= 0
+    ? "Up"
+    : "Down",
+
+    rate: lastRate,
+
+    result:
+    lastRate >= 0
+    ? "Profit"
+    : "Loss"
+  });
+
+  return list;
+}
+
+
+async function prepareAIQuantSettlement(order) {
+  let profitRate = Number(order.manualRate || 0);
+
+  if (!profitRate) {
+    if (order.assistantType === "AI Assistant") {
+      if (order.strategy === "Short-Term AI Quant") {
+        const setting = aiQuantRates[order.level] || aiQuantRates["Basic Quant"];
+        const firstOrder = await AIQuantOrder.findOne({
+          userId: order.userId,
+          strategy: "Short-Term AI Quant",
+          level: order.level,
+          assistantType: "AI Assistant"
+        }).sort({ createdAt: 1 });
+
+        let rateRange = setting.week1;
+        if (firstOrder) {
+          const daysPassed = (new Date() - new Date(firstOrder.createdAt)) / (1000 * 60 * 60 * 24);
+          if (daysPassed >= 7) {
+            rateRange = setting.afterWeek1;
+          }
+        }
+
+        profitRate = Number(randomBetween(rateRange.min, rateRange.max).toFixed(2));
+      } else if (order.strategy === "Mid-Term Smart Growth") {
+        profitRate = Number(randomBetween(12, 18).toFixed(2));
+      } else if (order.strategy === "Long-Term AI Wealth Plan") {
+        profitRate = Number(randomBetween(25, 40).toFixed(2));
+      } else {
+        profitRate = Number(randomBetween(8, 10).toFixed(2));
+      }
+    } else {
+      const setting = aiQuantRates[order.level] || aiQuantRates["Basic Quant"];
+      const firstOrder = await AIQuantOrder.findOne({
+        userId: order.userId,
+        level: order.level,
+        assistantType: { $ne: "AI Assistant" }
+      }).sort({ createdAt: 1 });
+
+      let rateRange = setting.week1;
+      if (firstOrder) {
+        const daysPassed = (new Date() - new Date(firstOrder.createdAt)) / (1000 * 60 * 60 * 24);
+        if (daysPassed >= 7) {
+          rateRange = setting.afterWeek1;
+        }
+      }
+
+      profitRate = Number(randomBetween(rateRange.min, rateRange.max).toFixed(2));
+    }
+  }
+
+  const profit = Number((Number(order.amount || 0) * profitRate / 100).toFixed(2));
+
+  order.profitRate = profitRate;
+  order.finalRate = profitRate;
+  order.profit = profit;
+  order.subTrades = generateSubTrades(profitRate, order.strategy, order.clientTimeZone, order.startTime || order.createdAt);
+
+  return { profitRate, profit };
+}
+
+/* AI Assistant 方案交易 */
+
+// 修复：添加用户认证
+app.post("/api/ai/assistant/start", authenticateUser, async (req, res) => {
+
+  try {
+
+    const {
+      amount,
+      strategy
+    } = req.body;
+
+    const user = req.user;
+
+    if (!user) {
+
+      return res.json({
+        success:false,
+        message:"User not found"
+      });
+    }
+
+    const asset =
+    Number(user.asset || 0);
+
+    const tradeAmount =
+    Number(amount || 0);
+
+    if (tradeAmount <= 0) {
+
+      return res.json({
+        success:false,
+        message:"Please enter amount"
+      });
+    }
+
+    if (tradeAmount > asset) {
+
+      return res.json({
+        success:false,
+        message:"Insufficient balance"
+      });
+    }
+
+    const now = new Date();
+    const totalAsset =
+Number(user.asset || 0)
++
+Number(user.lockedAsset || 0);
+
+const levelAsset =
+Math.max(
+  totalAsset,
+  Number(user.vipAsset || 0)
+);
+
+const level =
+getUserLevel(levelAsset);
+
+const setting = aiQuantRates[level];
+
+    /* 只有方案1限制次数 */
+
+if(strategy === "Short-Term AI Quant"){
+
+  const dayStart = new Date(now);
+  dayStart.setHours(0,0,0,0);
+
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const dailyCount =
+  await AIQuantOrder.countDocuments({
+    userId: user._id,
+    strategy: "Short-Term AI Quant",
+    level: level,
+    assistantType: "AI Assistant",
+    createdAt: {
+      $gte: dayStart,
+      $lt: dayEnd
+    }
+  });
+
+  if(dailyCount >= 1){
+    return res.json({
+      success:false,
+      message:"Daily Short-Term AI Quant limit reached. Please try again tomorrow."
+    });
+  }
+}
+
+const firstOrder = await AIQuantOrder.findOne({
+  userId: user._id,
+  strategy: "Short-Term AI Quant",
+  level: level,
+assistantType: "AI Assistant"
+}).sort({ createdAt: 1 });
+
+let rateRange = setting.week1;
+
+if(firstOrder){
+
+  const firstTime = new Date(firstOrder.createdAt);
+
+  const daysPassed =
+  (now - firstTime) / (1000 * 60 * 60 * 24);
+
+  if(daysPassed >= 7){
+    rateRange = setting.afterWeek1;
+  }
+}
+
+   const profitRate = 0;
+    const profit = 0;
+
+    let durationMinutes = 120;
+
+if(strategy === "Short-Term AI Quant"){
+
+  durationMinutes =
+  Math.floor(Math.random() * 61) + 60;
+}
+
+if(strategy === "Mid-Term Smart Growth"){
+
+  durationMinutes =
+  Math.floor(Math.random() * 4321) + 10080;
+}
+
+if(strategy === "Long-Term AI Wealth Plan"){
+
+  durationMinutes = 43200;
+}
+
+    const endTime =
+    new Date(
+      now.getTime() +
+      durationMinutes * 60 * 1000
+    );
+
+    const subTrades = [];
+
+const clientTimeZone = getClientTimeZone(req);
+let availableMarkets = getAvailableAIMarkets(clientTimeZone);
+const selected =
+availableMarkets[
+  Math.floor(Math.random() * availableMarkets.length)
+];
+
+
+    const order =
+    await AIQuantOrder.create({
+
+      userId: user._id,
+
+      username:
+      user.name ||
+      user.email,
+
+      market:
+      selected.market,
+
+      product:
+      selected.product,
+
+      level: level,
+       assistantType: "AI Assistant",
+      clientTimeZone,
+
+      strategy,
+
+      amount:
+      tradeAmount,
+
+      profitRate,
+
+      profit,
+
+      finalRate:
+      profitRate,
+
+       subTrades,
+
+      status:
+      "Running",
+
+      startTime:
+      now,
+
+      endTime
+    });
+
+    // 修复：正确锁定资金（从asset扣除，增加到lockedAsset）
+    user.asset = asset - tradeAmount;
+    user.balance = user.asset;
+    user.lockedAsset = (user.lockedAsset || 0) + tradeAmount;
+
+    if(!user.records){
+      user.records = [];
+    }
+
+   user.records.push(
+  `AI Assistant started: ${strategy}, locked ${tradeAmount} USDT`
+);
+
+    await user.save();
+
+    res.json({
+  success:true,
+  message:"AI Assistant started",
+  order: publicAIQuantOrder(order),
+  balance: user.asset
+  });
+
+  } catch(err){
+
+    console.log(err);
+
+    res.json({
+      success:false,
+      message:"AI Assistant failed"
+    });
+  }
+
+});
+
+/* 开始 AI Quant 交易 */
+
+// 修复：添加用户认证
+app.post("/api/ai/quant/start", authenticateUser, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const user = req.user;
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    const asset = Number(user.asset || 0);
+    const tradeAmount = Number(amount || 0);
+
+    if (tradeAmount <= 0) {
+      return res.json({
+        success: false,
+        message: "Please enter trade amount"
+      });
+    }
+
+    if (tradeAmount > asset) {
+      return res.json({
+        success: false,
+        message: "Insufficient balance"
+      });
+    }
+
+   const totalAsset =
+  Number(user.asset || 0)
+  +
+  Number(user.lockedAsset || 0);
+
+const levelAsset =
+  Math.max(
+    totalAsset,
+    Number(user.vipAsset || 0)
+  );
+
+const level =
+  getUserLevel(levelAsset);
+
+const setting =
+  aiQuantRates[level];
+
+const now = new Date();
+
+const dayStart = new Date(now);
+dayStart.setHours(0, 0, 0, 0);
+
+const dayEnd = new Date(dayStart);
+dayEnd.setDate(dayEnd.getDate() + 1);
+
+const dailyCount =
+await AIQuantOrder.countDocuments({
+  userId: user._id,
+  assistantType: { $ne: "AI Assistant" },
+  createdAt: {
+    $gte: dayStart,
+    $lt: dayEnd
+  }
+});
+
+if (dailyCount >= 1) {
+  return res.json({
+    success: false,
+    message: "AI Quant Trading is limited to 1 trade per day. Please try again tomorrow."
+  });
+}
+
+if (setting.weeklyLimit) {
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const weeklyCount =
+  await AIQuantOrder.countDocuments({
+    userId: user._id,
+    assistantType: { $ne: "AI Assistant" },
+    createdAt: {
+      $gte: weekStart
+    }
+  });
+
+  if (weeklyCount >= setting.weeklyLimit) {
+    return res.json({
+      success: false,
+      message: "Weekly AI Quant trade limit reached"
+    });
+  }
+}
+
+    const profitRate = 0;
+const subTrades = [];
+const profit = 0;
+
+   const clientTimeZone = getClientTimeZone(req);
+let availableMarkets = getAvailableAIMarkets(clientTimeZone);
+
+const selected =
+availableMarkets[
+  Math.floor(Math.random() * availableMarkets.length)
+];
+
+
+    const durationMinutes =
+Math.floor(Math.random() * 61) + 60;
+
+const endTime =
+new Date(
+  now.getTime() +
+  durationMinutes * 60 * 1000
+);
+
+    const order = await AIQuantOrder.create({
+      userId: user._id,
+      username: user.name || user.username || user.email,
+      market: selected.market,
+      product: selected.product,
+      level,
+      clientTimeZone,
+      amount: tradeAmount,
+      profitRate,
+       profit,
+
+       finalRate: profitRate,
+
+      subTrades,
+      status: "Running",
+      startTime: now,
+      endTime
+    });
+
+
+
+// 修复：正确锁定资金（从asset扣除，增加到lockedAsset）
+user.asset = asset - tradeAmount;
+user.balance = user.asset;
+user.lockedAsset = (user.lockedAsset || 0) + tradeAmount;
+
+if(!user.records){
+  user.records = [];
+}
+
+user.records.push(
+  `AI Quant locked ${tradeAmount} USDT for trading`
+);
+
+await user.save();
+
+res.json({
+  success: true,
+  message: "AI Quant trade started",
+  order: publicAIQuantOrder(order)
+});
+
+  } catch (error) {
+    console.log(error);
+
+    res.json({
+      success: false,
+      message: "AI Quant trade failed"
+    });
+  }
+});
+
+/* 结算 AI Quant 交易 */
+
+app.post("/api/ai/quant/settle/:id", authenticateUser, async (req, res) => {
+  try {
+    const order = await AIQuantOrder.findById(req.params.id);
+
+    if (!order) {
+      return res.json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    if (order.userId.toString() !== req.userId) {
+      return res.json({
+        success: false,
+        message: "Not your order"
+      });
+    }
+
+    if (order.status === "Completed") {
+      return res.json({
+        success: false,
+        message: "Order already completed"
+      });
+    }
+
+    const now = new Date();
+
+    if (now < new Date(order.endTime)) {
+      return res.json({
+        success: false,
+        message: "Trade is still running"
+      });
+    }
+
+    const user = req.user;
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // 修复：正确结算（解锁本金并返还利润）
+    await prepareAIQuantSettlement(order);
+    const amount = order.amount;
+    const profit = Number(order.profit || 0);
+    user.lockedAsset = Math.max(0, (user.lockedAsset || 0) - amount);
+    user.asset = Number(user.asset || 0) + amount + profit;
+    user.balance = user.asset;
+
+    user.records.push(
+      `AI Quant completed: +${profit.toFixed(2)} USDT`
+    );
+
+    order.status = "Completed";
+    order.completedAt = now;
+    if (!Array.isArray(order.subTrades) || order.subTrades.length === 0) {
+      order.subTrades = generateSubTrades(order.profitRate || order.finalRate || 0, order.strategy, order.clientTimeZone, order.startTime || order.createdAt);
+    }
+
+    await user.save();
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "AI Quant trade completed",
+      order: publicAIQuantOrder(order),
+      balance: user.asset
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.json({
+      success: false,
+      message: "Settlement failed"
+    });
+  }
+});
+
+/* 修改 AI 收益率 */
+
+app.post("/api/admin/ai-quant/set-rate/:id", verifyAdmin, async (req, res) => {
+
+  try {
+
+    const { rate } = req.body;
+
+    const order =
+    await AIQuantOrder.findById(
+      req.params.id
+    );
+
+    if (!order) {
+
+      return res.json({
+        success:false,
+        message:"Order not found"
+      });
+    }
+
+    if (order.status !== "Running") {
+
+      return res.json({
+        success:false,
+        message:"Only running orders can be edited"
+      });
+    }
+
+    const finalRate =
+    Number(rate || 0);
+
+    order.manualRate = finalRate;
+
+    order.profitRate = 0;
+
+    order.finalRate = 0;
+
+    order.profit = 0;
+
+    order.subTrades = [];
+
+    await order.save();
+
+    res.json({
+      success:true,
+      order
+    });
+
+  } catch(err) {
+
+    console.log(err);
+
+    res.json({
+      success:false,
+      message:"Set rate failed"
+    });
+  }
+
+});
+
+/* 获取 AI Quant 订单 */
+
+app.get("/api/ai/quant/orders/:userId", authenticateUser, async (req, res) => {
+  if (req.params.userId !== req.userId) {
+    return res.json({
+      success: false,
+      message: "Access denied"
+    });
+  }
+  const orders = await AIQuantOrder.find({
+    userId: req.params.userId
+  }).sort({ createdAt: -1 });
+
+  res.json({
+    success: true,
+    data: orders.map(publicAIQuantOrder)
+  });
+});
+
+/* 交易 */
+app.get("/api/trades", verifyAdmin, async (req, res) => {
+  const trades = await Trade.find();
+  res.json({ success: true, data: trades });
+});
+
+app.put("/api/trades/:id/start", verifyAdmin, async (req, res) => {
+  const trade = await Trade.findOneAndUpdate(
+    { id: req.params.id },
+    { status: "运行中" },
+    { new: true }
+  );
+
+  res.json({ success: true, data: trade });
+});
+
+app.put("/api/trades/:id/pause", verifyAdmin, async (req, res) => {
+  const trade = await Trade.findOneAndUpdate(
+    { id: req.params.id },
+    { status: "暂停" },
+    { new: true }
+  );
+
+  res.json({ success: true, data: trade });
+});
+
+app.put("/api/trades/:id/close", verifyAdmin, async (req, res) => {
+  const trade = await Trade.findOneAndUpdate(
+    { id: req.params.id },
+    { status: "已结束" },
+    { new: true }
+  );
+
+  res.json({ success: true, data: trade });
+});
+
+/* 客服工单 */
+app.get("/api/tickets", (req, res) => {
+  res.json({
+    success: true,
+    data: tickets
+  });
+});
+
+app.post("/api/tickets", (req, res) => {
+  const { user, email, type, priority, message } = req.body;
+
+  const newTicket = {
+    id: "TCK" + Date.now(),
+    user,
+    email,
+    type,
+    priority,
+    status: "待处理",
+    message,
+    reply: "",
+    time: new Date().toLocaleString()
+  };
+
+  tickets.push(newTicket);
+
+  res.json({
+    success: true,
+    data: newTicket
+  });
+});
+
+
+app.get("/api/token-yield/orders", authenticateUser, async (req, res) => {
+  try {
+    const user = req.user;
+    const orders = await TokenYieldOrder.find({ userId: user._id.toString() })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: orders.map(order => ({
+        id: order._id,
+        userId: order.userId,
+        type: "Token Yield",
+        planName: order.planName || "",
+        coin: order.planName || "",
+        amount: order.amount || 0,
+        profit: order.profit || 0,
+        rate: order.rate || 0,
+        days: order.days || 0,
+        status: order.status || "Running",
+        startTime: order.startTime,
+        endTime: order.endTime,
+        createdAt: order.createdAt,
+        time: order.createdAt
+      }))
+    });
+  } catch (err) {
+    console.log("Load user token yield orders error:", err);
+    res.json({
+      success: false,
+      message: "Failed to load yield orders"
+    });
+  }
+});
+
+app.post("/api/token-yield/start", authenticateUser, async (req, res) => {
+
+  try{
+
+    const { planName, amount, days, rate } = req.body;
+    const user = req.user;
+
+    if(!user){
+      return res.json({
+        success:false,
+        message:"User not found"
+      });
+    }
+
+    const asset = Number(user.asset || 0);
+    const investAmount = Number(amount || 0);
+
+    if(!investAmount || investAmount <= 0){
+      return res.json({
+        success:false,
+        message:"Please enter amount"
+      });
+    }
+
+    if(investAmount > asset){
+      return res.json({
+        success:false,
+        message:"Insufficient balance"
+      });
+    }
+
+    // 修复：正确锁定资金
+    user.asset = asset - investAmount;
+    user.balance = user.asset;
+    user.lockedAsset = (user.lockedAsset || 0) + investAmount;
+    user.tokenLocked = (user.tokenLocked || 0) + investAmount;
+
+    const profit =
+    investAmount * (Number(rate || 0) / 100);
+
+    const now = new Date();
+
+    const endTime = new Date(
+      now.getTime() +
+      Number(days || 7) * 24 * 60 * 60 * 1000
+    );
+
+    const order = await TokenYieldOrder.create({
+      userId: user._id,
+      planName,
+      amount: investAmount,
+      days: Number(days || 7),
+      rate: Number(rate || 0),
+      profit,
+      status: "Running",
+      startTime: now,
+      endTime
+    });
+
+    if(!user.records){
+      user.records = [];
+    }
+
+    user.records.push(
+      `Token Yield Locked ${investAmount} USDT`
+    );
+
+    await user.save();
+
+    res.json({
+      success:true,
+      order,
+      balance: user.asset
+    });
+
+  }catch(err){
+
+    console.log(err);
+
+    res.json({
+      success:false,
+      message:"Server error"
+    });
+  }
+
+});
+
+/* 提现申请：提交后立即扣除余额 */
+// 修复：添加用户认证
+app.post("/api/withdraw", authenticateUser, async (req, res) => {
+  try {
+
+    console.log("Withdraw body:", req.body);
+    const { address, amount, network } = req.body;
+    const user = req.user;
+
+    const withdrawAmount = Number(amount || 0);
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    if (withdrawAmount <= 0) {
+      return res.json({
+        success: false,
+        message: "Invalid amount"
+      });
+    }
+
+    // 最低提现额限制
+    if (withdrawAmount < 10) {
+      return res.json({
+        success: false,
+        message: "Minimum withdrawal amount is 10 USDT"
+      });
+    }
+
+    // 大额提现需要KYC验证
+    if (withdrawAmount >= 1000) {
+      if (!user.kyc || user.kyc !== "已通过") {
+        return res.json({
+          success: false,
+          message: "Withdrawals over 1000 USDT require KYC verification. Please complete KYC first.",
+          code: "KYC_REQUIRED"
+        });
+      }
+    }
+
+    if (withdrawAmount > Number(user.asset || 0)) {
+      return res.json({
+        success: false,
+        message: "Insufficient balance"
+      });
+    }
+
+    // 检查地址是否为空
+    if (!address || address.trim() === "") {
+      return res.json({
+        success: false,
+        message: "Withdrawal address is required"
+      });
+    }
+
+    // 检查网络类型
+    const validNetworks = ["TRC20", "ERC20", "BEP20", "BTC"];
+    if (!network || !validNetworks.includes(network)) {
+      return res.json({
+        success: false,
+        message: "Invalid network. Please select TRC20, ERC20, BEP20, or BTC"
+      });
+    }
+
+    user.asset = Number(user.asset || 0) - withdrawAmount;
+    user.balance = user.asset;
+
+    if (!user.records) {
+      user.records = [];
+    }
+
+    // 记录提现信息
+    user.records.push({
+      message: `Withdrawal submitted -${withdrawAmount} USDT to ${address.substring(0, 10)}...`,
+      amount: withdrawAmount,
+      address: address,
+      network: network,
+      kycRequired: withdrawAmount >= 1000,
+      timestamp: new Date()
+    });
+
+    await user.save();
+
+    const withdraw = {
+      id: Date.now(),
+      userId: user._id,
+      uid: user.uid,
+      email: user.email,
+      address: address,
+      amount: withdrawAmount,
+      network: network,
+      time: new Date().toLocaleString(),
+      status: "Pending"
+    };
+
+    await Withdrawal.create(withdraw);
+
+    res.json({
+      success: true,
+      data: withdraw,
+      balance: user.asset,
+      message: withdrawAmount >= 1000 
+        ? "Withdrawal request submitted. It will be processed after KYC verification."
+        : "Withdrawal submitted successfully"
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.json({
+      success: false,
+      message: "Withdrawal failed"
+    });
+  }
+});
+
+/* 获取提现列表 */
+app.get("/api/withdrawals", verifyAdmin, async (req, res) => {
+  try {
+    const list = await Withdrawal.find().sort({ createdAt: -1 });
+    res.json(list);
+  } catch (err) {
+    console.log(err);
+    res.json([]);
+  }
+});
+
+/* 更新提现状态：拒绝时自动退款 */
+app.post("/api/withdraw/status", verifyAdmin, async (req, res) => {
+  try {
+    const { id, status } = req.body;
+    const item = await Withdrawal.findById(id);
+
+    if (!item) {
+      return res.json({
+        success: false,
+        message: "提现记录不存在"
+      });
+    }
+
+    if (item.status === "Approved" || item.status === "Rejected") {
+      return res.json({
+        success: false,
+        message: "该提现已审核"
+      });
+    }
+
+    // 如果拒绝提现 -> 自动退款
+    if (status === "Rejected") {
+      const user = await User.findById(item.userId);
+      if (user) {
+        const refundAmount = Number(item.amount || 0);
+        user.asset = Number(user.asset || 0) + refundAmount;
+        user.balance = user.asset;
+
+        if (!user.records) {
+          user.records = [];
+        }
+        user.records.push({
+          message: `Withdrawal rejected, refunded +${refundAmount} USDT`,
+          timestamp: new Date()
+        });
+        await user.save();
+      }
+    }
+
+    // 更新状态
+    item.status = status;
+    await item.save();
+
+    res.json({
+      success: true,
+      data: item
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.json({
+      success: false,
+      message: "更新提现状态失败"
+    });
+  }
+});
+
+// ==================== 忘记密码功能 ====================
+// crypto is required at the top of this file
+
+// 存储重置令牌（生产环境建议使用Redis或数据库）
+const resetTokens = new Map();
+
+// 清理过期令牌的定时任务（每小时执行一次）
+setInterval(() => {
+    const now = Date.now();
+    for (const [token, data] of resetTokens.entries()) {
+        if (now > data.expiresAt) {
+            resetTokens.delete(token);
+        }
+    }
+}, 3600000);
+
+// 发送重置链接
+app.post("/api/forgot-password", async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.json({ success: false, message: "Email is required" });
+        }
+        
+        // 简单的邮箱格式验证
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.json({ success: false, message: "Please enter a valid email address" });
+        }
+        
+        const user = await User.findOne({ email });
+        
+        // 为了安全，即使用户不存在也返回成功（防止邮箱枚举攻击）
+        if (!user) {
+            return res.json({ 
+                success: true, 
+                message: "If the email exists, a reset link has been sent" 
+            });
+        }
+        
+        // 生成重置令牌
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = Date.now() + 3600000; // 1小时后过期
+        
+        resetTokens.set(token, {
+            userId: user._id,
+            email: user.email,
+            expiresAt: expiresAt
+        });
+        
+        // 构建重置链接
+        const resetUrl = `${req.protocol}://${req.get('host')}/reset_password.html?token=${token}`;
+        
+        // 开发环境打印日志，生产环境应发送邮件
+        console.log(`========== 密码重置请求 ==========`);
+        console.log(`用户邮箱: ${email}`);
+        console.log(`重置令牌: ${token}`);
+        console.log(`重置链接: ${resetUrl}`);
+        console.log(`令牌有效期: 1小时`);
+        console.log(`==================================`);
+        
+        // TODO: 生产环境需要配置邮件服务发送邮件
+        // 例如使用 nodemailer 发送邮件
+        
+        res.json({ 
+            success: true, 
+            message: "If the email exists, a reset link has been sent",
+            resetTokenSent: true
+        });
+        
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        res.json({ success: false, message: "Server error, please try again later" });
+    }
+});
+
+// 验证重置令牌
+app.get("/api/verify-reset-token", async (req, res) => {
+    try {
+        const { token } = req.query;
+        
+        if (!token) {
+            return res.json({ success: false, message: "Token is required" });
+        }
+        
+        const tokenData = resetTokens.get(token);
+        
+        if (!tokenData) {
+            return res.json({ success: false, message: "Invalid or expired token" });
+        }
+        
+        if (Date.now() > tokenData.expiresAt) {
+            resetTokens.delete(token);
+            return res.json({ success: false, message: "Token has expired" });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: "Token is valid",
+            email: tokenData.email
+        });
+        
+    } catch (error) {
+        console.error("Verify token error:", error);
+        res.json({ success: false, message: "Server error" });
+    }
+});
+
+// 管理员登录接口
+app.post("/api/admin/login", async (req, res) => {
+    const { username, password } = req.body;
+    
+    // 验证用户名和密码
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        const token = signToken({
+            type: "admin",
+            username,
+            exp: Date.now() + ADMIN_TOKEN_TTL_MS
+        }, ADMIN_TOKEN);
+
+        res.json({
+            success: true,
+            message: "Login successful",
+            token
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            message: "Invalid username or password"
+        });
+    }
+});
+
+// 重置密码
+app.post("/api/reset-password", async (req, res) => {
+    try {
+        const { token, newPassword, confirmPassword } = req.body;
+        
+        if (!token || !newPassword) {
+            return res.json({ success: false, message: "Token and new password are required" });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.json({ success: false, message: "Password must be at least 6 characters" });
+        }
+        
+        if (newPassword !== confirmPassword) {
+            return res.json({ success: false, message: "Passwords do not match" });
+        }
+        
+        const tokenData = resetTokens.get(token);
+        
+        if (!tokenData) {
+            return res.json({ success: false, message: "Invalid or expired token" });
+        }
+        
+        if (Date.now() > tokenData.expiresAt) {
+            resetTokens.delete(token);
+            return res.json({ success: false, message: "Token has expired" });
+        }
+        
+        const user = await User.findById(tokenData.userId);
+        if (!user) {
+            return res.json({ success: false, message: "User not found" });
+        }
+        
+        // 更新密码
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+        
+        // 删除已使用的令牌
+        resetTokens.delete(token);
+        
+        // 添加记录
+        user.records.push({ 
+            message: "Password reset successfully", 
+            timestamp: new Date() 
+        });
+        await user.save();
+        
+        res.json({ success: true, message: "Password has been reset successfully" });
+        
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.json({ success: false, message: "Server error, please try again later" });
+    }
+});
+
+/* Socket 客服 */
+
+let aiSupportEnabled = true;
+let serviceOnline = false;
+const onlineSupportUsers = new Map();
+
+async function getAIReply(message) {
+
+  return "Hello, AI support has received your message. A customer service agent will assist you shortly.";
+}
 
 io.on("connection", (socket) => {
-  console.log("Client connected", socket.id);
-  socket.on("send-to-telegram", async (data) => {
-    try {
-      const { chatId, text } = data;
-      if (!chatId || !text) return;
-      if (!bot) { console.log("Telegram Bot is not started"); return; }
-      await bot.sendMessage(chatId, text);
-      console.log(`Sent Telegram reply [${chatId}]: ${text}`);
-    } catch (err) {
-      console.error("Telegram reply failed:", err.message);
+
+  console.log("客服系统用户已连接");
+
+  socket.on("service_online", () => {
+
+    serviceOnline = true;
+
+    console.log("人工客服在线");
+  });
+
+  socket.on("service_offline", () => {
+
+    serviceOnline = false;
+
+    console.log("人工客服离线");
+  });
+
+  socket.on("set_ai_support", (value) => {
+
+    aiSupportEnabled = value;
+
+    console.log("AI客服状态:", aiSupportEnabled);
+  });
+
+  socket.on("user_online", (data = {}) => {
+    const userId = String(data.userId || data.user || "");
+    if (!userId) return;
+
+    socket.userId = userId;
+    onlineSupportUsers.set(userId, {
+      socketId: socket.id,
+      userId,
+      uid: data.uid || "",
+      username: data.username || data.name || "",
+      email: data.email || "",
+      onlineAt: new Date()
+    });
+
+    io.emit("user_status", { userId, online: true });
+  });
+
+  socket.on("user_offline", (data = {}) => {
+    const userId = String(data.userId || data.user || socket.userId || "");
+    if (!userId) return;
+
+    onlineSupportUsers.delete(userId);
+    io.emit("user_status", { userId, online: false });
+  });
+
+  socket.on("send_message", async (data) => {
+
+    console.log("收到消息:", data);
+
+    /* 保存用户消息 */
+
+    const savedMessage =
+    await ChatMessage.create({
+
+      user: data.user,
+
+      username:
+      data.username ||
+      data.userName ||
+      "",
+
+      uid:
+      data.uid || "",
+
+      serviceId:
+      data.serviceId || "",
+
+      sender:
+      data.sender,
+
+      type:
+      data.type || "text",
+
+      message:
+      data.message || "",
+
+      imageUrl:
+      data.imageUrl || "",
+
+      time:
+     new Date().toLocaleTimeString()
+    });
+
+    /* 广播用户消息 */
+
+    io.emit("receive_message", {
+
+      id: savedMessage._id,
+
+      user: savedMessage.user,
+
+      sender: savedMessage.sender,
+
+      type: savedMessage.type,
+
+      message: savedMessage.message,
+
+      imageUrl: savedMessage.imageUrl,
+
+      username: savedMessage.username,
+
+      uid: savedMessage.uid,
+
+      serviceId: savedMessage.serviceId,
+
+      time: savedMessage.time
+
+    });
+
+    /* AI 自动回复 */
+
+    if (
+
+      data.sender === "user" &&
+
+      aiSupportEnabled === true &&
+
+      serviceOnline === false
+
+    ) {
+
+      setTimeout(async () => {
+
+        const aiReply =
+        await getAIReply(data.message);
+
+        /* 保存AI回复 */
+
+        const savedAIMessage =
+        await ChatMessage.create({
+
+          user: data.user,
+
+          username:
+          data.username ||
+          data.userName ||
+          "",
+
+          uid:
+          data.uid || "",
+
+          serviceId: "",
+
+          sender: "service",
+
+          type: "text",
+
+          message: aiReply,
+
+          imageUrl: "",
+
+          time:
+          data.time ||
+          new Date().toLocaleTimeString()
+        });
+
+        /* 广播AI回复 */
+
+        io.emit("receive_message", {
+
+          id: savedAIMessage._id,
+
+          user: savedAIMessage.user,
+
+          sender: savedAIMessage.sender,
+
+          type: savedAIMessage.type,
+
+          message: savedAIMessage.message,
+
+          imageUrl: savedAIMessage.imageUrl,
+
+          username: savedAIMessage.username,
+
+          uid: savedAIMessage.uid,
+
+          serviceId: savedAIMessage.serviceId,
+
+          time: savedAIMessage.time
+
+        });
+
+      }, 800);
     }
   });
-  socket.on("disconnect", () => console.log("Client disconnected", socket.id));
+
+  socket.on("disconnect", () => {
+
+    console.log("客服系统用户已断开");
+  });
+
 });
 
-server.listen(PORT, () => {
-  console.log(`\n${"=".repeat(55)}`);
-  console.log("AI assistant started");
-  console.log(`${"=".repeat(55)}`);
-  console.log(`Local URL: ${sslOptions.key ? "https" : "http"}://localhost:${PORT}`);
-  console.log(`Static files: ${publicPath}`);
-  console.log(`AI mode: ${OPENAI_API_KEY ? "OpenAI enabled" : "mock mode"}`);
-  console.log(`Telegram: ${TELEGRAM_TOKEN ? "bot started" : "not configured"}`);
-  console.log(`${"=".repeat(55)}\n`);
-});
+async function settleExpiredTokenYieldOrders(){
 
-process.on("uncaughtException", (err) => {
-  console.error("Uncaught exception:", err);
-});
+  try{
 
+    const now = new Date();
+
+    const orders = await TokenYieldOrder.find({
+      status: "Running",
+      endTime: { $lte: now }
+    });
+
+    for(const order of orders){
+
+      const user = await User.findById(order.userId);
+
+      if(!user) continue;
+
+      const amount = Number(order.amount || 0);
+      const profit = Number(order.profit || 0);
+
+      // 修复：正确结算
+      user.lockedAsset = Math.max(0, (user.lockedAsset || 0) - amount);
+      user.asset = Number(user.asset || 0) + amount + profit;
+      user.balance = user.asset;
+
+      user.tokenLocked = Number(user.tokenLocked || 0) - amount;
+
+      user.totalProfit = Number(user.totalProfit || 0) + profit;
+      user.tokenProfit = Number(user.tokenProfit || 0) + profit;
+      user.tokenTodayProfit = Number(user.tokenTodayProfit || 0) + profit;
+
+      if(!user.records){
+        user.records = [];
+      }
+
+      user.records.push(
+        `Token Yield completed +${profit.toFixed(2)} USDT`
+      );
+
+      order.status = "Completed";
+      order.completedAt = now;
+      if (!Array.isArray(order.subTrades) || order.subTrades.length === 0) {
+        order.subTrades = generateSubTrades(order.profitRate || order.finalRate || 0, order.strategy, order.clientTimeZone, order.startTime || order.createdAt);
+      }
+
+      await user.save();
+      await order.save();
+    }
+
+  }catch(err){
+    console.log("Settle Token Yield error:", err);
+  }
+}
+
+async function settleExpiredAIQuantOrders(){
+
+  try{
+
+    const now = new Date();
+
+    const orders = await AIQuantOrder.find({
+      status: "Running",
+      endTime: { $lte: now }
+    });
+
+    for(const order of orders){
+
+      const user = await User.findById(order.userId);
+
+      if(!user) continue;
+
+      const amount = Number(order.amount || 0);
+      await prepareAIQuantSettlement(order);
+      const profit = Number(order.profit || 0);
+
+      // 修复：正确结算
+      user.lockedAsset = Math.max(0, (user.lockedAsset || 0) - amount);
+      user.asset = Number(user.asset || 0) + amount + profit;
+      user.balance = user.asset;
+
+      user.totalProfit = Number(user.totalProfit || 0) + profit;
+
+      if(!user.records){
+        user.records = [];
+      }
+
+      user.records.push(
+  order.assistantType === "AI Assistant"
+? `AI Assistant completed +${profit.toFixed(2)} USDT`
+: `AI Quant completed +${profit.toFixed(2)} USDT`
+
+);
+      order.status = "Completed";
+      order.completedAt = now;
+
+      await user.save();
+      await order.save();
+    }
+
+  }catch(err){
+    console.log("Settle AI Quant error:", err);
+  }
+}
+
+settleExpiredAIQuantOrders();
+
+setInterval(
+  settleExpiredAIQuantOrders,
+  60000
+);
+
+settleExpiredTokenYieldOrders();
+
+setInterval(
+  settleExpiredTokenYieldOrders,
+  60000
+);
+
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+});
