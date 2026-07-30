@@ -1556,6 +1556,70 @@ function isWeekendMarketSession(timeZone, date = new Date()) {
   return weekday === "Sat" || weekday === "Sun";
 }
 
+function getDatePartsInTimeZone(timeZone, date = new Date()) {
+  const safeTimeZone = normalizeMarketTimeZone(timeZone);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: safeTimeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+
+  const values = {};
+  parts.forEach(part => {
+    if (part.type !== "literal") {
+      values[part.type] = Number(part.value);
+    }
+  });
+
+  return values;
+}
+
+function getZonedMidnightUtc(timeZone, year, month, day) {
+  const safeTimeZone = normalizeMarketTimeZone(timeZone);
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: safeTimeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(utcGuess);
+
+  const values = {};
+  parts.forEach(part => {
+    if (part.type !== "literal") {
+      values[part.type] = Number(part.value);
+    }
+  });
+
+  const shownHour = values.hour === 24 ? 0 : values.hour;
+  const shownUtc = Date.UTC(
+    values.year,
+    values.month - 1,
+    values.day,
+    shownHour,
+    values.minute || 0,
+    values.second || 0
+  );
+  const offset = shownUtc - utcGuess.getTime();
+
+  return new Date(utcGuess.getTime() - offset);
+}
+
+function getClientDayRange(timeZone, date = new Date()) {
+  const parts = getDatePartsInTimeZone(timeZone, date);
+  const dayStart = getZonedMidnightUtc(timeZone, parts.year, parts.month, parts.day);
+  const nextDayUtc = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0));
+  const nextParts = getDatePartsInTimeZone(timeZone, nextDayUtc);
+  const dayEnd = getZonedMidnightUtc(timeZone, nextParts.year, nextParts.month, nextParts.day);
+
+  return { dayStart, dayEnd };
+}
+
 function isAfterHoursMarketSession(timeZone, date = new Date()) {
   const hour = getHourInTimeZone(timeZone, date);
   return hour >= 18 || hour < 9;
@@ -1949,11 +2013,8 @@ const setting = aiQuantRates[level];
 
 if(strategy === "Short-Term AI Quant"){
 
-  const dayStart = new Date(now);
-  dayStart.setHours(0,0,0,0);
-
-  const dayEnd = new Date(dayStart);
-  dayEnd.setDate(dayEnd.getDate() + 1);
+  const clientTimeZone = getClientTimeZone(req);
+  const { dayStart, dayEnd } = getClientDayRange(clientTimeZone, now);
 
   const dailyCount =
   await AIQuantOrder.countDocuments({
@@ -2161,11 +2222,8 @@ const setting =
 
 const now = new Date();
 
-const dayStart = new Date(now);
-dayStart.setHours(0, 0, 0, 0);
-
-const dayEnd = new Date(dayStart);
-dayEnd.setDate(dayEnd.getDate() + 1);
+const clientTimeZone = getClientTimeZone(req);
+const { dayStart, dayEnd } = getClientDayRange(clientTimeZone, now);
 
 const dailyCount =
 await AIQuantOrder.countDocuments({
@@ -2210,7 +2268,6 @@ if (setting.weeklyLimit) {
 const subTrades = [];
 const profit = 0;
 
-   const clientTimeZone = getClientTimeZone(req);
 let availableMarkets = getAvailableAIMarkets(clientTimeZone);
 
 const selected =
