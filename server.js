@@ -2556,7 +2556,7 @@ app.post("/api/tickets", (req, res) => {
     status: "待处理",
     message,
     reply: "",
-    time: new Date().toLocaleString()
+    time: new Date().toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })
   };
 
   tickets.push(newTicket);
@@ -2784,7 +2784,7 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
       address: address,
       amount: withdrawAmount,
       network: network,
-      time: new Date().toLocaleString(),
+      time: new Date().toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }),
       status: "Pending"
     };
 
@@ -3162,7 +3162,7 @@ io.on("connection", (socket) => {
       data.imageUrl || "",
 
       time:
-     new Date().toLocaleTimeString()
+     new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })
     });
 
     /* 广播用户消息 */
@@ -3235,7 +3235,7 @@ io.on("connection", (socket) => {
 
           time:
           data.time ||
-          new Date().toLocaleTimeString()
+          new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })
         });
 
         /* 广播AI回复 */

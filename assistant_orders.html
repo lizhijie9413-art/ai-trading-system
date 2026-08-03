@@ -290,7 +290,7 @@ let allOrders = [];
 let currentFilter = "all";
 
 function money(n){
-  return "$" + Number(n || 0).toLocaleString(undefined,{
+  return "$" + Number(n || 0).toLocaleString("en-US",{
     minimumFractionDigits:2,
     maximumFractionDigits:2
   });
@@ -309,7 +309,15 @@ function plusMoney(n){
 
 function formatTime(t){
   if(!t) return "-";
-  return new Date(t).toLocaleString();
+  return new Date(t).toLocaleString("en-US", {
+    year:"numeric",
+    month:"numeric",
+    day:"numeric",
+    hour:"numeric",
+    minute:"2-digit",
+    second:"2-digit",
+    hour12:true
+  });
 }
 
 function setFilter(type, btn){

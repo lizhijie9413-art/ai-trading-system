@@ -240,7 +240,7 @@ async function loadHistory(){
           color: "green",
           desc: "Wallet Funding",
           status: "Completed",
-          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }) : "-"
         });
         totalDeposit += amount;
       }
@@ -252,7 +252,7 @@ async function loadHistory(){
           color: "red",
           desc: "Withdrawal Request",
           status: "Pending",
-          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }) : "-"
         });
         totalWithdraw += amount;
       }
@@ -264,7 +264,7 @@ async function loadHistory(){
           color: "green",
           desc: "Withdrawal Refund",
           status: "Completed",
-          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }) : "-"
         });
       }
       else if(text.includes("AI Quant completed") || text.includes("AI Assistant completed")){
@@ -275,7 +275,7 @@ async function loadHistory(){
           color: "purple",
           desc: "AI Trading Profit",
           status: "Auto Settled",
-          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }) : "-"
         });
         totalProfit += amount;
       }
@@ -287,7 +287,7 @@ async function loadHistory(){
           color: "purple",
           desc: "Token Yield Profit",
           status: "Auto Settled",
-          time: record.timestamp ? new Date(record.timestamp).toLocaleString() : "-"
+          time: record.timestamp ? new Date(record.timestamp).toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }) : "-"
         });
         totalProfit += amount;
       }
@@ -311,7 +311,7 @@ async function loadHistory(){
             color: "red",
             desc: `${item.network || "Wallet"} Withdrawal`,
             status: item.status || "Pending",
-            time: item.time || new Date(item.createdAt).toLocaleString()
+            time: item.time || new Date(item.createdAt).toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })
           });
           totalWithdraw += (item.amount || 0);
         }

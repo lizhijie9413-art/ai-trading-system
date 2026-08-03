@@ -520,7 +520,7 @@ function getCurrentUser() {
 
 // ==================== 格式化金额 ====================
 function formatMoney(value){
-    return "$" + Number(value || 0).toLocaleString(undefined, {
+    return "$" + Number(value || 0).toLocaleString("en-US", {
         minimumFractionDigits:2,
         maximumFractionDigits:2
     });
@@ -531,6 +531,19 @@ function formatPercent(value, decimals = 2, showPlus = false){
     if(!Number.isFinite(num)) return decimals === 1 ? "0.0%" : "0.00%";
     const prefix = showPlus && num > 0 ? "+" : "";
     return prefix + num.toFixed(decimals) + "%";
+}
+
+function formatUSTime(value){
+    if(!value) return "-";
+    return new Date(value).toLocaleString("en-US", {
+        year:"numeric",
+        month:"numeric",
+        day:"numeric",
+        hour:"numeric",
+        minute:"2-digit",
+        second:"2-digit",
+        hour12:true
+    });
 }
 
 
@@ -756,11 +769,11 @@ function renderOrders() {
                 </div>
                 <div class="statement-box">
                     <span>Start Time</span>
-                    <strong>${order.startTime ? new Date(order.startTime).toLocaleString() : "-"}</strong>
+                    <strong>${order.startTime ? formatUSTime(order.startTime) : "-"}</strong>
                 </div>
                 <div class="statement-box">
                     <span>${order.status === "Completed" ? "Completed Time" : "End Time"}</span>
-                    <strong>${completedTime ? new Date(completedTime).toLocaleString() : (order.endTime ? new Date(order.endTime).toLocaleString() : "-")}</strong>
+                    <strong>${completedTime ? formatUSTime(completedTime) : (order.endTime ? formatUSTime(order.endTime) : "-")}</strong>
                 </div>
             </div>
             ${detailsHtml}
