@@ -87,9 +87,44 @@ body::before{
 }
 
 .balance{
-  font-size:54px;
+  max-width:100%;
+  font-size:48px;
+  line-height:1.05;
   font-weight:900;
-  letter-spacing:-2px;
+  letter-spacing:0;
+  white-space:nowrap;
+  overflow:hidden;
+}
+
+.balance.balance-long{
+  font-size:42px;
+}
+
+.balance.balance-xl{
+  font-size:36px;
+}
+
+@media (max-width:430px){
+  .asset-card{
+    padding:22px;
+  }
+
+  .balance{
+    font-size:44px;
+  }
+
+  .balance.balance-long{
+    font-size:38px;
+  }
+
+  .balance.balance-xl{
+    font-size:32px;
+  }
+
+  .profit{
+    font-size:18px;
+    line-height:1.35;
+  }
 }
 
 .profit{
@@ -394,6 +429,16 @@ function safeNumber(value){
 
 function formatMoneyPlain(value){
   return safeNumber(value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function fitBalanceText(element, text){
+  element.classList.remove("balance-long", "balance-xl");
+  if(text.length >= 15){
+    element.classList.add("balance-xl");
+  }else if(text.length >= 13){
+    element.classList.add("balance-long");
+  }
+  element.innerText = text;
 }
 
 function formatRoi(profit, asset){
