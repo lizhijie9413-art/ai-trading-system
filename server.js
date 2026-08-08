@@ -4,6 +4,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
 const OpenAI = require("openai").default;
 const bcrypt = require("bcryptjs");
@@ -13,6 +14,8 @@ const multer = require("multer");
 const crypto = require("crypto");
 
 const app = express();
+const uploadDir = path.join(__dirname, "uploads");
+fs.mkdirSync(uploadDir, { recursive: true });
 // 修复：将管理员Token改为环境变量
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
@@ -538,7 +541,7 @@ async function authenticateUserOrAdmin(req, res, next) {
 
 const kycStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/");
+    cb(null, uploadDir);
   },
 
   filename: function (req, file, cb) {
@@ -561,17 +564,26 @@ const upload = multer({
   }
 });
 
-app.post("/api/chat/upload", authenticateUserOrAdmin, upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({
-      success: false,
-      message: "No image uploaded"
-    });
-  }
+app.post("/api/chat/upload", authenticateUserOrAdmin, (req, res) => {
+  upload.single("image")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || "Image upload failed"
+      });
+    }
 
-  res.json({
-    success: true,
-    url: "/uploads/" + req.file.filename
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No image uploaded"
+      });
+    }
+
+    res.json({
+      success: true,
+      url: "/uploads/" + req.file.filename
+    });
   });
 });
 
@@ -591,7 +603,7 @@ app.get("/api/kyc/list", verifyAdmin, (req, res) => {
   res.json(kycSubmissions);
 });
 
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(uploadDir));
 
 const PORT = process.env.PORT || 3000;
 

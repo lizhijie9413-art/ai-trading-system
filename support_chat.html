@@ -301,6 +301,9 @@ function getUserAuthHeaders(){
   if(localUser.token){
     headers.Authorization = "Bearer " + localUser.token;
   }
+  if(chatUserId && !String(chatUserId).startsWith("guest-")){
+    headers["user-id"] = chatUserId;
+  }
   return headers;
 }
 
@@ -432,8 +435,8 @@ async function sendImage(){
   const file = document.getElementById("imageInput").files[0];
   if(!file) return;
   
-  if(file.size > 5 * 1024 * 1024){
-    alert("Image size should be less than 5MB");
+  if(file.size > 20 * 1024 * 1024){
+    alert("Image size should be less than 20MB");
     return;
   }
   if(!file.type.startsWith('image/')){
