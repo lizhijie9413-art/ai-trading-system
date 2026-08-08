@@ -283,6 +283,13 @@ async function loadHistoryForUser(userId){
     }
 }
 
+async function loadAllChatHistories(){
+    const ids = users.map(u => u._id || u.id).filter(Boolean);
+    await Promise.all(ids.map(id => loadHistoryForUser(id)));
+    renderUsers();
+    renderMessages();
+}
+
 function showNewMessagePopup(data){
     const oldToast = document.querySelector(".new-message-toast");
     if(oldToast) oldToast.remove();
@@ -394,7 +401,7 @@ async function loadUsers(){
         }
 
         renderUsers();
-        renderMessages();
+        await loadAllChatHistories();
 
     }catch(err){
         console.log(err);
@@ -439,20 +446,21 @@ function renderUsers(){
 }
 
 // ==================== 切换用户 ====================
-function switchUser(id, name, uid, email){
+async function switchUser(id, name, uid, email){
     currentUserId = id;
     currentUserName = name;
     unreadMap[id] = 0;
     updateTitleNotice();
 
-    document.getElementById("chatTitle").innerText = `正在与 ${escapeHtml(name)} 聊天`;
-    document.getElementById("chatSubtitle").innerText = `用户UID: ${escapeHtml(uid)} ｜ 邮箱: ${escapeHtml(email)} ｜ 客服ID: ${serviceId}`;
+    document.getElementById("chatTitle").innerText = `姝ｅ湪涓?${escapeHtml(name)} 鑱婂ぉ`;
+    document.getElementById("chatSubtitle").innerText = `鐢ㄦ埛UID: ${escapeHtml(uid)} 锝?閭: ${escapeHtml(email)} 锝?瀹㈡湇ID: ${serviceId}`;
 
     renderUsers();
+    await loadHistoryForUser(id);
     renderMessages();
 }
 
-// ==================== 人工/AI开关 ====================
+// ==================== 浜哄伐/AI寮€鍏?====================
 function setServiceOnline(){
     serviceOnline = true;
     socket.emit("service_online");
