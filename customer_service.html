@@ -94,6 +94,32 @@ body{
 }
 .upload-btn{display:flex;align-items:center}
 #imageInput{display:none}
+.new-message-toast{
+  position:fixed;
+  right:24px;
+  top:24px;
+  z-index:9999;
+  min-width:280px;
+  max-width:360px;
+  padding:16px 18px;
+  border-radius:16px;
+  background:linear-gradient(135deg,#7c3aed,#2563eb);
+  color:#fff;
+  box-shadow:0 18px 42px rgba(0,0,0,.38);
+  font-size:15px;
+  line-height:1.45;
+  cursor:pointer;
+  animation:toastIn .22s ease-out;
+}
+.new-message-toast strong{
+  display:block;
+  font-size:16px;
+  margin-bottom:4px;
+}
+@keyframes toastIn{
+  from{opacity:0;transform:translateY(-12px)}
+  to{opacity:1;transform:translateY(0)}
+}
 .status-bar{
   padding:8px 18px;background:#101014;border-top:1px solid #222;
   color:#aaa;font-size:13px;
@@ -257,9 +283,32 @@ async function loadHistoryForUser(userId){
     }
 }
 
+function showNewMessagePopup(data){
+    const oldToast = document.querySelector(".new-message-toast");
+    if(oldToast) oldToast.remove();
+
+    const userName = data.username || data.uid || "Customer";
+    const messageText = data.type === "image" ? "[Image]" : (data.message || "New message");
+    const toast = document.createElement("div");
+    toast.className = "new-message-toast";
+    toast.innerHTML = `<strong>New customer message</strong><div>${escapeHtml(userName)}: ${escapeHtml(messageText)}</div>`;
+    toast.onclick = () => {
+        if(data.user){
+            const found = users.find(u => String(u._id || u.id) === String(data.user));
+            if(found){
+                switchUser(found._id || found.id, found.name || found.username || "Unknown", found.uid || "", found.email || "");
+            }
+        }
+        toast.remove();
+    };
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 6500);
+}
+
 function notifyNewMessage(data){
     if(data.sender === "service") return;
     playNewMessageSound();
+    showNewMessagePopup(data);
     if ("Notification" in window && Notification.permission === "granted") {
         new Notification("New customer message", {
             body: (data.username || data.uid || "Customer") + ": " + (data.message || "[image]")
@@ -311,12 +360,19 @@ socket.on("user_status", (data) => {
 socket.on("receive_message", (data) => {
     const userId = data.user;
     if(!chatRecords[userId]) chatRecords[userId] = [];
-    chatRecords[userId].push(data);
+    chatRecords[userId].push(normalizeChatMessage(data));
+
+    if(data.sender !== "service"){
+        notifyNewMessage(data);
+    }
+
     if(userId !== currentUserId){
         unreadMap[userId] = (unreadMap[userId] || 0) + 1;
+        updateTitleNotice();
         renderUsers();
         return;
     }
+
     renderMessages();
 });
 
