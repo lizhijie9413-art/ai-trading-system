@@ -219,6 +219,44 @@ function playNewMessageSound(){
     }
 }
 
+function getAdminAuthHeaders(){
+    return { "admin-token": ADMIN_TOKEN };
+}
+
+function normalizeChatMessage(item){
+    return {
+        id: item.id || item._id || "",
+        user: item.user || "",
+        username: item.username || item.userName || "",
+        uid: item.uid || "",
+        serviceId: item.serviceId || "",
+        sender: item.sender || "user",
+        type: item.type || "text",
+        message: item.message || "",
+        imageUrl: item.imageUrl || "",
+        time: item.time || "Now"
+    };
+}
+
+async function loadHistoryForUser(userId){
+    if(!userId) return;
+    try{
+        const res = await fetch(API_BASE + "/api/chat/history/" + userId, {
+            headers: getAdminAuthHeaders()
+        });
+        const result = await res.json();
+
+        if(result.success && Array.isArray(result.data)){
+            chatRecords[userId] = result.data.map(normalizeChatMessage);
+            if(userId === currentUserId){
+                renderMessages();
+            }
+        }
+    }catch(err){
+        console.log("Load customer chat history failed:", err);
+    }
+}
+
 function notifyNewMessage(data){
     if(data.sender === "service") return;
     playNewMessageSound();
@@ -434,6 +472,7 @@ async function sendImage(){
     try {
         const res = await fetch(`${API_BASE}/api/chat/upload`, {
             method: "POST",
+            headers: getAdminAuthHeaders(),
             body: formData
         });
         const result = await res.json();

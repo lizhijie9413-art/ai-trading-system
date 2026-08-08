@@ -562,6 +562,13 @@ const upload = multer({
 });
 
 app.post("/api/chat/upload", authenticateUserOrAdmin, upload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "No image uploaded"
+    });
+  }
+
   res.json({
     success: true,
     url: "/uploads/" + req.file.filename
@@ -950,12 +957,21 @@ app.delete("/api/users/:id", verifyAdmin, async (req, res) => {
   }
 });
 
-app.get("/api/chat/history/:userId", authenticateUser, async (req, res) => {
+app.get("/api/chat/history/:userId", authenticateUserOrAdmin, async (req, res) => {
 
   try {
 
+    const requestedUserId = String(req.params.userId || "");
+
+    if (!req.admin && (!req.user || String(req.user._id) !== requestedUserId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden"
+      });
+    }
+
     const list = await ChatMessage.find({
-      user: req.params.userId
+      user: requestedUserId
     }).sort({ createdAt: 1 });
 
     res.json({
@@ -3107,6 +3123,8 @@ io.on("connection", (socket) => {
     if (!userId) return;
 
     socket.userId = userId;
+    socket.join("support_user:" + userId);
+    socket.emit("service_status", { serviceOnline, aiSupportEnabled });
     onlineSupportUsers.set(userId, {
       socketId: socket.id,
       userId,
@@ -3124,6 +3142,7 @@ io.on("connection", (socket) => {
     if (!userId) return;
 
     onlineSupportUsers.delete(userId);
+    socket.leave("support_user:" + userId);
     io.emit("user_status", { userId, online: false });
   });
 

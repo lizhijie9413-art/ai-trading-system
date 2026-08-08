@@ -296,6 +296,14 @@ const serviceId = "CS-001";
 const chatBody = document.getElementById("chatBody");
 const input = document.getElementById("messageInput");
 
+function getUserAuthHeaders(){
+  const headers = {};
+  if(localUser.token){
+    headers.Authorization = "Bearer " + localUser.token;
+  }
+  return headers;
+}
+
 function emitUserOnline(){
   socket.emit("user_online", {
     userId: chatUserId,
@@ -315,6 +323,39 @@ let isTyping = false;
 
 function saveChatRecords(){
   localStorage.setItem("supportChatRecords_" + chatUserId, JSON.stringify(chatRecords));
+}
+
+function normalizeChatMessage(item){
+  return {
+    user: item.user || chatUserId,
+    username: item.username || chatUsername,
+    uid: item.uid || chatUid,
+    serviceId: item.serviceId || serviceId,
+    sender: item.sender || "service",
+    type: item.type || "text",
+    message: item.message || "",
+    imageUrl: item.imageUrl || "",
+    time: item.time || nowTime()
+  };
+}
+
+async function loadChatHistory(){
+  if(!localUser.token || String(chatUserId).startsWith("guest-")) return;
+
+  try{
+    const res = await fetch(API_BASE_URL + "/api/chat/history/" + chatUserId, {
+      headers: getUserAuthHeaders()
+    });
+    const result = await res.json();
+
+    if(result.success && Array.isArray(result.data)){
+      chatRecords = result.data.map(normalizeChatMessage);
+      saveChatRecords();
+      renderMessages();
+    }
+  }catch(err){
+    console.log("Load chat history failed:", err);
+  }
 }
 
 function nowTime(){
@@ -406,6 +447,7 @@ async function sendImage(){
   try{
     const res = await fetch(`${API_BASE_URL}/api/chat/upload`, {
       method: "POST",
+      headers: getUserAuthHeaders(),
       body: formData
     });
     const result = await res.json();
@@ -441,6 +483,7 @@ function handleEnter(event){
 // ==================== Socket事件 ====================
 socket.on("connect", () => {
   emitUserOnline();
+  loadChatHistory();
   console.log("✅ Socket连接成功, id:", socket.id);
   document.getElementById("supportStatus").innerHTML = "Online";
   document.getElementById("supportStatus").style.color = "#00f5a0";
