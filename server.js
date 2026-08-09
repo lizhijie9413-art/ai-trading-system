@@ -1097,33 +1097,59 @@ app.put("/api/users/:id/profile", authenticateUser, async (req, res) => {
 });
 
 app.put("/api/users/:id/withdraw", verifyAdmin, async (req, res) => {
-  const amount = Number(req.body.amount);
-  const user = await User.findById(req.params.id);
+  try {
+    const amount = Number(req.body.amount);
 
-  if (!user) {
-    return res.status(404).json({ success: false, message: "用户不存在" });
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid withdrawal amount"
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    const availableBalance = Number(user.asset ?? user.availableBalance ?? user.balance ?? 0);
+
+    if (amount > availableBalance) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient available balance"
+      });
+    }
+
+    user.asset = availableBalance - amount;
+    user.balance = user.asset;
+
+    if (!Array.isArray(user.records)) user.records = [];
+    user.records.push({
+      type: "admin_withdraw",
+      amount,
+      message: `Admin withdraw -${amount} USDT`,
+      timestamp: new Date()
+    });
+
+    addUserFinanceStat(user, "withdraw", amount);
+
+    stats.todayWithdraw += amount;
+    stats.monthWithdraw += amount;
+
+    await user.save();
+    res.json({ success: true, data: user, stats });
+  } catch (err) {
+    console.log("Admin withdraw error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Admin withdraw failed"
+    });
   }
-
-  if (amount > user.asset) {
-    return res.status(400).json({ success: false, message: "余额不足" });
-  }
-
-  user.asset -= amount;
-  if (!Array.isArray(user.records)) user.records = [];
-  user.records.push({
-    type: "admin_withdraw",
-    amount,
-    message: `Admin withdraw -${amount} USDT`,
-    timestamp: new Date()
-  });
-
-  addUserFinanceStat(user, "withdraw", amount);
-
-  stats.todayWithdraw += amount;
-  stats.monthWithdraw += amount;
-
-  await user.save();
-  res.json({ success: true, data: user, stats });
 });
 
  app.put(
