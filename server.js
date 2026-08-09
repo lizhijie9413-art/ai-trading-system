@@ -564,7 +564,7 @@ const upload = multer({
   }
 });
 
-app.post("/api/chat/upload", authenticateUserOrAdmin, (req, res) => {
+app.post("/api/chat/upload", (req, res) => {
   upload.single("image")(req, res, (err) => {
     if (err) {
       return res.status(400).json({
@@ -579,6 +579,8 @@ app.post("/api/chat/upload", authenticateUserOrAdmin, (req, res) => {
         message: "No image uploaded"
       });
     }
+
+    console.log("Chat image uploaded:", req.file.filename);
 
     res.json({
       success: true,
@@ -1648,6 +1650,21 @@ function getClientDayRange(timeZone, date = new Date()) {
   return { dayStart, dayEnd };
 }
 
+function getClientWeekRange(timeZone, date = new Date()) {
+  const parts = getDatePartsInTimeZone(timeZone, date);
+  const localNoonUtc = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12, 0, 0));
+  const weekday = localNoonUtc.getUTCDay();
+  const daysFromMonday = (weekday + 6) % 7;
+  const mondayUtc = new Date(Date.UTC(parts.year, parts.month - 1, parts.day - daysFromMonday, 0, 0, 0));
+  const mondayParts = getDatePartsInTimeZone(timeZone, mondayUtc);
+  const weekStart = getZonedMidnightUtc(timeZone, mondayParts.year, mondayParts.month, mondayParts.day);
+  const nextMondayUtc = new Date(Date.UTC(mondayParts.year, mondayParts.month - 1, mondayParts.day + 7, 0, 0, 0));
+  const nextMondayParts = getDatePartsInTimeZone(timeZone, nextMondayUtc);
+  const weekEnd = getZonedMidnightUtc(timeZone, nextMondayParts.year, nextMondayParts.month, nextMondayParts.day);
+
+  return { weekStart, weekEnd };
+}
+
 function isAfterHoursMarketSession(timeZone, date = new Date()) {
   const hour = getHourInTimeZone(timeZone, date);
   return hour >= 18 || hour < 9;
@@ -2271,16 +2288,15 @@ if (dailyCount >= 1) {
 }
 
 if (setting.weeklyLimit) {
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
-  weekStart.setHours(0, 0, 0, 0);
+  const { weekStart, weekEnd } = getClientWeekRange(clientTimeZone, now);
 
   const weeklyCount =
   await AIQuantOrder.countDocuments({
     userId: user._id,
     assistantType: { $ne: "AI Assistant" },
     createdAt: {
-      $gte: weekStart
+      $gte: weekStart,
+      $lt: weekEnd
     }
   });
 

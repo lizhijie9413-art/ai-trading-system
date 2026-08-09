@@ -704,7 +704,9 @@ function getDateKey(date){
 
 function getWeekStart(date){
     const d = new Date(date);
-    d.setDate(d.getDate() - d.getDay());
+    const day = d.getDay();
+    const daysFromMonday = (day + 6) % 7;
+    d.setDate(d.getDate() - daysFromMonday);
     d.setHours(0, 0, 0, 0);
     return d;
 }
@@ -972,7 +974,8 @@ const response = await fetch(
       "user-id": localUser.id   // 添加认证头
     },
     body:JSON.stringify({
-      amount: amount            // 不需要传userId了
+      amount: amount,
+      clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })
   }
 );
