@@ -30,6 +30,11 @@ body{
   width:100%;height:42px;border:none;outline:none;border-radius:10px;
   background:#24242b;color:white;padding:0 14px;font-size:15px;
 }
+.toggle-users-btn{
+  width:100%;margin-top:10px;padding:10px;border:none;border-radius:10px;
+  background:#2b2148;color:#c4b5fd;font-weight:800;cursor:pointer;
+}
+.toggle-users-btn.active{background:#7c3aed;color:white}
 .user-list{overflow-y:auto;flex:1}
 .user-item{
   padding:18px 20px;border-bottom:1px solid #2a2a2a;cursor:pointer;
@@ -213,6 +218,7 @@ let chatRecords = {};
 let unreadMap = {};
 let onlineUsers = {};
 let lastMessageMap = {};
+let showAllUsers = false;
 let totalUnread = 0;
 const defaultTitle = document.title;
 const reportedMessageIds = new Set();
@@ -429,27 +435,33 @@ socket.on("admin_new_user_message", (data) => {
 
 // ==================== 加载用户列表 ====================
 async function loadUsers(){
+    userList.innerHTML = "<div style='padding:20px;color:#aaa'>Loading users...</div>";
+
     try{
         const res = await fetch(`${API_BASE}/api/users`, {
             headers: { "admin-token": ADMIN_TOKEN }
         });
         const result = await res.json();
 
-        users = result.data || [];
-
-        if(users.length > 0 && !currentUserId){
-            const first = users[0];
-            currentUserId = first._id || first.id;
-            currentUserName = first.name || first.username || "Unknown";
-            document.getElementById("chatTitle").innerText = `正在与 ${currentUserName} 聊天`;
+        if(!res.ok || result.success === false){
+            const message = result.message || "Admin token expired or users API failed";
+            userList.innerHTML = "<div style='padding:20px;color:#f87171'>" + escapeHtml(message) + "</div>";
+            return;
         }
 
+        users = Array.isArray(result.data)
+            ? result.data
+            : (Array.isArray(result.users) ? result.users : []);
+
         renderUsers();
-        await loadAllChatHistories();
+
+        if(users.length > 0){
+            await loadAllChatHistories();
+        }
 
     }catch(err){
         console.log(err);
-        userList.innerHTML = "<div style='padding:20px;color:#f87171'>用户加载失败</div>";
+        userList.innerHTML = "<div style='padding:20px;color:#f87171'>Users failed to load. Please refresh or login again.</div>";
     }
 }
 
@@ -460,9 +472,7 @@ function renderUsers(){
     const list = users.filter(u => {
         const text = `${u.uid || ""} ${u.name || ""} ${u.username || ""} ${u.email || ""}`.toLowerCase();
         const id = String(u._id || u.id || "");
-        const hasUnread = Number(unreadMap[id] || 0) > 0;
-        const isOnline = !!onlineUsers[id];
-        return text.includes(keyword) && (isOnline || hasUnread);
+        return text.includes(keyword);
     }).sort((a, b) => {
         const aId = String(a._id || a.id || "");
         const bId = String(b._id || b.id || "");
@@ -478,6 +488,13 @@ function renderUsers(){
     });
 
     userList.innerHTML = "";
+
+    if(list.length === 0){
+        userList.innerHTML = users.length === 0
+            ? "<div style='padding:20px;color:#aaa'>No users loaded. Please refresh or login again.</div>"
+            : "<div style='padding:20px;color:#aaa'>No users match this search.</div>";
+        return;
+    }
 
     list.forEach(user => {
         const id = user._id || user.id;
