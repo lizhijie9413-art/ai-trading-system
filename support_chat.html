@@ -331,18 +331,64 @@ function emitUserOffline(){
 }
 
 // ==================== 本地存储消息记录 ====================
-let chatRecords = JSON.parse(localStorage.getItem("supportChatRecords_" + chatUserId) || "[]");
+let chatRecords = [];
 let isTyping = false;
 
+function uniqueValues(values){
+  return Array.from(new Set(values.map(value => String(value || "").trim()).filter(Boolean)));
+}
+
+function getChatStorageKeys(){
+  return uniqueValues([
+    chatUserId,
+    localUser._id,
+    localUser.userId,
+    chatUid,
+    (localUser.email || "").toLowerCase()
+  ]).map(key => "supportChatRecords_" + key);
+}
+
+function messageKey(item){
+  return String(item.id || item._id || [
+    item.user || item.userId || "",
+    item.uid || "",
+    item.sender || "",
+    item.type || "",
+    item.message || "",
+    item.imageUrl || "",
+    item.time || ""
+  ].join("|"));
+}
+
+function isMessageForCurrentUser(data){
+  const messageUserId = String(data.user || data.userId || "");
+  const messageUid = String(data.uid || "");
+  const messageEmail = String(data.email || "").toLowerCase();
+  const localEmail = String(localUser.email || "").toLowerCase();
+
+  return (
+    (messageUserId && (messageUserId === String(chatUserId) || messageUserId === String(localUser._id || "") || messageUserId === String(localUser.userId || ""))) ||
+    (messageUid && messageUid === String(chatUid)) ||
+    (messageEmail && localEmail && messageEmail === localEmail)
+  );
+}
+
 function saveChatRecords(){
-  localStorage.setItem("supportChatRecords_" + chatUserId, JSON.stringify(chatRecords));
+  const data = JSON.stringify(chatRecords.slice(-300));
+  getChatStorageKeys().forEach(key => {
+    localStorage.setItem(key, data);
+  });
 }
 
 function normalizeChatMessage(item){
   return {
+    id: item.id || item._id || "",
+    _id: item._id || item.id || "",
     user: item.user || chatUserId,
+    userId: item.userId || item.user || chatUserId,
     username: item.username || chatUsername,
     uid: item.uid || chatUid,
+    email: item.email || localUser.email || "",
     serviceId: item.serviceId || serviceId,
     sender: item.sender || "service",
     type: item.type || "text",
@@ -350,6 +396,26 @@ function normalizeChatMessage(item){
     imageUrl: item.imageUrl || "",
     time: item.time || nowTime()
   };
+}
+
+function mergeChatRecords(records){
+  (records || []).map(normalizeChatMessage).forEach(item => {
+    const key = messageKey(item);
+    const exists = chatRecords.some(oldItem => messageKey(oldItem) === key);
+    if(!exists){
+      chatRecords.push(item);
+    }
+  });
+  chatRecords = chatRecords.slice(-300);
+}
+
+function loadLocalChatRecords(){
+  chatRecords = [];
+  getChatStorageKeys().forEach(key => {
+    try{
+      mergeChatRecords(JSON.parse(localStorage.getItem(key) || "[]"));
+    }catch(err){}
+  });
 }
 
 async function loadChatHistory(){
@@ -362,7 +428,7 @@ async function loadChatHistory(){
     const result = await res.json();
 
     if(result.success && Array.isArray(result.data)){
-      chatRecords = result.data.map(normalizeChatMessage);
+      mergeChatRecords(result.data);
       saveChatRecords();
       renderMessages();
     }
@@ -531,21 +597,11 @@ socket.on("disconnect", () => {
 
 socket.on("receive_message", (data) => {
   console.log("收到消息:", data);
-  if(String(data.user) !== String(chatUserId)) return;
+  if(!isMessageForCurrentUser(data)) return;
   
   showTypingIndicator(false);
   
-  chatRecords.push({
-    user: data.user,
-    username: data.username,
-    uid: data.uid,
-    serviceId: data.serviceId || serviceId,
-    sender: data.sender,
-    type: data.type || "text",
-    message: data.message || "",
-    imageUrl: data.imageUrl || "",
-    time: data.time || nowTime()
-  });
+  mergeChatRecords([data]);
   
   saveChatRecords();
   renderMessages();
@@ -596,6 +652,7 @@ input.addEventListener("input", () => {
 });
 
 // ==================== 初始化 ====================
+loadLocalChatRecords();
 renderMessages();
 </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>客服聊天系统</title>
+<title>Customer Service</title>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <style>
@@ -145,10 +145,10 @@ if (!adminAuth || adminAuth.role !== "admin") {
 <div class="container">
 
   <div class="sidebar">
-    <div class="sidebar-header">用户会话</div>
+    <div class="sidebar-header">User Chats</div>
 
     <div class="sidebar-tools">
-      <input id="searchInput" placeholder="搜索用户名 / UID / 邮箱" oninput="renderUsers()">
+      <input id="searchInput" placeholder="Search name / UID / email" oninput="renderUsers()">
     </div>
 
     <div class="user-list" id="userList"></div>
@@ -158,36 +158,33 @@ if (!adminAuth || adminAuth.role !== "admin") {
 
     <div class="chat-header">
       <div>
-        <div class="chat-title" id="chatTitle">请选择用户</div>
-        <div class="chat-subtitle" id="chatSubtitle">客服ID: CS-001</div>
+        <div class="chat-title" id="chatTitle">Select a user</div>
+        <div class="chat-subtitle" id="chatSubtitle">Service ID: CS-001</div>
       </div>
 
       <div class="control-buttons">
-        <button id="onlineBtn" class="green" onclick="setServiceOnline()">人工上线</button>
-        <button id="offlineBtn" onclick="setServiceOffline()">人工离线</button>
-        <button id="aiOnBtn" class="blue" onclick="enableAI()">AI托管开</button>
-        <button id="aiOffBtn" class="danger" onclick="disableAI()">AI托管关</button>
+        <button id="onlineBtn" class="green" onclick="setServiceOnline()">Human Online</button>
+        <button id="offlineBtn" onclick="setServiceOffline()">Human Offline</button>
+        <button id="aiOnBtn" class="blue" onclick="enableAI()">AI Assist On</button>
+        <button id="aiOffBtn" class="danger" onclick="disableAI()">AI Assist Off</button>
       </div>
     </div>
 
     <div class="chat-body" id="chatBody"></div>
 
-    <div class="status-bar" id="statusBar">
-      状态：人工客服未上线，AI托管默认开启
-    </div>
+    <div class="status-bar" id="statusBar">Status: human support offline, AI assist on by default</div>
 
     <div class="chat-input">
-      <label class="upload-btn" for="imageInput">📷 照片</label>
+      <label class="upload-btn" for="imageInput">Photo</label>
       <input type="file" id="imageInput" accept="image/*" onchange="sendImage()">
 
       <input
         type="text"
         id="messageInput"
-        placeholder="输入客服回复..."
-        onkeydown="handleEnter(event)"
+        placeholder="Type support reply..." onkeydown="handleEnter(event)"
       />
 
-      <button onclick="sendMessage()">发送</button>
+      <button onclick="sendMessage()">Send</button>
     </div>
 
   </div>
@@ -381,19 +378,19 @@ function escapeHtml(str) {
 // ==================== Socket事件 ====================
 socket.on("connect", () => {
     console.log("✅ 客服后台已连接, socket id:", socket.id);
-    document.getElementById("statusBar").innerHTML = "状态：已连接服务器 ✓";
+    document.getElementById("statusBar").innerHTML = "Status: connected to server";
     setServiceOnline();
     disableAI();
 });
 
 socket.on("connect_error", (err) => {
     console.log("❌ Socket连接错误:", err.message);
-    document.getElementById("statusBar").innerHTML = "状态：连接失败，请检查网络或VPN ✗";
+    document.getElementById("statusBar").innerHTML = "Status: connection failed, check network or VPN";
 });
 
 socket.on("disconnect", () => {
     console.log("⚠️ Socket已断开");
-    document.getElementById("statusBar").innerHTML = "状态：连接已断开，正在重连...";
+    document.getElementById("statusBar").innerHTML = "Status: disconnected, reconnecting...";
 });
 
 socket.on("online_users_snapshot", (list) => {
@@ -500,7 +497,7 @@ function renderUsers(){
         const id = user._id || user.id;
         // 修复：确保转换为字符串
         const name = user.name || user.username || "Unknown";
-        const uid = user.uid !== undefined && user.uid !== null ? String(user.uid) : "无UID";
+        const uid = user.uid !== undefined && user.uid !== null ? String(user.uid) : "No UID";
         const email = user.email || "No email";
         const unread = unreadMap[id] || 0;
         const isOnline = !!onlineUsers[id];
@@ -513,7 +510,7 @@ function renderUsers(){
             <div class="user-name">${escapeHtml(name)}</div>
             <div class="user-meta">UID: ${escapeHtml(uid)}</div>
             <div class="user-meta">${escapeHtml(email)}</div>
-            <div class="user-status ${isOnline ? 'online' : 'offline'}">${isOnline ? "● 在线" : "○ 离线"}</div>
+            <div class="user-status ${isOnline ? 'online' : 'offline'}">${isOnline ? "Online" : "Offline"}</div>
             <div class="unread" style="display:${unread ? "flex" : "none"}">${unread}</div>
         `;
 
@@ -530,8 +527,8 @@ async function switchUser(id, name, uid, email){
     unreadMap[id] = 0;
     updateTitleNotice();
 
-    document.getElementById("chatTitle").innerText = `姝ｅ湪涓?${escapeHtml(name)} 鑱婂ぉ`;
-    document.getElementById("chatSubtitle").innerText = `鐢ㄦ埛UID: ${escapeHtml(uid)} 锝?閭: ${escapeHtml(email)} 锝?瀹㈡湇ID: ${serviceId}`;
+    document.getElementById("chatTitle").innerText = `Chat with ${name}`;
+        document.getElementById("chatSubtitle").innerText = `UID: ${uid || "N/A"} | Email: ${email || "No email"} | Service ID: ${serviceId}`;
 
     renderUsers();
     await loadHistoryForUser(id);
@@ -569,15 +566,15 @@ function updateStatus(){
     document.getElementById("aiOnBtn").classList.toggle("active", aiSupportEnabled);
     document.getElementById("aiOffBtn").classList.toggle("active", !aiSupportEnabled);
 
-    document.getElementById("statusBar").innerText = 
-        `状态：${serviceOnline ? "人工客服在线 👤" : "人工客服离线 💤"} ｜ ${aiSupportEnabled ? "AI托管开启 🤖" : "AI托管关闭 🔒"} ｜ 客服ID：${serviceId}`;
+    document.getElementById("statusBar").innerText =
+                `Status: ${serviceOnline ? "human support online" : "human support offline"} | ${aiSupportEnabled ? "AI assist on" : "AI assist off"} | Service ID: ${serviceId}`;
 }
 
 // ==================== 发送文字 ====================
 function sendMessage(){
     const message = input.value.trim();
     if(!currentUserId){
-        alert("请先选择用户");
+        alert("Please select a user first");
         return;
     }
     if(!message) return;
@@ -603,7 +600,7 @@ function handleEnter(event){
 async function sendImage(){
     const file = document.getElementById("imageInput").files[0];
     if(!currentUserId){
-        alert("请先选择用户");
+        alert("Please select a user first");
         return;
     }
     if(!file) return;
@@ -620,7 +617,7 @@ async function sendImage(){
         const result = await res.json();
 
         if(!result.success){
-            alert("图片上传失败");
+            alert("Image upload failed");
             return;
         }
 
@@ -631,12 +628,12 @@ async function sendImage(){
             sender: "service",
             type: "image",
             imageUrl: result.url.startsWith("http") ? result.url : API_BASE + result.url,
-            message: "[图片]"
+            message: "[image]"
         });
         document.getElementById("imageInput").value = "";
     } catch(err) {
         console.log(err);
-        alert("上传失败");
+        alert("Upload failed");
     }
 }
 
@@ -644,7 +641,7 @@ async function sendImage(){
 function renderMessages(){
     chatBody.innerHTML = "";
     if(!currentUserId){
-        chatBody.innerHTML = "<div style='color:#aaa'>请选择一个用户会话</div>";
+        chatBody.innerHTML = "<div style='color:#aaa'>Select a user to view messages</div>";
         return;
     }
 
@@ -663,7 +660,7 @@ function renderMessages(){
         div.innerHTML = `
             <div class="bubble">
                 ${content}
-                <div class="msg-time">${escapeHtml(data.time || "Now")} ${data.serviceId ? "｜" + escapeHtml(data.serviceId) : ""}</div>
+                <div class="msg-time">${escapeHtml(data.time || "Now")} ${data.serviceId ? " | " + escapeHtml(data.serviceId) : ""}</div>
             </div>
         `;
         chatBody.appendChild(div);

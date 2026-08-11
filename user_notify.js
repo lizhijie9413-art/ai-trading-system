@@ -28,6 +28,24 @@
   const unreadStorageKey = "supportUnreadCount_" + (userId || uid || email);
   let unreadCount = Number(localStorage.getItem(unreadStorageKey) || 0);
 
+  function uniqueValues(values) {
+    return Array.from(new Set(values.map(function (value) {
+      return String(value || "").trim();
+    }).filter(Boolean)));
+  }
+
+  function getSupportRecordKeys() {
+    return uniqueValues([
+      userId,
+      user._id,
+      user.userId,
+      uid,
+      email
+    ]).map(function (key) {
+      return "supportChatRecords_" + key;
+    });
+  }
+
   function escapeHtml(value) {
     return String(value || "").replace(/[&<>]/g, function (char) {
       if (char === "&") return "&amp;";
@@ -160,6 +178,47 @@
     );
   }
 
+  function normalizeSupportMessage(data) {
+    return {
+      id: data.id || data._id || "",
+      _id: data._id || data.id || "",
+      user: data.user || data.userId || userId || uid || email,
+      userId: data.userId || data.user || userId || "",
+      username: data.username || username,
+      uid: data.uid || uid,
+      email: data.email || email,
+      serviceId: data.serviceId || "CS-001",
+      sender: data.sender || "service",
+      type: data.type || "text",
+      message: data.message || "",
+      imageUrl: data.imageUrl || "",
+      time: data.time || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+  }
+
+  function saveMessageToLocalChat(data) {
+    const message = normalizeSupportMessage(data);
+    const key = messageKey(message);
+
+    getSupportRecordKeys().forEach(function (storageKey) {
+      let records = [];
+      try {
+        records = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      } catch (err) {
+        records = [];
+      }
+
+      const exists = records.some(function (item) {
+        return messageKey(item) === key;
+      });
+
+      if (!exists) {
+        records.push(message);
+        localStorage.setItem(storageKey, JSON.stringify(records.slice(-300)));
+      }
+    });
+  }
+
   function notify(data) {
     if (!data || data.sender !== "service") return;
     if (!isMessageForCurrentUser(data)) return;
@@ -168,6 +227,7 @@
     if (seenMessages.has(key)) return;
     seenMessages.add(key);
 
+    saveMessageToLocalChat(data);
     unreadCount += 1;
     localStorage.setItem(unreadStorageKey, String(unreadCount));
     renderUnreadBadge();
