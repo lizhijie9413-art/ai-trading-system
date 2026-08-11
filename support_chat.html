@@ -293,6 +293,16 @@ const chatUsername = localUser.name || localUser.username || "Guest User";
 const chatUid = localUser.uid || "0000";
 const serviceId = "CS-001";
 
+[
+  chatUserId,
+  localUser._id,
+  localUser.userId,
+  chatUid,
+  (localUser.email || "").toLowerCase()
+].filter(Boolean).forEach(key => {
+  localStorage.removeItem("supportUnreadCount_" + key);
+});
+
 const chatBody = document.getElementById("chatBody");
 const input = document.getElementById("messageInput");
 
@@ -431,6 +441,19 @@ function sendMessage(){
 }
 
 // ==================== 发送图片 ====================
+function reportImageUploadFailure(message){
+  socket.emit("send_message", {
+    user: chatUserId,
+    username: chatUsername,
+    uid: chatUid,
+    serviceId: serviceId,
+    sender: "user",
+    type: "text",
+    message: "[Image upload failed] " + message,
+    time: nowTime()
+  });
+}
+
 async function sendImage(){
   const file = document.getElementById("imageInput").files[0];
   if(!file) return;
@@ -469,11 +492,14 @@ async function sendImage(){
       });
       document.getElementById("imageInput").value = "";
     } else {
-      alert("Image upload failed");
+      const message = result.message || "Image upload failed";
+      alert(message);
+      reportImageUploadFailure(message);
     }
   }catch(err){
     console.log(err);
     alert("Image upload failed");
+    reportImageUploadFailure("Network or server error");
   }
 }
 

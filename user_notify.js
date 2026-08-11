@@ -5,7 +5,6 @@
   const API_BASE = "https://ai-trading-system-j5jf.onrender.com";
   const defaultTitle = document.title;
   const seenMessages = new Set();
-  let unreadCount = 0;
   let socketInstance = null;
 
   function getCurrentUser() {
@@ -26,6 +25,8 @@
   if (!userId && !uid && !email) return;
 
   const username = user.name || user.username || "User";
+  const unreadStorageKey = "supportUnreadCount_" + (userId || uid || email);
+  let unreadCount = Number(localStorage.getItem(unreadStorageKey) || 0);
 
   function escapeHtml(value) {
     return String(value || "").replace(/[&<>]/g, function (char) {
@@ -85,8 +86,46 @@
       }
       .user-support-toast strong{display:block;font-size:15px;margin-bottom:5px}
       .user-support-toast div{font-size:13px;line-height:1.45;opacity:.96}
+      .user-support-unread-badge{
+        position:fixed;right:16px;bottom:92px;z-index:2147483646;
+        min-width:112px;padding:12px 14px;border-radius:999px;
+        background:linear-gradient(135deg,#7c3aed,#38bdf8);
+        color:white;font-family:Arial,sans-serif;font-weight:800;
+        box-shadow:0 14px 34px rgba(0,0,0,.34);cursor:pointer;
+        display:none;align-items:center;justify-content:center;gap:7px;
+        border:1px solid rgba(255,255,255,.2);
+      }
+      .user-support-unread-badge span{
+        min-width:22px;height:22px;border-radius:50%;background:#ff1744;
+        display:inline-flex;align-items:center;justify-content:center;
+        font-size:12px;
+      }
     `;
     document.head.appendChild(style);
+  }
+
+  function renderUnreadBadge() {
+    ensureStyle();
+
+    let badge = document.getElementById("userSupportUnreadBadge");
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = "userSupportUnreadBadge";
+      badge.className = "user-support-unread-badge";
+      badge.onclick = function () {
+        window.location.href = "support_chat.html";
+      };
+      document.body.appendChild(badge);
+    }
+
+    if (unreadCount > 0) {
+      badge.innerHTML = `Support <span>${unreadCount}</span>`;
+      badge.style.display = "inline-flex";
+      document.title = "(" + unreadCount + ") Support message";
+    } else {
+      badge.style.display = "none";
+      document.title = defaultTitle;
+    }
   }
 
   function showToast(data) {
@@ -130,7 +169,8 @@
     seenMessages.add(key);
 
     unreadCount += 1;
-    document.title = "(" + unreadCount + ") Support message";
+    localStorage.setItem(unreadStorageKey, String(unreadCount));
+    renderUnreadBadge();
     playSound();
     showToast(data);
 
@@ -183,10 +223,6 @@
     socketInstance.on("receive_message", notify);
   }
 
-  window.addEventListener("focus", function () {
-    unreadCount = 0;
-    document.title = defaultTitle;
-  });
-
+  renderUnreadBadge();
   loadSocketIo(connect);
 })();
