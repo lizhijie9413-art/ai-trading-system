@@ -214,6 +214,7 @@ let unreadMap = {};
 let onlineUsers = {};
 let totalUnread = 0;
 const defaultTitle = document.title;
+const reportedMessageIds = new Set();
 
 const userList = document.getElementById("userList");
 const chatBody = document.getElementById("chatBody");
@@ -312,15 +313,45 @@ function showNewMessagePopup(data){
     setTimeout(() => toast.remove(), 6500);
 }
 
-function notifyNewMessage(data){
-    if(data.sender === "service") return;
+function getMessageKey(data){
+    return String(data.id || data._id || [
+        data.user || "",
+        data.sender || "",
+        data.type || "",
+        data.message || "",
+        data.imageUrl || "",
+        data.time || ""
+    ].join("|"));
+}
+
+function reportCustomerMessage(data){
+    if(!data || data.sender === "service") return false;
+
+    const key = getMessageKey(data);
+    if(reportedMessageIds.has(key)) return false;
+    reportedMessageIds.add(key);
+
+    const userId = data.user;
+    if(userId){
+        unreadMap[userId] = (unreadMap[userId] || 0) + 1;
+    }
+
+    updateTitleNotice();
+    renderUsers();
     playNewMessageSound();
     showNewMessagePopup(data);
+
     if ("Notification" in window && Notification.permission === "granted") {
         new Notification("New customer message", {
             body: (data.username || data.uid || "Customer") + ": " + (data.message || "[image]")
         });
     }
+
+    return true;
+}
+
+function notifyNewMessage(data){
+    reportCustomerMessage(data);
 }
 
 if ("Notification" in window && Notification.permission === "default") {
@@ -374,13 +405,15 @@ socket.on("receive_message", (data) => {
     }
 
     if(userId !== currentUserId){
-        unreadMap[userId] = (unreadMap[userId] || 0) + 1;
-        updateTitleNotice();
         renderUsers();
         return;
     }
 
     renderMessages();
+});
+
+socket.on("admin_new_user_message", (data) => {
+    notifyNewMessage(data);
 });
 
 // ==================== 加载用户列表 ====================

@@ -3362,7 +3362,7 @@ io.on("connection", (socket) => {
 
     /* 广播用户消息 */
 
-    io.emit("receive_message", {
+    const publicMessage = {
 
       id: savedMessage._id,
 
@@ -3384,7 +3384,13 @@ io.on("connection", (socket) => {
 
       time: savedMessage.time
 
-    });
+    };
+
+    io.emit("receive_message", publicMessage);
+
+    if (savedMessage.sender === "user") {
+      io.emit("admin_new_user_message", publicMessage);
+    }
 
     /* AI 自动回复 */
 
