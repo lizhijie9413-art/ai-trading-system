@@ -293,15 +293,33 @@ const chatUsername = localUser.name || localUser.username || "Guest User";
 const chatUid = localUser.uid || "0000";
 const serviceId = "CS-001";
 
-[
-  chatUserId,
-  localUser._id,
-  localUser.userId,
-  chatUid,
-  (localUser.email || "").toLowerCase()
-].filter(Boolean).forEach(key => {
-  localStorage.removeItem("supportUnreadCount_" + key);
-  localStorage.setItem("supportLastSeenAt_" + key, String(Date.now()));
+function getSupportIdentityKeys(){
+  return Array.from(new Set([
+    chatUserId,
+    localUser._id,
+    localUser.userId,
+    chatUid,
+    (localUser.email || "").toLowerCase()
+  ].map(key => String(key || "").trim()).filter(Boolean)));
+}
+
+function clearSupportUnreadState(){
+  const now = String(Date.now());
+  getSupportIdentityKeys().forEach(key => {
+    localStorage.removeItem("supportUnreadCount_" + key);
+    localStorage.setItem("supportLastSeenAt_" + key, now);
+  });
+
+  const badge = document.getElementById("userSupportUnreadBadge");
+  if(badge) badge.remove();
+
+  document.querySelectorAll(".user-support-toast").forEach(toast => toast.remove());
+}
+
+clearSupportUnreadState();
+window.addEventListener("focus", clearSupportUnreadState);
+document.addEventListener("visibilitychange", () => {
+  if(!document.hidden) clearSupportUnreadState();
 });
 
 const chatBody = document.getElementById("chatBody");
@@ -606,6 +624,7 @@ socket.on("receive_message", (data) => {
   
   saveChatRecords();
   renderMessages();
+  clearSupportUnreadState();
 });
 
 socket.on("user_typing", (data) => {

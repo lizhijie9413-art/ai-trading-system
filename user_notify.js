@@ -48,6 +48,54 @@
     });
   }
 
+  function getSupportUnreadKeys() {
+    return uniqueValues([
+      userId,
+      user._id,
+      user.userId,
+      uid,
+      email
+    ]).map(function (key) {
+      return "supportUnreadCount_" + key;
+    });
+  }
+
+  function getSupportLastSeenKeys() {
+    return uniqueValues([
+      userId,
+      user._id,
+      user.userId,
+      uid,
+      email
+    ]).map(function (key) {
+      return "supportLastSeenAt_" + key;
+    });
+  }
+
+  function markSupportRead() {
+    unreadCount = 0;
+    getSupportUnreadKeys().forEach(function (key) {
+      localStorage.removeItem(key);
+    });
+    getSupportLastSeenKeys().forEach(function (key) {
+      localStorage.setItem(key, String(Date.now()));
+    });
+
+    const badge = document.getElementById("userSupportUnreadBadge");
+    if (badge) badge.remove();
+
+    document.querySelectorAll(".user-support-toast").forEach(function (toast) {
+      toast.remove();
+    });
+
+    document.title = defaultTitle;
+  }
+
+  function openSupportChat() {
+    markSupportRead();
+    window.location.href = "support_chat.html";
+  }
+
   function getLastSeenAt() {
     return Number(localStorage.getItem(lastSeenStorageKey) || notifierStartedAt);
   }
@@ -144,7 +192,7 @@
       badge.id = "userSupportUnreadBadge";
       badge.className = "user-support-unread-badge";
       badge.onclick = function () {
-        window.location.href = "support_chat.html";
+        openSupportChat();
       };
       document.body.appendChild(badge);
     }
@@ -170,7 +218,7 @@
     toast.className = "user-support-toast";
     toast.innerHTML = `<strong>Support message</strong><div>${escapeHtml(text)}</div>`;
     toast.onclick = function () {
-      window.location.href = "support_chat.html";
+      openSupportChat();
     };
 
     document.body.appendChild(toast);
