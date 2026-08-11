@@ -459,7 +459,10 @@ function renderUsers(){
 
     const list = users.filter(u => {
         const text = `${u.uid || ""} ${u.name || ""} ${u.username || ""} ${u.email || ""}`.toLowerCase();
-        return text.includes(keyword);
+        const id = String(u._id || u.id || "");
+        const hasUnread = Number(unreadMap[id] || 0) > 0;
+        const isOnline = !!onlineUsers[id];
+        return text.includes(keyword) && (isOnline || hasUnread);
     }).sort((a, b) => {
         const aId = String(a._id || a.id || "");
         const bId = String(b._id || b.id || "");
