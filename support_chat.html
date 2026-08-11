@@ -301,6 +301,7 @@ const serviceId = "CS-001";
   (localUser.email || "").toLowerCase()
 ].filter(Boolean).forEach(key => {
   localStorage.removeItem("supportUnreadCount_" + key);
+  localStorage.setItem("supportLastSeenAt_" + key, String(Date.now()));
 });
 
 const chatBody = document.getElementById("chatBody");

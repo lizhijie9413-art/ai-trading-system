@@ -26,6 +26,8 @@
 
   const username = user.name || user.username || "User";
   const unreadStorageKey = "supportUnreadCount_" + (userId || uid || email);
+  const lastSeenStorageKey = "supportLastSeenAt_" + (userId || uid || email);
+  const notifierStartedAt = Date.now();
   let unreadCount = Number(localStorage.getItem(unreadStorageKey) || 0);
 
   function uniqueValues(values) {
@@ -44,6 +46,17 @@
     ]).map(function (key) {
       return "supportChatRecords_" + key;
     });
+  }
+
+  function getLastSeenAt() {
+    return Number(localStorage.getItem(lastSeenStorageKey) || notifierStartedAt);
+  }
+
+  function getUserAuthHeaders() {
+    const headers = {};
+    if (user.token) headers.Authorization = "Bearer " + user.token;
+    if (userId) headers["user-id"] = userId;
+    return headers;
   }
 
   function escapeHtml(value) {
@@ -219,6 +232,23 @@
     });
   }
 
+  function hasLocalChatMessage(data) {
+    const key = messageKey(data);
+
+    return getSupportRecordKeys().some(function (storageKey) {
+      let records = [];
+      try {
+        records = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      } catch (err) {
+        records = [];
+      }
+
+      return records.some(function (item) {
+        return messageKey(item) === key;
+      });
+    });
+  }
+
   function notify(data) {
     if (!data || data.sender !== "service") return;
     if (!isMessageForCurrentUser(data)) return;
@@ -242,6 +272,34 @@
       } else if (Notification.permission === "default") {
         Notification.requestPermission().catch(function () {});
       }
+    }
+  }
+
+  async function pollSupportMessages() {
+    if (!userId) return;
+
+    try {
+      const res = await fetch(API_BASE + "/api/chat/history/" + userId, {
+        headers: getUserAuthHeaders(),
+        cache: "no-store"
+      });
+      const result = await res.json();
+
+      if (!result.success || !Array.isArray(result.data)) return;
+
+      const lastSeenAt = getLastSeenAt();
+      result.data.forEach(function (item) {
+        if (!item || item.sender !== "service") return;
+        if (!isMessageForCurrentUser(item)) return;
+
+        const createdAt = item.createdAt ? new Date(item.createdAt).getTime() : Date.now();
+        if (Number.isFinite(createdAt) && createdAt <= lastSeenAt) return;
+        if (hasLocalChatMessage(item)) return;
+
+        notify(item);
+      });
+    } catch (err) {
+      console.log("Support message polling failed:", err.message);
     }
   }
 
@@ -285,4 +343,6 @@
 
   renderUnreadBadge();
   loadSocketIo(connect);
+  pollSupportMessages();
+  setInterval(pollSupportMessages, 12000);
 })();
