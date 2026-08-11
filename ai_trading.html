@@ -715,8 +715,7 @@ const tradeKey =
 "usedTrades_" +
 (localUser?.uid || localUser?.id || "guest");
 
-let usedTrades =
-Number(localStorage.getItem(tradeKey) || 0);
+let usedTrades = 0;
 
 const quantLevels = {
     "Basic Quant": {
@@ -927,7 +926,7 @@ document.getElementById("quantProfit").innerText =
 "+$" + formatMoneyPlain(totalProfit) + " (+" + roi + "%)";
 
         detectLevel(levelAsset);
-
+        await syncTodayTradeCount();
         updateTradeCounter();
     }
 }
@@ -986,12 +985,6 @@ const result = await response.json();
     if(result.success){
 
         usedTrades++;
-
-      localStorage.setItem(
-    tradeKey,
-    usedTrades
-);
-
         updateTradeCounter();
 
        showNotice(
