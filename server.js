@@ -794,6 +794,8 @@ const ChatMessage = mongoose.model("ChatMessage", new mongoose.Schema({
 }));
 
 let stats = {
+  dayKey: "",
+  monthKey: "",
   todayRecharge: 0,
   monthRecharge: 0,
   todayWithdraw: 0,
@@ -876,6 +878,24 @@ function addUserFinanceStat(user, kind, amount) {
   user.financeStats = financeStats;
 }
 
+function normalizeRuntimeStats() {
+  const { dayKey, monthKey } = getFinanceDateKeys();
+
+  if (stats.dayKey !== dayKey) {
+    stats.todayRecharge = 0;
+    stats.todayWithdraw = 0;
+    stats.dayKey = dayKey;
+  }
+
+  if (stats.monthKey !== monthKey) {
+    stats.monthRecharge = 0;
+    stats.monthWithdraw = 0;
+    stats.monthKey = monthKey;
+  }
+
+  return stats;
+}
+
 function calculateFinanceStats(users) {
   const result = {
     todayRecharge: 0,
@@ -896,11 +916,13 @@ function calculateFinanceStats(users) {
 }
 
 function mergeRuntimeAndPersistedStats(persistedStats) {
+  const runtimeStats = normalizeRuntimeStats();
+
   return {
-    todayRecharge: Math.max(Number(stats.todayRecharge || 0), Number(persistedStats.todayRecharge || 0)),
-    monthRecharge: Math.max(Number(stats.monthRecharge || 0), Number(persistedStats.monthRecharge || 0)),
-    todayWithdraw: Math.max(Number(stats.todayWithdraw || 0), Number(persistedStats.todayWithdraw || 0)),
-    monthWithdraw: Math.max(Number(stats.monthWithdraw || 0), Number(persistedStats.monthWithdraw || 0))
+    todayRecharge: Math.max(Number(runtimeStats.todayRecharge || 0), Number(persistedStats.todayRecharge || 0)),
+    monthRecharge: Math.max(Number(runtimeStats.monthRecharge || 0), Number(persistedStats.monthRecharge || 0)),
+    todayWithdraw: Math.max(Number(runtimeStats.todayWithdraw || 0), Number(persistedStats.todayWithdraw || 0)),
+    monthWithdraw: Math.max(Number(runtimeStats.monthWithdraw || 0), Number(persistedStats.monthWithdraw || 0))
   };
 }
 
@@ -1046,15 +1068,16 @@ app.put("/api/users/:id/recharge", verifyAdmin, async (req, res) => {
 
   addUserFinanceStat(user, "recharge", amount);
 
-  stats.todayRecharge += amount;
-  stats.monthRecharge += amount;
+  const runtimeStats = normalizeRuntimeStats();
+  runtimeStats.todayRecharge += amount;
+  runtimeStats.monthRecharge += amount;
 
   await user.save();
 
   res.json({
     success: true,
     data: user,
-    stats
+    stats: runtimeStats
   });
 });
 
@@ -1140,11 +1163,12 @@ app.put("/api/users/:id/withdraw", verifyAdmin, async (req, res) => {
 
     addUserFinanceStat(user, "withdraw", amount);
 
-    stats.todayWithdraw += amount;
-    stats.monthWithdraw += amount;
+    const runtimeStats = normalizeRuntimeStats();
+    runtimeStats.todayWithdraw += amount;
+    runtimeStats.monthWithdraw += amount;
 
     await user.save();
-    res.json({ success: true, data: user, stats });
+    res.json({ success: true, data: user, stats: runtimeStats });
   } catch (err) {
     console.log("Admin withdraw error:", err);
     res.status(500).json({
