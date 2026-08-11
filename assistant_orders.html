@@ -424,9 +424,10 @@ function renderOrders(){
 
     const isCompleted = order.status === "Completed";
     const statusClass = isCompleted ? "completed" : "running";
-    const profitRateDisplay = isCompleted ? "+" + formatPercent(order.profitRate) : "Pending";
-    const profitDisplay = isCompleted ? plusMoney(order.profit || 0) : "Pending";
-    const subTrades = isCompleted && Array.isArray(order.subTrades) ? order.subTrades : [];
+    const subTrades = Array.isArray(order.subTrades) ? order.subTrades : [];
+    const hasVisibleProgress = !isCompleted && subTrades.length > 0;
+    const profitRateDisplay = (isCompleted || hasVisibleProgress) ? formatPercent(order.profitRate || 0) : "Pending";
+    const profitDisplay = (isCompleted || hasVisibleProgress) ? plusMoney(order.profit || 0) : "Pending";
 
     return `
       <div class="order-card">
@@ -453,12 +454,12 @@ function renderOrders(){
 
           <div class="box">
             <span>Profit Rate</span>
-            <b class="${isCompleted ? "profit" : ""}">${profitRateDisplay}</b>
+            <b class="${(isCompleted || hasVisibleProgress) ? "profit" : ""}">${profitRateDisplay}</b>
           </div>
 
           <div class="box">
             <span>Profit</span>
-            <b class="${isCompleted ? "profit" : ""}">${profitDisplay}</b>
+            <b class="${(isCompleted || hasVisibleProgress) ? "profit" : ""}">${profitDisplay}</b>
           </div>
 
           <div class="box">
@@ -468,7 +469,7 @@ function renderOrders(){
         </div>
 
         <div class="box" style="margin-top:10px;">
-          <span>End Time</span>
+          <span>${order.strategy === "Long-Term AI Wealth Plan" ? "Contract Unlock Time" : "End Time"}</span>
           <b style="font-size:12px;">${formatTime(order.endTime)}</b>
         </div>
 
@@ -479,7 +480,7 @@ function renderOrders(){
         <div class="sub-trades" id="detail-${order._id}">
           ${
             subTrades.length === 0
-            ? `<div class="sub-row"><span>${isCompleted ? "No execution details" : "Execution pending"}</span><b>-</b></div>`
+            ? `<div class="sub-row"><span>${isCompleted ? "No execution details" : "Waiting for the next long-term trade"}</span><b>-</b></div>`
             : subTrades.map(item => `
               <div class="sub-row">
                 <span>${item.product || "AI Market"} · ${item.direction || ""}</span>

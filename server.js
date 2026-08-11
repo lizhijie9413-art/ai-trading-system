@@ -1332,15 +1332,28 @@ const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
 
 function publicAIQuantOrder(order) {
   const obj = typeof order.toObject === "function" ? order.toObject() : { ...order };
+
   if (obj.status !== "Completed") {
-    obj.profit = 0;
-    obj.profitRate = 0;
-    obj.finalRate = 0;
-    obj.subTrades = [];
+    if (obj.assistantType === "AI Assistant" && obj.strategy === "Long-Term AI Wealth Plan") {
+      const visibleTrades = getVisibleSubTrades(obj);
+      const liveRate = getSubTradeTotalRate(visibleTrades);
+
+      obj.subTrades = visibleTrades;
+      obj.profitRate = liveRate;
+      obj.profit = Number((Number(obj.amount || 0) * liveRate / 100).toFixed(2));
+      obj.finalRate = 0;
+    } else {
+      obj.profit = 0;
+      obj.profitRate = 0;
+      obj.finalRate = 0;
+      obj.subTrades = [];
+    }
+
     obj.completedAt = null;
   } else {
     obj.subTrades = sanitizeSubTradesForOrderSession(obj);
   }
+
   return obj;
 }
 
@@ -1725,10 +1738,11 @@ function isMarketAllowedForSession(market, timeZone, date = new Date()) {
 
 function sanitizeSubTradesForOrderSession(order) {
   const trades = Array.isArray(order.subTrades) ? order.subTrades : [];
-  const sessionDate = new Date(order.startTime || order.createdAt || order.completedAt || new Date());
-  const allowedMarkets = getAvailableAIMarkets(order.clientTimeZone, sessionDate);
 
   return trades.map((trade, index) => {
+    const sessionDate = new Date(trade.visibleAt || trade.tradeTime || order.startTime || order.createdAt || order.completedAt || new Date());
+    const allowedMarkets = getAvailableAIMarkets(order.clientTimeZone, sessionDate);
+
     if (isMarketAllowedForSession(trade.market, order.clientTimeZone, sessionDate)) {
       return trade;
     }
@@ -1740,6 +1754,22 @@ function sanitizeSubTradesForOrderSession(order) {
       product: replacement.product
     };
   });
+}
+
+function getVisibleSubTrades(order, now = new Date()) {
+  const trades = sanitizeSubTradesForOrderSession(order);
+  const nowMs = new Date(now).getTime();
+
+  return trades
+    .filter(trade => {
+      const visibleAt = trade.visibleAt || trade.tradeTime || order.endTime || order.startTime || order.createdAt;
+      return new Date(visibleAt).getTime() <= nowMs;
+    })
+    .sort((a, b) => new Date(a.visibleAt || a.tradeTime || 0) - new Date(b.visibleAt || b.tradeTime || 0));
+}
+
+function getSubTradeTotalRate(trades) {
+  return Number((trades || []).reduce((sum, trade) => sum + Number(trade.rate || 0), 0).toFixed(2));
 }
 
 const aiMarkets = [
@@ -1958,6 +1988,77 @@ if(strategy === "Long-Term AI Wealth Plan"){
   return list;
 }
 
+function shuffleList(list) {
+  return list
+    .map(item => ({ item, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(entry => entry.item);
+}
+
+function generateScheduledLongTermTrades(finalRate, timeZone, startTime, endTime) {
+  const count = getAITradeCount("Long-Term AI Wealth Plan");
+  const startMs = new Date(startTime).getTime();
+  const endMs = new Date(endTime).getTime();
+  const safeEndMs = Math.max(endMs - 5 * 60 * 1000, startMs + 60 * 1000);
+  const firstTradeMs = Math.min(startMs + 24 * 60 * 60 * 1000, safeEndMs);
+  const scheduleStartMs = firstTradeMs < safeEndMs ? firstTradeMs : startMs + 60 * 1000;
+  const scheduleSpan = Math.max(safeEndMs - scheduleStartMs, 60 * 1000);
+  const lossCount = Math.max(4, Math.floor(count * 0.25));
+  const winCount = count - lossCount;
+
+  const losses = Array.from({ length: lossCount }, () => -Number(randomBetween(0.35, 2.4).toFixed(2)));
+  const totalLoss = Math.abs(getSubTradeTotalRate(losses.map(rate => ({ rate }))));
+  const gainTarget = Number((Number(finalRate || 0) + totalLoss).toFixed(2));
+  const weights = Array.from({ length: winCount }, () => randomBetween(0.6, 1.8));
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  const wins = weights.map(weight => Number((gainTarget * weight / weightTotal).toFixed(2)));
+  const diff = Number((Number(finalRate || 0) - getSubTradeTotalRate([...wins, ...losses].map(rate => ({ rate })))).toFixed(2));
+  wins[wins.length - 1] = Number((wins[wins.length - 1] + diff).toFixed(2));
+
+  return shuffleList([...wins, ...losses])
+    .map((rate, index) => {
+      const visibleAt = new Date(scheduleStartMs + Math.random() * scheduleSpan);
+      const markets = getAvailableAIMarkets(timeZone, visibleAt);
+      const market = markets[Math.floor(Math.random() * markets.length)];
+
+      return {
+        no: index + 1,
+        market: market.market,
+        product: market.product,
+        direction: rate >= 0 ? "Up" : "Down",
+        rate,
+        result: rate >= 0 ? "Profit" : "Loss",
+        visibleAt,
+        tradeTime: visibleAt
+      };
+    })
+    .sort((a, b) => new Date(a.visibleAt) - new Date(b.visibleAt))
+    .map((trade, index) => ({ ...trade, no: index + 1 }));
+}
+
+async function ensureLongTermAssistantSchedule(order) {
+  if (
+    !order ||
+    order.status === "Completed" ||
+    order.assistantType !== "AI Assistant" ||
+    order.strategy !== "Long-Term AI Wealth Plan" ||
+    (Array.isArray(order.subTrades) && order.subTrades.length > 0)
+  ) {
+    return order;
+  }
+
+  const startTime = order.startTime || order.createdAt || new Date();
+  const endTime = order.endTime || new Date(new Date(startTime).getTime() + (Math.floor(Math.random() * 61) + 30) * 24 * 60 * 60 * 1000);
+  const finalRate = Number(order.finalRate || order.manualRate || 0) || Number(randomBetween(20, 30).toFixed(2));
+
+  order.endTime = endTime;
+  order.finalRate = finalRate;
+  order.subTrades = generateScheduledLongTermTrades(finalRate, order.clientTimeZone, startTime, endTime);
+  await order.save();
+
+  return order;
+}
+
 
 async function prepareAIQuantSettlement(order) {
   let profitRate = Number(order.manualRate || 0);
@@ -1985,7 +2086,7 @@ async function prepareAIQuantSettlement(order) {
       } else if (order.strategy === "Mid-Term Smart Growth") {
         profitRate = Number(randomBetween(12, 18).toFixed(2));
       } else if (order.strategy === "Long-Term AI Wealth Plan") {
-        profitRate = Number(randomBetween(25, 40).toFixed(2));
+        profitRate = Number(randomBetween(20, 30).toFixed(2));
       } else {
         profitRate = Number(randomBetween(8, 10).toFixed(2));
       }
@@ -2009,12 +2110,23 @@ async function prepareAIQuantSettlement(order) {
     }
   }
 
+  if (
+    order.assistantType === "AI Assistant" &&
+    order.strategy === "Long-Term AI Wealth Plan" &&
+    Array.isArray(order.subTrades) &&
+    order.subTrades.length > 0
+  ) {
+    order.subTrades = sanitizeSubTradesForOrderSession(order);
+    profitRate = getSubTradeTotalRate(order.subTrades);
+  } else {
+    order.subTrades = generateSubTrades(profitRate, order.strategy, order.clientTimeZone, order.startTime || order.createdAt);
+  }
+
   const profit = Number((Number(order.amount || 0) * profitRate / 100).toFixed(2));
 
   order.profitRate = profitRate;
   order.finalRate = profitRate;
   order.profit = profit;
-  order.subTrades = generateSubTrades(profitRate, order.strategy, order.clientTimeZone, order.startTime || order.createdAt);
 
   return { profitRate, profit };
 }
@@ -2147,7 +2259,7 @@ if(strategy === "Mid-Term Smart Growth"){
 
 if(strategy === "Long-Term AI Wealth Plan"){
 
-  durationMinutes = 43200;
+  durationMinutes = (Math.floor(Math.random() * 61) + 30) * 1440;
 }
 
     const endTime =
@@ -2156,7 +2268,7 @@ if(strategy === "Long-Term AI Wealth Plan"){
       durationMinutes * 60 * 1000
     );
 
-    const subTrades = [];
+    let subTrades = [];
 
 const clientTimeZone = getClientTimeZone(req);
 let availableMarkets = getAvailableAIMarkets(clientTimeZone);
@@ -2164,6 +2276,12 @@ const selected =
 availableMarkets[
   Math.floor(Math.random() * availableMarkets.length)
 ];
+
+let plannedFinalRate = profitRate;
+if(strategy === "Long-Term AI Wealth Plan"){
+  plannedFinalRate = Number(randomBetween(20, 30).toFixed(2));
+  subTrades = generateScheduledLongTermTrades(plannedFinalRate, clientTimeZone, now, endTime);
+}
 
 
     const order =
@@ -2195,7 +2313,7 @@ availableMarkets[
       profit,
 
       finalRate:
-      profitRate,
+      plannedFinalRate,
 
        subTrades,
 
@@ -2563,6 +2681,10 @@ app.get("/api/ai/quant/orders/:userId", authenticateUser, async (req, res) => {
   const orders = await AIQuantOrder.find({
     userId: req.params.userId
   }).sort({ createdAt: -1 });
+
+  for (const order of orders) {
+    await ensureLongTermAssistantSchedule(order);
+  }
 
   res.json({
     success: true,

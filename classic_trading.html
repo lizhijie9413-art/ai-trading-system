@@ -662,7 +662,7 @@ function aiReply(message){
             "Institutional Capital Rotation"
         ];
 
-        const longReturns = ["20% - 45%","25% - 50%","30% - 60%"];
+        const longReturns = ["20% - 30%","20% - 30%","20% - 30%"];
         const longFocus = [
             "AI Infrastructure + ETF Allocation",
             "Long-Term Global AI Expansion",
@@ -1009,7 +1009,8 @@ async function startAITrade(){
     },
     body: JSON.stringify({
       amount: aiPlanAmount,
-      strategy: selectedAIPlanName
+      strategy: selectedAIPlanName,
+      clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })
   }
 );
