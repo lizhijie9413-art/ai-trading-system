@@ -79,6 +79,7 @@ const publicRootFiles = new Set([
   "trade_management.html",
   "transfer.html",
   "user_management.html",
+  "user_notify.js",
   "withdraw.html",
   "withdraw_management.html",
   "yield_statement.html"
