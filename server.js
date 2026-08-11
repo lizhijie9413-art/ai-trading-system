@@ -3295,6 +3295,11 @@ io.on("connection", (socket) => {
     console.log("AI客服状态:", aiSupportEnabled);
   });
 
+  socket.on("admin_join_support", () => {
+    socket.join("support_admins");
+    socket.emit("online_users_snapshot", Array.from(onlineSupportUsers.values()));
+  });
+
   socket.on("user_online", (data = {}) => {
     const userId = String(data.userId || data.user || "");
     if (!userId) return;
@@ -3311,7 +3316,7 @@ io.on("connection", (socket) => {
       onlineAt: new Date()
     });
 
-    io.emit("user_status", { userId, online: true });
+    io.emit("user_status", { userId, online: true, user: onlineSupportUsers.get(userId) });
   });
 
   socket.on("user_offline", (data = {}) => {

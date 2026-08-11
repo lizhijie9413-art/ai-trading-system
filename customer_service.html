@@ -212,6 +212,7 @@ let aiSupportEnabled = true;
 let chatRecords = {};
 let unreadMap = {};
 let onlineUsers = {};
+let lastMessageMap = {};
 let totalUnread = 0;
 const defaultTitle = document.title;
 const reportedMessageIds = new Set();
@@ -389,14 +390,24 @@ socket.on("disconnect", () => {
     document.getElementById("statusBar").innerHTML = "状态：连接已断开，正在重连...";
 });
 
+socket.on("online_users_snapshot", (list) => {
+    onlineUsers = {};
+    (Array.isArray(list) ? list : []).forEach(item => {
+        const id = String(item.userId || item.user || "");
+        if(id) onlineUsers[id] = true;
+    });
+    renderUsers();
+});
+
 socket.on("user_status", (data) => {
     if(!data || !data.userId) return;
-    onlineUsers[data.userId] = !!data.online;
+    onlineUsers[String(data.userId)] = !!data.online;
     renderUsers();
 });
 
 socket.on("receive_message", (data) => {
-    const userId = data.user;
+    const userId = String(data.user || "");
+    if(userId) lastMessageMap[userId] = Date.now();
     if(!chatRecords[userId]) chatRecords[userId] = [];
     chatRecords[userId].push(normalizeChatMessage(data));
 
@@ -449,6 +460,18 @@ function renderUsers(){
     const list = users.filter(u => {
         const text = `${u.uid || ""} ${u.name || ""} ${u.username || ""} ${u.email || ""}`.toLowerCase();
         return text.includes(keyword);
+    }).sort((a, b) => {
+        const aId = String(a._id || a.id || "");
+        const bId = String(b._id || b.id || "");
+        const aOnline = onlineUsers[aId] ? 1 : 0;
+        const bOnline = onlineUsers[bId] ? 1 : 0;
+        if(aOnline !== bOnline) return bOnline - aOnline;
+
+        const aUnread = Number(unreadMap[aId] || 0);
+        const bUnread = Number(unreadMap[bId] || 0);
+        if(aUnread !== bUnread) return bUnread - aUnread;
+
+        return Number(lastMessageMap[bId] || 0) - Number(lastMessageMap[aId] || 0);
     });
 
     userList.innerHTML = "";
