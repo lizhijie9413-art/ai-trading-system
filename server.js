@@ -45,6 +45,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const publicRootFiles = new Set([
   "admin_login.html",
+  "admin_notify.js",
   "ai_trading.html",
   "assistant_orders.html",
   "billing.html",
