@@ -525,6 +525,8 @@ function renderUsers(){
 async function switchUser(id, name, uid, email){
     currentUserId = id;
     currentUserName = name;
+    currentUserUid = uid;
+    currentUserEmail = email;
     unreadMap[id] = 0;
     updateTitleNotice();
 
