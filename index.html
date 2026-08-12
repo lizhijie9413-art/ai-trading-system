@@ -587,18 +587,27 @@ body::before{
 
 .return-text{
     text-align:center;
+    width:78px;
+    line-height:1.05;
+    position:relative;
+    z-index:1;
 }
 
 .return-text strong{
     display:block;
-    font-size:16px;
+    font-size:12px;
     color:#d1d5db;
+    margin-bottom:3px;
 }
 
 .return-text span{
-    font-size:38px;
+    display:block;
+    max-width:78px;
+    font-size:24px;
+    line-height:1;
     color:#00ff9d;
     font-weight:800;
+    white-space:nowrap;
 }
 
 /* cards grid */
@@ -1356,7 +1365,9 @@ async function loadHomeBalance(){
             document.getElementById("homeProfit").innerHTML = 
                 "+$" + formatMoneyPlain(totalProfit) + " (+" + roi + "%)";
 
-            document.getElementById("totalReturn").innerHTML = "+" + roi + "%";
+            const totalReturnEl = document.getElementById("totalReturn");
+            totalReturnEl.innerHTML = "+" + roi + "%";
+            totalReturnEl.style.fontSize = totalReturnEl.innerText.length > 7 ? "20px" : "24px";
         }
     } catch(err) {
         console.log("Load balance error:", err);
@@ -1425,5 +1436,6 @@ loadHomeBalance();
 setInterval(loadHomeBalance, 30000);
 </script>
 
+<script src="user_notify.js"></script>
 </body>
 </html>
