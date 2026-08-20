@@ -16,6 +16,7 @@
 body{
   background:#07070b;
   color:white;
+  overflow-x:hidden;
 }
 
 .sidebar{
@@ -52,6 +53,7 @@ body{
 .main{
   margin-left:260px;
   padding:35px;
+  min-width:0;
 }
 
 h1{
@@ -90,7 +92,7 @@ h1{
 }
 
 .search input{
-  width:500px;
+  width:min(500px,100%);
   background:#1f1f1f;
   border:none;
   color:white;
@@ -104,11 +106,13 @@ h1{
   background:#121212;
   border:1px solid #333;
   border-radius:16px;
-  overflow:hidden;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
 }
 
 table{
   width:100%;
+  min-width:980px;
   border-collapse:collapse;
 }
 
@@ -169,6 +173,86 @@ tr:hover{
   text-align:center;
   color:#888;
   padding:35px;
+}
+
+@media (max-width: 768px){
+  body{
+    overflow-x:hidden;
+  }
+
+  .sidebar{
+    position:relative;
+    width:100%;
+    height:auto;
+    padding:14px 12px;
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    white-space:nowrap;
+    border-bottom:1px solid #2a2a2a;
+  }
+
+  .sidebar h2{
+    display:none;
+  }
+
+  .sidebar a{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    padding:10px 12px;
+    border-radius:10px;
+    font-size:14px;
+  }
+
+  .main{
+    margin-left:0;
+    padding:18px 12px 32px;
+    width:100%;
+  }
+
+  h1{
+    font-size:34px;
+    margin-bottom:18px;
+  }
+
+  .top-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+
+  .card{
+    padding:16px;
+    border-radius:12px;
+  }
+
+  .card h2{
+    font-size:24px;
+    word-break:break-word;
+  }
+
+  .search input{
+    width:100%;
+    font-size:14px;
+    padding:13px;
+  }
+
+  .table-box{
+    width:100%;
+    border-radius:12px;
+  }
+
+  th,td{
+    padding:12px 10px;
+    font-size:13px;
+  }
+}
+
+@media (max-width: 420px){
+  .top-grid{
+    grid-template-columns:1fr;
+  }
 }
 </style>
 </head>
