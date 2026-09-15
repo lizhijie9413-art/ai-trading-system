@@ -85,6 +85,12 @@ button,select,input{
   background:linear-gradient(135deg,#7c3aed,#2563eb);
   border-color:rgba(255,255,255,.18);
 }
+.seg-btn.active{
+  color:#fff;
+  background:linear-gradient(135deg,#7c3aed,#22d3ee);
+  border-color:rgba(255,255,255,.18);
+  box-shadow:0 0 18px rgba(34,211,238,.22);
+}
 .seg-btn.long.active{background:linear-gradient(135deg,#00c853,#22d3ee);color:#06111a}
 .seg-btn.short.active{background:linear-gradient(135deg,#ff3864,#f97316);color:white}
 .row{margin-top:16px}
@@ -136,7 +142,13 @@ select option{background:#111827;color:white}
 }
 .start-btn:disabled,.settle-btn:disabled{opacity:.48;cursor:not-allowed}
 .ai-smart-btn:disabled{opacity:.48;cursor:not-allowed}
-.orders-title{font-size:22px;font-weight:900;margin:24px 0 12px}
+.orders-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 12px}
+.orders-title{font-size:22px;font-weight:900}
+.billing-link{
+  min-height:38px;padding:0 14px;border-radius:14px;text-decoration:none;
+  display:flex;align-items:center;gap:8px;color:#fff;font-weight:900;font-size:13px;
+  background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.36);
+}
 .order-card{border-radius:22px;padding:16px;margin-bottom:12px;background:rgba(15,23,42,.86);border:1px solid rgba(139,92,246,.18)}
 .order-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
 .status{padding:7px 10px;border-radius:999px;background:rgba(245,158,11,.18);color:#fbbf24;font-weight:900;font-size:12px}
@@ -176,7 +188,7 @@ select option{background:#111827;color:white}
       <div class="coin" id="coinIcon">BTC</div>
       <div>
         <h2 id="symbolName">BTC/USDT</h2>
-        <p id="marketName">Crypto · Max 40x</p>
+        <p id="marketName">Crypto · Max 50x</p>
       </div>
     </div>
     <div class="muted" id="durationText">60s</div>
@@ -239,7 +251,10 @@ select option{background:#111827;color:white}
   <button class="ai-smart-btn" id="aiSmartBtn" onclick="startAISmartTrade()">AI Smart Trade</button>
 </section>
 
-<div class="orders-title">My Contracts</div>
+<div class="orders-head">
+  <div class="orders-title">Running Contracts</div>
+  <a class="billing-link" href="perpetual_billing.html"><i class="fa-solid fa-receipt"></i> Billing</a>
+</div>
 <div id="ordersBox"></div>
 
 <div class="bottom-nav">
@@ -312,7 +327,7 @@ function updateMarketView(){
   const price = Number(item.price || 0);
   const move = (Math.sin(Date.now() / 35000 + price) * 2.8).toFixed(2);
   document.getElementById("symbolName").textContent = item.symbol || selectedSymbol;
-  document.getElementById("marketName").textContent = selectedMarket + " · Max 40x";
+  document.getElementById("marketName").textContent = selectedMarket + " · Max 50x";
   document.getElementById("coinIcon").textContent = (item.symbol || "PC").split("/")[0].slice(0,3);
   document.getElementById("livePrice").textContent = money(price * (1 + Number(move) / 100));
   document.getElementById("priceMove").textContent = (move >= 0 ? "+" : "") + move + "%";
@@ -343,7 +358,7 @@ function setDuration(seconds){
 
 function renderLeverage(){
   const box = document.getElementById("leverageGrid");
-  box.innerHTML = [1,2,5,10,20,40].map(value => `
+  box.innerHTML = [1,5,10,50].map(value => `
     <button class="lev-btn ${value === selectedLeverage ? "active" : ""}" onclick="setLeverage(${value})">${value}x</button>
   `).join("");
 }
@@ -480,9 +495,9 @@ async function loadOrders(){
   const box = document.getElementById("ordersBox");
   const res = await fetch(API_BASE + "/api/perpetual/orders", { headers: authHeaders() });
   const result = await res.json();
-  const orders = result.success ? result.data : [];
+  const orders = result.success ? (result.data || []).filter(order => order.status !== "Completed") : [];
   if(!orders.length){
-    box.innerHTML = `<div class="order-card muted">No contracts yet.</div>`;
+    box.innerHTML = `<div class="order-card muted">No running contracts.</div>`;
     return;
   }
 

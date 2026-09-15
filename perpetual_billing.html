@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perpetual Billing</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body{
+  max-width:430px;min-height:100vh;margin:0 auto;padding:18px 16px 110px;color:#fff;
+  background:
+    radial-gradient(circle at 18% 8%,rgba(124,58,237,.28),transparent 28%),
+    radial-gradient(circle at 86% 42%,rgba(34,211,238,.14),transparent 32%),
+    linear-gradient(180deg,#030712,#07111f 52%,#020617);
+  overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:42px 42px;
+}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.back{
+  width:48px;height:48px;border-radius:16px;border:1px solid rgba(139,92,246,.28);
+  background:rgba(255,255,255,.06);color:#c084fc;font-size:22px;
+  display:flex;align-items:center;justify-content:center;text-decoration:none;flex:0 0 auto;
+}
+.title h1{font-size:30px;line-height:1.05}.title p{color:#94a3b8;margin-top:5px;font-size:14px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.tab-btn{
+  min-height:42px;border:none;border-radius:14px;color:#cbd5e1;font-weight:900;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);
+}
+.tab-btn.active{color:#fff;background:linear-gradient(135deg,#7c3aed,#2563eb)}
+.summary-card,.bill-card{
+  background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+  border:1px solid rgba(139,92,246,.24);border-radius:24px;padding:16px;margin-bottom:14px;
+  box-shadow:0 0 24px rgba(139,92,246,.12);overflow:hidden;
+}
+.summary-card{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.summary-card span,.muted{color:#94a3b8;font-size:13px}.summary-card strong{display:block;margin-top:6px;font-size:22px}
+.bill-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px}
+.bill-title strong{display:block;font-size:18px}.bill-title span{display:block;margin-top:5px;color:#94a3b8;font-size:12px}
+.mode{height:30px;padding:0 10px;border-radius:999px;background:rgba(16,185,129,.16);color:#34d399;font-size:12px;font-weight:900;display:flex;align-items:center;white-space:nowrap}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mini{padding:12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);min-width:0}
+.mini span{display:block;color:#94a3b8;font-size:12px;margin-bottom:7px}.mini strong{font-size:16px;word-break:break-word}
+.profit{color:#00f5a0}.loss{color:#ff4d6d}
+.details{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
+.details-head{display:flex;justify-content:space-between;align-items:center;color:#cbd5e1;font-size:13px;font-weight:900;margin-bottom:6px}
+.sub-trade{display:grid;grid-template-columns:40px 1fr 68px 58px;gap:8px;align-items:center;color:#cbd5e1;font-size:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.sub-trade:last-child{border-bottom:none}
+.empty{padding:22px;border-radius:22px;background:rgba(15,23,42,.78);border:1px solid rgba(139,92,246,.18);color:#94a3b8;text-align:center;font-weight:800}
+.bottom-nav{
+  position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;height:78px;
+  background:rgba(3,7,18,.96);border-top:1px solid rgba(255,255,255,.08);
+  display:grid;grid-template-columns:repeat(5,1fr);z-index:50;
+}
+.nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#64748b;text-decoration:none;font-size:12px;gap:5px}
+.nav-item i{font-size:20px}.nav-item.active{color:#c084fc}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="back" href="perpetual_contracts.html"><i class="fa-solid fa-arrow-left"></i></a>
+  <div class="title">
+    <h1>Contract Billing</h1>
+    <p>Completed perpetual contract records</p>
+  </div>
+</div>
+
+<div class="summary-card">
+  <div><span>Completed Orders</span><strong id="totalOrders">0</strong></div>
+  <div><span>Total P/L</span><strong id="totalProfit">$0.00</strong></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-filter="All" onclick="setFilter('All')">All</button>
+  <button class="tab-btn" data-filter="Manual" onclick="setFilter('Manual')">Manual</button>
+  <button class="tab-btn" data-filter="AI Smart" onclick="setFilter('AI Smart')">AI Smart</button>
+</div>
+
+<div id="billingBox"></div>
+
+<div class="bottom-nav">
+  <a class="nav-item" href="index.html"><i class="fa-solid fa-house"></i>Home</a>
+  <a class="nav-item" href="market.html"><i class="fa-solid fa-chart-column"></i>Markets</a>
+  <a class="nav-item active" href="trade.html"><i class="fa-solid fa-arrow-right-arrow-left"></i>Trade</a>
+  <a class="nav-item" href="portfolio.html"><i class="fa-regular fa-folder"></i>Portfolio</a>
+  <a class="nav-item" href="profile.html"><i class="fa-regular fa-user"></i>Profile</a>
+</div>
+
+<script>
+const API_BASE = location.origin.includes("localhost") ? "http://localhost:3000" : location.origin;
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if(!user || !user.id){
+  location.href = "login.html";
+}
+
+let completedOrders = [];
+let activeFilter = "All";
+
+function authHeaders(){
+  return {
+    "Content-Type":"application/json",
+    "Authorization":"Bearer " + (user.token || ""),
+    "user-id": user.id
+  };
+}
+
+function money(value){
+  return "$" + Number(value || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function formatDate(value){
+  if(!value) return "--";
+  return new Date(value).toLocaleString("en-US", {
+    year:"numeric", month:"numeric", day:"numeric",
+    hour:"numeric", minute:"2-digit", second:"2-digit", hour12:true
+  });
+}
+
+function setFilter(filter){
+  activeFilter = filter;
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.filter === filter);
+  });
+  renderOrders();
+}
+
+async function loadBilling(){
+  const box = document.getElementById("billingBox");
+  box.innerHTML = `<div class="empty">Loading billing records...</div>`;
+  try{
+    const res = await fetch(API_BASE + "/api/perpetual/orders", { headers: authHeaders() });
+    const result = await res.json();
+    completedOrders = result.success ? (result.data || []).filter(order => order.status === "Completed") : [];
+    renderSummary();
+    renderOrders();
+  }catch(err){
+    box.innerHTML = `<div class="empty">Unable to load billing records.</div>`;
+  }
+}
+
+function renderSummary(){
+  const total = completedOrders.reduce((sum, order) => sum + Number(order.profit || 0), 0);
+  document.getElementById("totalOrders").textContent = completedOrders.length;
+  const totalProfit = document.getElementById("totalProfit");
+  totalProfit.textContent = money(total);
+  totalProfit.className = total >= 0 ? "profit" : "loss";
+}
+
+function renderOrders(){
+  const box = document.getElementById("billingBox");
+  const list = completedOrders.filter(order => activeFilter === "All" || (order.mode || "Manual") === activeFilter);
+  if(!list.length){
+    box.innerHTML = `<div class="empty">No completed billing records.</div>`;
+    return;
+  }
+
+  box.innerHTML = list.map(order => {
+    const profit = Number(order.profit || 0);
+    const profitRate = Number(order.profitRate || 0);
+    const isAISmart = order.mode === "AI Smart";
+    const subTrades = Array.isArray(order.subTrades) ? order.subTrades : [];
+    const durationLabel = isAISmart ? "30 min" : `${order.durationSeconds || 0}s`;
+    const detailsHtml = isAISmart && subTrades.length ? `
+      <div class="details">
+        <div class="details-head"><span>AI Smart Trade Details</span><span>5 trades</span></div>
+        ${subTrades.map(item => `
+          <div class="sub-trade">
+            <span>#${item.no}</span>
+            <span>${item.direction || "--"}</span>
+            <strong class="${Number(item.profitRate || 0) >= 0 ? "profit" : "loss"}">${Number(item.profitRate || 0).toFixed(2)}%</strong>
+            <span>${item.result || ""}</span>
+          </div>
+        `).join("")}
+      </div>
+    ` : "";
+
+    return `
+      <section class="bill-card">
+        <div class="bill-top">
+          <div class="bill-title">
+            <strong>${order.symbol || "--"} · ${order.direction || "--"} ${order.leverage || 1}x</strong>
+            <span>${order.market || "--"} · ${formatDate(order.completedAt || order.endTime)}</span>
+          </div>
+          <div class="mode">${isAISmart ? "AI Smart" : "Manual"}</div>
+        </div>
+        <div class="grid">
+          <div class="mini"><span>Margin</span><strong>${money(order.margin)}</strong></div>
+          <div class="mini"><span>Position Size</span><strong>${money(order.positionSize)}</strong></div>
+          <div class="mini"><span>Entry Price</span><strong>${money(order.entryPrice)}</strong></div>
+          <div class="mini"><span>Exit Price</span><strong>${money(order.exitPrice)}</strong></div>
+          <div class="mini"><span>P/L Rate</span><strong class="${profitRate >= 0 ? "profit" : "loss"}">${profitRate.toFixed(2)}%</strong></div>
+          <div class="mini"><span>P/L</span><strong class="${profit >= 0 ? "profit" : "loss"}">${money(profit)}</strong></div>
+          <div class="mini"><span>Duration</span><strong>${durationLabel}</strong></div>
+          <div class="mini"><span>Status</span><strong>Completed</strong></div>
+        </div>
+        ${detailsHtml}
+      </section>
+    `;
+  }).join("");
+}
+
+loadBilling();
+</script>
+<script src="user_notify.js"></script>
+</body>
+</html>

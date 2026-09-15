@@ -164,6 +164,16 @@ tr:hover{
   margin-top:8px;
 }
 
+.mode-select{
+  width:92px;
+  padding:7px 8px;
+  border:none;
+  border-radius:8px;
+  background:#252525;
+  color:white;
+  outline:none;
+}
+
 .refresh-btn{
   background:#2979ff;
   color:white;
@@ -255,6 +265,7 @@ tr:hover{
   }
 }
 </style>
+<link rel="stylesheet" href="admin_mobile.css">
 </head>
 
 <script>
@@ -266,7 +277,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
 }
 </script>
 
-<body>
+<body class="admin-page">
 
 <div class="sidebar">
 
@@ -333,6 +344,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
           <th>投入金额</th>
           <th>收益率</th>
           <th>收益</th>
+          <th>结果模式</th>
           <th>状态</th>
           <th>开始时间</th>
         </tr>
@@ -433,6 +445,53 @@ async function setRate(id){
   }
 }
 
+async function setResultMode(id){
+
+  const select =
+  document.getElementById("mode-" + id);
+
+  if(!select){
+    return;
+  }
+
+  const response =
+  await fetch(
+    API_BASE + "/api/admin/ai-quant/set-result-mode/" + id,
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "admin-token": ADMIN_TOKEN
+      },
+      body:JSON.stringify({
+        mode: select.value
+      })
+    }
+  );
+
+  const result =
+  await response.json();
+
+  if(result.success){
+    alert("结果模式设置成功");
+    loadTrades();
+  }else{
+    alert(result.message || "设置失败");
+  }
+}
+
+function getModeText(mode){
+  if(mode === "random"){
+    return "随机";
+  }
+
+  if(mode === "loss"){
+    return "亏损";
+  }
+
+  return "盈利";
+}
+
 function formatUSDT(value){
 
   return Number(value || 0)
@@ -501,7 +560,7 @@ function renderTrades(){
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="10" class="empty">
+        <td colspan="11" class="empty">
           暂无交易订单
         </td>
       </tr>
@@ -521,8 +580,20 @@ function renderTrades(){
     ? "profit-positive"
     : "profit-negative";
 
+    const id = item.id || item._id;
+    const isAIOrder =
+    item.type === "AI Quant" ||
+    item.type === "AI Assistant";
+
+    const canSetMode =
+    item.status === "Running" &&
+    isAIOrder;
+
+    const resultMode =
+    item.resultMode || "profit";
+
     tr.innerHTML = `
-      <td>${item.id || item._id || ""}</td>
+      <td>${id || ""}</td>
 
       <td>${item.uid || ""}</td>
 
@@ -540,7 +611,7 @@ function renderTrades(){
         <br><br>
 
         <input
-          id="rate-${item.id || item._id}"
+          id="rate-${id}"
           type="number"
           step="0.01"
           placeholder="收益率%"
@@ -551,7 +622,7 @@ function renderTrades(){
 
         <button
           class="action-btn refresh-btn"
-          onclick="setRate('${item.id || item._id}')"
+          onclick="setRate('${id}')"
         >
           设置
         </button>
@@ -559,6 +630,27 @@ function renderTrades(){
 
       <td class="${profitClass}">
         ${formatUSDT(item.profit)}
+      </td>
+
+      <td>
+        ${
+          canSetMode
+          ? `
+            <select class="mode-select" id="mode-${id}">
+              <option value="random" ${resultMode === "random" ? "selected" : ""}>随机</option>
+              <option value="profit" ${resultMode === "profit" ? "selected" : ""}>盈利</option>
+              <option value="loss" ${resultMode === "loss" ? "selected" : ""}>亏损</option>
+            </select>
+            <br>
+            <button
+              class="action-btn refresh-btn"
+              onclick="setResultMode('${id}')"
+            >
+              保存
+            </button>
+          `
+          : (isAIOrder ? getModeText(resultMode) : "-")
+        }
       </td>
 
       <td class="${getStatusClass(item.status)}">

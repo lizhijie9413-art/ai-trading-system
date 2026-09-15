@@ -45,6 +45,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const publicRootFiles = new Set([
   "admin_login.html",
+  "admin_mobile.css",
   "admin_notify.js",
   "ai_trading.html",
   "assistant_orders.html",
@@ -65,6 +66,7 @@ const publicRootFiles = new Set([
   "market.html",
   "notifications.html",
   "order_management.html",
+  "perpetual_billing.html",
   "perpetual_contracts.html",
   "portfolio.html",
   "profile.html",
@@ -116,6 +118,7 @@ const allowedHtmlPages = new Set([
   "market.html",
   "notifications.html",
   "order_management.html",
+  "perpetual_billing.html",
   "perpetual_contracts.html",
   "portfolio.html",
   "profile.html",
@@ -1343,6 +1346,10 @@ const AIQuantOrder = mongoose.model("AIQuantOrder", new mongoose.Schema({
   profit: Number,
   finalRate: Number,
   manualRate: Number,
+  resultMode: {
+    type: String,
+    default: "profit"
+  },
 
   subTrades: {
   type: Array,
@@ -1645,6 +1652,8 @@ app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
         profit: order.status === "Completed" ? (order.profit || 0) : 0,
 
         rate: order.status === "Completed" ? (order.profitRate || 0) : 0,
+
+        resultMode: order.resultMode || "profit",
 
         status: order.status || "",
 
@@ -2111,6 +2120,25 @@ function randomBetween(min, max) {
 
 }
 
+function normalizeTradeResultMode(mode) {
+  return ["random", "profit", "loss"].includes(mode) ? mode : "profit";
+}
+
+function applyTradeResultMode(rate, mode) {
+  const value = Math.abs(Number(rate || 0));
+  const resultMode = normalizeTradeResultMode(mode);
+
+  if (resultMode === "loss") {
+    return -value;
+  }
+
+  if (resultMode === "random") {
+    return Math.random() >= 0.5 ? value : -value;
+  }
+
+  return value;
+}
+
 function getAITradeCount(planName){
 
   if(planName === "Short-Term AI Quant"){
@@ -2295,9 +2323,14 @@ async function ensureLongTermAssistantSchedule(order) {
 
 
 async function prepareAIQuantSettlement(order) {
-  let profitRate = Number(order.manualRate || 0);
+  const hasManualRate =
+    order.manualRate !== undefined &&
+    order.manualRate !== null &&
+    order.manualRate !== "";
 
-  if (!profitRate) {
+  let profitRate = hasManualRate ? Number(order.manualRate || 0) : 0;
+
+  if (!hasManualRate) {
     if (order.assistantType === "AI Assistant") {
       if (order.strategy === "Short-Term AI Quant") {
         const setting = aiQuantRates[order.level] || aiQuantRates["Basic Quant"];
@@ -2342,13 +2375,17 @@ async function prepareAIQuantSettlement(order) {
 
       profitRate = Number(randomBetween(rateRange.min, rateRange.max).toFixed(2));
     }
+
+    profitRate = applyTradeResultMode(profitRate, order.resultMode);
   }
 
   if (
     order.assistantType === "AI Assistant" &&
     order.strategy === "Long-Term AI Wealth Plan" &&
     Array.isArray(order.subTrades) &&
-    order.subTrades.length > 0
+    order.subTrades.length > 0 &&
+    !hasManualRate &&
+    normalizeTradeResultMode(order.resultMode) === "profit"
   ) {
     order.subTrades = sanitizeSubTradesForOrderSession(order);
     profitRate = getSubTradeTotalRate(order.subTrades);
@@ -2903,6 +2940,62 @@ app.post("/api/admin/ai-quant/set-rate/:id", verifyAdmin, async (req, res) => {
 
 });
 
+/* 修改 AI 交易结果模式 */
+
+app.post("/api/admin/ai-quant/set-result-mode/:id", verifyAdmin, async (req, res) => {
+
+  try {
+
+    const { mode } = req.body;
+    const resultMode = normalizeTradeResultMode(mode);
+
+    const order =
+    await AIQuantOrder.findById(
+      req.params.id
+    );
+
+    if (!order) {
+
+      return res.json({
+        success:false,
+        message:"Order not found"
+      });
+    }
+
+    if (order.status !== "Running") {
+
+      return res.json({
+        success:false,
+        message:"Only running orders can be edited"
+      });
+    }
+
+    order.resultMode = resultMode;
+    order.manualRate = undefined;
+    order.profitRate = 0;
+    order.finalRate = 0;
+    order.profit = 0;
+    order.subTrades = [];
+
+    await order.save();
+
+    res.json({
+      success:true,
+      order
+    });
+
+  } catch(err) {
+
+    console.log(err);
+
+    res.json({
+      success:false,
+      message:"Set result mode failed"
+    });
+  }
+
+});
+
 /* 获取 AI Quant 订单 */
 
 app.get("/api/ai/quant/orders/:userId", authenticateUser, async (req, res) => {
@@ -3159,7 +3252,7 @@ app.post("/api/perpetual/start", authenticateUser, async (req, res) => {
       return res.status(400).json({ success: false, message: "Please choose Long or Short" });
     }
 
-    if (![1, 2, 5, 10, 20, 40].includes(selectedLeverage)) {
+    if (![1, 5, 10, 50].includes(selectedLeverage)) {
       return res.status(400).json({ success: false, message: "Invalid leverage" });
     }
 
@@ -3240,7 +3333,7 @@ app.post("/api/perpetual/ai-smart/start", authenticateUser, async (req, res) => 
       return res.status(400).json({ success: false, message: "Invalid product" });
     }
 
-    if (![1, 2, 5, 10, 20, 40].includes(selectedLeverage)) {
+    if (![1, 5, 10, 50].includes(selectedLeverage)) {
       return res.status(400).json({ success: false, message: "Invalid leverage" });
     }
 

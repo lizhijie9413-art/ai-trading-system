@@ -82,6 +82,7 @@ tr:hover{background:#1a1a1a;}
 .menu-toggle{display:none;position:fixed;top:15px;left:15px;z-index:1000;background:#7c4dff;border:none;color:white;width:44px;height:44px;border-radius:12px;font-size:20px;cursor:pointer;}
 @media (max-width: 576px){.menu-toggle{display:block;}.main{padding-top:60px;}}
 </style>
+<link rel="stylesheet" href="admin_mobile.css">
 </head>
 
 <script>
@@ -93,7 +94,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
 }
 </script>
 
-<body>
+<body class="admin-page">
 
 <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
 
