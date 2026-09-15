@@ -3320,7 +3320,7 @@ app.post("/api/perpetual/start", authenticateUser, async (req, res) => {
       return res.status(400).json({ success: false, message: "Please choose Long or Short" });
     }
 
-    if (![1, 5, 10, 50].includes(selectedLeverage)) {
+    if (!Number.isInteger(selectedLeverage) || selectedLeverage < 1 || selectedLeverage > 50) {
       return res.status(400).json({ success: false, message: "Invalid leverage" });
     }
 
@@ -3405,7 +3405,7 @@ app.post("/api/perpetual/ai-smart/start", authenticateUser, async (req, res) => 
       return res.status(400).json({ success: false, message: "Invalid product" });
     }
 
-    if (![1, 5, 10, 50].includes(selectedLeverage)) {
+    if (!Number.isInteger(selectedLeverage) || selectedLeverage < 1 || selectedLeverage > 50) {
       return res.status(400).json({ success: false, message: "Invalid leverage" });
     }
 
