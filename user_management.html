@@ -196,7 +196,7 @@ tr:hover{
 }
 
 /* 输入框 */
-.recharge-input, .withdraw-input{
+.recharge-input, .withdraw-input, .result-mode-select{
   width:100px;
   padding:8px;
   border-radius:6px;
@@ -204,6 +204,10 @@ tr:hover{
   background:#2a2a2a;
   color:white;
   text-align:center;
+}
+
+.result-mode-select{
+  margin-bottom:8px;
 }
 
 /* 按钮 */
@@ -421,11 +425,11 @@ if (!adminAuth || adminAuth.role !== "admin") {
     <table>
       <thead>
         <tr>
-          <th>UID</th><th>用户名</th><th>邮箱</th><th>余额</th><th>总收益</th><th>状态</th><th>KYC</th><th>充值</th><th>提现</th><th>操作</th>
+          <th>UID</th><th>用户名</th><th>邮箱</th><th>余额</th><th>总收益</th><th>交易结果</th><th>状态</th><th>KYC</th><th>充值</th><th>提现</th><th>操作</th>
         </tr>
       </thead>
       <tbody id="userTable">
-        <tr><td colspan="10" class="loading">加载用户数据中...</td></tr>
+        <tr><td colspan="11" class="loading">加载用户数据中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -465,7 +469,7 @@ function formatMoney(value){
 // ==================== 加载用户 ====================
 async function loadUsers() {
   const tbody = document.getElementById("userTable");
-  tbody.innerHTML = '<tr><td colspan="10" class="loading">加载用户数据中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="11" class="loading">加载用户数据中...</td></tr>';
   
   try {
     const response = await fetch(`${API_BASE}/api/users`, {
@@ -479,11 +483,11 @@ async function loadUsers() {
       renderTable();
       updateStats();
     } else {
-      tbody.innerHTML = '<tr><td colspan="10" class="empty">加载失败</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="empty">加载失败</td></tr>';
     }
   } catch (error) {
     console.error(error);
-    tbody.innerHTML = '<tr><td colspan="10" class="empty">网络错误</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty">网络错误</td></tr>';
   }
 }
 
@@ -492,7 +496,7 @@ function renderTable() {
   const tbody = document.getElementById("userTable");
   
   if (!users || users.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty">暂无用户数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty">暂无用户数据</td></tr>';
     return;
   }
 
@@ -502,6 +506,7 @@ function renderTable() {
     const statusText = user.status === 'active' ? '正常' : (user.status === 'frozen' ? '资产冻结' : '拉黑');
     const statusClass = user.status === 'active' ? 'status-active' : (user.status === 'frozen' ? 'status-frozen' : 'status-blacklisted');
     const kycText = user.kyc || '未审核';
+    const resultMode = user.defaultTradeResultMode || 'profit';
     
     // 操作按钮
     let actionButtons = '';
@@ -521,6 +526,15 @@ function renderTable() {
         <td>${escapeHtml(user.email || '-')}</td>
         <td>${formatMoney(balance)}</td>
         <td>${formatMoney(totalProfit)}</td>
+        <td>
+          <select class="result-mode-select" id="tradeMode_${user._id}">
+            <option value="random" ${resultMode === 'random' ? 'selected' : ''}>随机</option>
+            <option value="profit" ${resultMode === 'profit' ? 'selected' : ''}>盈利</option>
+            <option value="loss" ${resultMode === 'loss' ? 'selected' : ''}>亏损</option>
+          </select>
+          <br>
+          <button class="recharge-btn" onclick="setUserTradeMode('${user._id}')">保存</button>
+        </td>
         <td class="${statusClass}">${statusText}</td>
         <td>${kycText}</td>
         <td><input type="number" class="recharge-input" id="recharge_${user._id}" placeholder="金额"><button class="recharge-btn" onclick="rechargeUser('${user._id}')">充值</button></td>
@@ -593,6 +607,26 @@ async function withdrawUser(userId) {
   const result = await response.json();
   if (result.success) { alert("提现成功"); input.value = ""; loadUsers(); }
   else { alert(result.message || "提现失败"); }
+}
+
+// ==================== 用户默认交易结果 ====================
+async function setUserTradeMode(userId) {
+  const select = document.getElementById(`tradeMode_${userId}`);
+  if (!select) return;
+
+  const response = await fetch(`${API_BASE}/api/users/${userId}/trade-result-mode`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "admin-token": ADMIN_TOKEN },
+    body: JSON.stringify({ mode: select.value })
+  });
+
+  const result = await response.json();
+  if (result.success) {
+    alert("交易结果设置成功");
+    loadUsers();
+  } else {
+    alert(result.message || "设置失败");
+  }
 }
 
 // ==================== 资产冻结/解冻 ====================

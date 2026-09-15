@@ -710,6 +710,11 @@ const UserSchema = new mongoose.Schema({
     default: "active"
   },
 
+  defaultTradeResultMode: {
+    type: String,
+    default: "profit"
+  },
+
   kyc: {
     type: String,
     default: "未审核"
@@ -993,6 +998,7 @@ app.get("/api/users", verifyAdmin, async (req, res) => {
     data: users.map(user => {
       const obj = typeof user.toObject === "function" ? user.toObject() : { ...user };
       obj.status = normalizeAccountStatus(obj.status);
+      obj.defaultTradeResultMode = normalizeTradeResultMode(obj.defaultTradeResultMode);
       return obj;
     }),
     stats: mergeRuntimeAndPersistedStats(persistedStats)
@@ -1033,6 +1039,44 @@ app.delete("/api/users/:id", verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Delete user failed"
+    });
+  }
+});
+
+app.put("/api/users/:id/trade-result-mode", verifyAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    user.defaultTradeResultMode = normalizeTradeResultMode(req.body.mode);
+
+    if (!Array.isArray(user.records)) {
+      user.records = [];
+    }
+
+    user.records.push({
+      type: "trade_result_mode",
+      message: `Default trade result mode set to ${user.defaultTradeResultMode}`,
+      timestamp: new Date()
+    });
+
+    await user.save();
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (err) {
+    console.log("Set user trade result mode error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Set trade result mode failed"
     });
   }
 });
@@ -2646,6 +2690,9 @@ if(strategy === "Long-Term AI Wealth Plan"){
       finalRate:
       plannedFinalRate,
 
+      resultMode:
+      normalizeTradeResultMode(user.defaultTradeResultMode),
+
        subTrades,
 
       status:
@@ -2820,6 +2867,8 @@ new Date(
        profit,
 
        finalRate: profitRate,
+
+      resultMode: normalizeTradeResultMode(user.defaultTradeResultMode),
 
       subTrades,
       status: "Running",
