@@ -401,7 +401,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
   <div class="stats">
     <div class="stat-card"><p>总用户数</p><h2 id="totalUsers">0</h2></div>
     <div class="stat-card"><p>总资产</p><h2 id="totalAssets">0 USDT</h2></div>
-    <div class="stat-card"><p>冻结/拉黑</p><h2 id="frozenUsers">0</h2></div>
+    <div class="stat-card"><p>资产冻结/拉黑</p><h2 id="frozenUsers">0</h2></div>
     <div class="stat-card"><p>今日充值</p><h2 id="todayRecharge">0 USDT</h2></div>
     <div class="stat-card"><p>本月充值</p><h2 id="monthRecharge">0 USDT</h2></div>
     <div class="stat-card"><p>今日提现</p><h2 id="todayWithdraw">0 USDT</h2></div>
@@ -499,14 +499,14 @@ function renderTable() {
   tbody.innerHTML = users.map(user => {
     const balance = user.availableBalance !== undefined ? user.availableBalance : (user.asset || 0);
     const totalProfit = user.totalProfit || 0;
-    const statusText = user.status === 'active' ? '正常' : (user.status === 'frozen' ? '冻结' : '拉黑');
+    const statusText = user.status === 'active' ? '正常' : (user.status === 'frozen' ? '资产冻结' : '拉黑');
     const statusClass = user.status === 'active' ? 'status-active' : (user.status === 'frozen' ? 'status-frozen' : 'status-blacklisted');
     const kycText = user.kyc || '未审核';
     
     // 操作按钮
     let actionButtons = '';
     if (user.status !== 'blacklisted') {
-      actionButtons = `<button class="freeze-btn" onclick="freezeUser('${user._id}')">${user.status === 'frozen' ? '解冻' : '冻结'}</button>
+      actionButtons = `<button class="freeze-btn" onclick="freezeUser('${user._id}')">${user.status === 'frozen' ? '资产解冻' : '资产冻结'}</button>
                        <button class="blacklist-btn" onclick="blacklistUser('${user._id}')">拉黑</button>
                        <button class="delete-btn" onclick="deleteUser('${user._id}')">删除</button>`;
     } else {
@@ -595,9 +595,9 @@ async function withdrawUser(userId) {
   else { alert(result.message || "提现失败"); }
 }
 
-// ==================== 冻结/解冻 ====================
+// ==================== 资产冻结/解冻 ====================
 async function freezeUser(userId) {
-  if (!confirm("确定要冻结/解冻该用户吗？")) return;
+  if (!confirm("确定要冻结/解冻该用户资产吗？\n冻结后用户仍可登录，但不能交易和提现。")) return;
   const response = await fetch(`${API_BASE}/api/users/${userId}/freeze`, {
     method: "PUT",
     headers: { "admin-token": ADMIN_TOKEN }

@@ -264,12 +264,36 @@ async function authenticateUser(req, res, next) {
   if (tokenPayload && tokenPayload.userId !== user._id.toString()) {
     return res.status(403).json({ success: false, message: "Invalid user token" });
   }
-  if (user.status !== 'active') {
-    return res.status(403).json({ success: false, message: "Account is frozen" });
+  const accountStatus = normalizeAccountStatus(user.status);
+  if (accountStatus === "blacklisted") {
+    return res.status(403).json({ success: false, message: "Account is blacklisted" });
   }
   req.user = user;
   req.userId = userId;
   next();
+}
+
+function normalizeAccountStatus(status) {
+  if (status === "blacklisted" || status === "拉黑") {
+    return "blacklisted";
+  }
+
+  if (status === "frozen" || status === "冻结") {
+    return "frozen";
+  }
+
+  return "active";
+}
+
+function isAssetFrozen(user) {
+  return normalizeAccountStatus(user?.status) === "frozen";
+}
+
+function blockFrozenAssetAction(res) {
+  return res.status(403).json({
+    success: false,
+    message: "Assets are frozen. Trading and withdrawals are disabled."
+  });
 }
 
 app.post("/api/tts", authenticateUser, async (req, res) => {
@@ -503,6 +527,15 @@ app.post("/api/login", async (req, res) => {
             });
         }
 
+        const accountStatus = normalizeAccountStatus(user.status);
+
+        if (accountStatus === "blacklisted") {
+            return res.json({
+                success: false,
+                message: "Account is blacklisted."
+            });
+        }
+
         const token = signToken({
             userId: user._id.toString(),
             type: "user",
@@ -519,7 +552,7 @@ app.post("/api/login", async (req, res) => {
         name: user.username || user.name,
         email: user.email,
         balance: user.asset || user.balance || 0,
-        status: user.status
+        status: accountStatus
     }
 });
 
@@ -957,7 +990,11 @@ app.get("/api/users", verifyAdmin, async (req, res) => {
   const persistedStats = calculateFinanceStats(users);
   res.json({
     success: true,
-    data: users,
+    data: users.map(user => {
+      const obj = typeof user.toObject === "function" ? user.toObject() : { ...user };
+      obj.status = normalizeAccountStatus(obj.status);
+      return obj;
+    }),
     stats: mergeRuntimeAndPersistedStats(persistedStats)
   });
 });
@@ -1146,6 +1183,10 @@ app.put("/api/users/:id/withdraw", verifyAdmin, async (req, res) => {
       });
     }
 
+    if (isAssetFrozen(user)) {
+      return blockFrozenAssetAction(res);
+    }
+
     const availableBalance = Number(user.asset ?? user.availableBalance ?? user.balance ?? 0);
 
     if (amount > availableBalance) {
@@ -1195,8 +1236,14 @@ app.put("/api/users/:id/withdraw", verifyAdmin, async (req, res) => {
     return res.status(404).json({ success: false, message: "用户不存在" });
   }
 
-  user.status = user.status === "冻结" ? "正常" : "冻结";
-  user.records.push(user.status === "冻结" ? "账户冻结" : "账户解冻");
+  const currentStatus = normalizeAccountStatus(user.status);
+  user.status = currentStatus === "frozen" ? "active" : "frozen";
+
+  if (!Array.isArray(user.records)) {
+    user.records = [];
+  }
+
+  user.records.push(user.status === "frozen" ? "资产冻结：禁止交易和提现" : "资产解冻：恢复交易和提现");
 
   await user.save();
   res.json({ success: true, data: user });
@@ -1212,7 +1259,11 @@ app.put(
     return res.status(404).json({ success: false, message: "用户不存在" });
   }
 
-  user.status = "拉黑";
+  user.status = "blacklisted";
+  if (!Array.isArray(user.records)) {
+    user.records = [];
+  }
+
   user.records.push("账户拉黑");
 
   await user.save();
@@ -2429,6 +2480,10 @@ app.post("/api/ai/assistant/start", authenticateUser, async (req, res) => {
       });
     }
 
+    if (isAssetFrozen(user)) {
+      return blockFrozenAssetAction(res);
+    }
+
     const asset =
     Number(user.asset || 0);
 
@@ -2649,6 +2704,10 @@ app.post("/api/ai/quant/start", authenticateUser, async (req, res) => {
         success: false,
         message: "User not found"
       });
+    }
+
+    if (isAssetFrozen(user)) {
+      return blockFrozenAssetAction(res);
     }
 
     const asset = Number(user.asset || 0);
@@ -3140,6 +3199,10 @@ app.post("/api/token-yield/start", authenticateUser, async (req, res) => {
       });
     }
 
+    if (isAssetFrozen(user)) {
+      return blockFrozenAssetAction(res);
+    }
+
     const asset = Number(user.asset || 0);
     const investAmount = Number(amount || 0);
 
@@ -3270,6 +3333,10 @@ app.post("/api/perpetual/start", authenticateUser, async (req, res) => {
     }
 
     const user = await User.findById(req.user._id);
+    if (isAssetFrozen(user)) {
+      return blockFrozenAssetAction(res);
+    }
+
     const asset = Number(user.asset || 0);
     if (selectedMargin > asset) {
       return res.status(400).json({ success: false, message: "Insufficient balance" });
@@ -3347,6 +3414,10 @@ app.post("/api/perpetual/ai-smart/start", authenticateUser, async (req, res) => 
     }
 
     const user = await User.findById(req.user._id);
+    if (isAssetFrozen(user)) {
+      return blockFrozenAssetAction(res);
+    }
+
     const asset = Number(user.asset || 0);
     if (selectedMargin > asset) {
       return res.status(400).json({ success: false, message: "Insufficient balance" });
@@ -3463,6 +3534,10 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
         success: false,
         message: "User not found"
       });
+    }
+
+    if (isAssetFrozen(user)) {
+      return blockFrozenAssetAction(res);
     }
 
     if (withdrawAmount <= 0) {
