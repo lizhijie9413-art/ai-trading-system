@@ -90,6 +90,17 @@ button,select,input{
   border-color:rgba(255,255,255,.18);
   box-shadow:0 0 18px rgba(34,211,238,.22);
 }
+.duration-btn{
+  border:1px solid rgba(148,163,184,.16);
+  background:rgba(15,23,42,.86);
+}
+.duration-btn.active{
+  border-color:rgba(34,211,238,.72);
+  background:linear-gradient(135deg,#7c3aed 0%,#38bdf8 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.12),
+    0 0 18px rgba(56,189,248,.22);
+}
 .seg-btn.long.active{background:linear-gradient(135deg,#00c853,#22d3ee);color:#06111a}
 .seg-btn.short.active{background:linear-gradient(135deg,#ff3864,#f97316);color:white}
 .leverage-slider-wrap{
@@ -267,8 +278,8 @@ select option{background:#111827;color:white}
   <div class="row">
     <div class="label"><span>Duration</span><span>Settlement after time ends</span></div>
     <div class="seg">
-      <button type="button" class="seg-btn active" id="duration60" onclick="setDuration(60)">60S</button>
-      <button type="button" class="seg-btn" id="duration120" onclick="setDuration(120)">120S</button>
+      <button type="button" class="seg-btn duration-btn active" id="duration60" onclick="setDuration(60)">60S</button>
+      <button type="button" class="seg-btn duration-btn" id="duration120" onclick="setDuration(120)">120S</button>
     </div>
   </div>
 
