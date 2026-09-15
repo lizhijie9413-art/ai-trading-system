@@ -102,6 +102,28 @@ h1{
   outline:none;
 }
 
+.filter-bar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:-8px 0 20px;
+}
+
+.filter-btn{
+  border:none;
+  border-radius:12px;
+  padding:11px 16px;
+  color:#dbeafe;
+  background:#1f1f25;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.filter-btn.active{
+  color:white;
+  background:linear-gradient(135deg,#7c3aed,#2979ff);
+}
+
 .table-box{
   background:#121212;
   border:1px solid #333;
@@ -330,6 +352,13 @@ if (!adminAuth || adminAuth.role !== "admin") {
     >
   </div>
 
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all" onclick="setTradeFilter('all')">全部账单</button>
+    <button class="filter-btn" data-filter="ai" onclick="setTradeFilter('ai')">AI交易</button>
+    <button class="filter-btn" data-filter="perpetual" onclick="setTradeFilter('perpetual')">合约账单</button>
+    <button class="filter-btn" data-filter="token" onclick="setTradeFilter('token')">质押收益</button>
+  </div>
+
   <div class="table-box">
 
     <table>
@@ -347,6 +376,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
           <th>结果模式</th>
           <th>状态</th>
           <th>开始时间</th>
+          <th>备注明细</th>
         </tr>
       </thead>
 
@@ -365,6 +395,7 @@ const API_BASE =
 const ADMIN_TOKEN = adminAuth.token;
 
 let trades = [];
+let activeTradeFilter = "all";
 
 async function loadTrades(){
 
@@ -549,6 +580,41 @@ function updateStats(){
   formatUSDT(totalVolume);
 }
 
+function getTradeSource(item){
+  if(item.source){
+    return item.source;
+  }
+
+  if(item.type === "Perpetual Contract" || item.type === "AI Smart Perpetual"){
+    return "perpetual";
+  }
+
+  if(item.type === "Token Yield"){
+    return "token";
+  }
+
+  return "ai";
+}
+
+function getVisibleTrades(){
+  if(activeTradeFilter === "all"){
+    return trades;
+  }
+
+  return trades.filter(item => getTradeSource(item) === activeTradeFilter);
+}
+
+function setTradeFilter(filter){
+  activeTradeFilter = filter;
+
+  document.querySelectorAll(".filter-btn").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.filter === filter);
+  });
+
+  renderTrades();
+  searchTrades();
+}
+
 function renderTrades(){
 
   const tbody =
@@ -556,11 +622,13 @@ function renderTrades(){
 
   tbody.innerHTML = "";
 
-  if(trades.length === 0){
+  const visibleTrades = getVisibleTrades();
+
+  if(visibleTrades.length === 0){
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" class="empty">
+        <td colspan="12" class="empty">
           暂无交易订单
         </td>
       </tr>
@@ -570,7 +638,7 @@ function renderTrades(){
     return;
   }
 
-  trades.forEach(item=>{
+  visibleTrades.forEach(item=>{
 
     const tr =
     document.createElement("tr");
@@ -592,20 +660,13 @@ function renderTrades(){
     const resultMode =
     item.resultMode || "profit";
 
-    tr.innerHTML = `
-      <td>${id || ""}</td>
+    const canSetRate =
+    item.status === "Running" &&
+    isAIOrder;
 
-      <td>${item.uid || ""}</td>
-
-      <td>${item.user || item.username || item.name || ""}</td>
-
-      <td>${item.type || "Token Yield"}</td>
-
-      <td>${item.coin || item.planName || item.product || ""}</td>
-
-      <td>${formatUSDT(item.amount)}</td>
-
-      <td>
+    const rateCell =
+    canSetRate
+    ? `
         ${formatRate(item.rate)}
 
         <br><br>
@@ -626,6 +687,24 @@ function renderTrades(){
         >
           设置
         </button>
+      `
+    : formatRate(item.rate);
+
+    tr.innerHTML = `
+      <td>${id || ""}</td>
+
+      <td>${item.uid || ""}</td>
+
+      <td>${item.user || item.username || item.name || ""}</td>
+
+      <td>${item.type || "Token Yield"}</td>
+
+      <td>${item.coin || item.planName || item.product || ""}</td>
+
+      <td>${formatUSDT(item.amount)}</td>
+
+      <td>
+        ${rateCell}
       </td>
 
       <td class="${profitClass}">
@@ -658,6 +737,8 @@ function renderTrades(){
       </td>
 
       <td>${item.time || item.createdAt || ""}</td>
+
+      <td>${item.remark || "-"}</td>
     `;
 
     tbody.appendChild(tr);
