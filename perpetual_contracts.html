@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perpetual Contracts</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body{
+  max-width:430px;
+  min-height:100vh;
+  margin:0 auto;
+  padding:18px 16px 110px;
+  color:#fff;
+  background:
+    radial-gradient(circle at 20% 10%,rgba(124,58,237,.28),transparent 28%),
+    radial-gradient(circle at 85% 55%,rgba(34,211,238,.14),transparent 32%),
+    linear-gradient(180deg,#030712,#07111f 52%,#020617);
+  overflow-x:hidden;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:42px 42px;
+}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.back{
+  width:48px;height:48px;border-radius:16px;border:1px solid rgba(139,92,246,.28);
+  background:rgba(255,255,255,.06);color:#c084fc;font-size:22px;
+  display:flex;align-items:center;justify-content:center;text-decoration:none;
+}
+.title h1{font-size:30px;line-height:1.05}
+.title p{color:#94a3b8;margin-top:5px;font-size:14px}
+.card{
+  background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(8,13,32,.96));
+  border:1px solid rgba(139,92,246,.25);
+  border-radius:28px;
+  padding:20px;
+  box-shadow:0 0 30px rgba(139,92,246,.14);
+  margin-bottom:16px;
+  overflow:hidden;
+}
+.market-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.symbol{display:flex;align-items:center;gap:12px}
+.coin{
+  width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#8b5cf6,#22d3ee);
+  font-weight:900;font-size:20px;
+}
+.symbol h2{font-size:22px}
+.symbol p,.muted{color:#94a3b8;font-size:13px}
+.price{font-size:38px;font-weight:900;margin:20px 0 6px}
+.move{font-weight:800;color:#00f5a0}
+.move.down{color:#ff4d6d}
+.chart{height:120px;margin-top:12px}
+.chart svg{width:100%;height:100%}
+.tabs,.seg,.lev-grid,.quick-grid{display:grid;gap:8px;margin-top:12px}
+.tabs{grid-template-columns:repeat(4,1fr)}
+.seg{grid-template-columns:repeat(2,1fr)}
+.lev-grid{grid-template-columns:repeat(6,1fr)}
+.quick-grid{grid-template-columns:repeat(3,1fr)}
+button,select,input{
+  border:none;
+  outline:none;
+  border-radius:14px;
+  font-size:15px;
+}
+.pill,.seg-btn,.lev-btn,.quick-btn{
+  min-height:42px;
+  background:rgba(255,255,255,.07);
+  color:#cbd5e1;
+  font-weight:800;
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,.08);
+}
+.pill.active,.lev-btn.active,.quick-btn.active{
+  color:#fff;
+  background:linear-gradient(135deg,#7c3aed,#2563eb);
+  border-color:rgba(255,255,255,.18);
+}
+.seg-btn.long.active{background:linear-gradient(135deg,#00c853,#22d3ee);color:#06111a}
+.seg-btn.short.active{background:linear-gradient(135deg,#ff3864,#f97316);color:white}
+.row{margin-top:16px}
+.label{display:flex;justify-content:space-between;color:#cbd5e1;font-size:14px;margin-bottom:8px}
+select,input{
+  width:100%;
+  height:52px;
+  padding:0 14px;
+  color:white;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.1);
+}
+select option{background:#111827;color:white}
+.summary{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:16px;
+}
+.mini{
+  padding:13px;
+  border-radius:16px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+}
+.mini span{display:block;color:#94a3b8;font-size:12px;margin-bottom:7px}
+.mini strong{font-size:18px}
+.start-btn,.settle-btn{
+  width:100%;
+  height:58px;
+  margin-top:18px;
+  border-radius:18px;
+  color:white;
+  font-weight:900;
+  font-size:17px;
+  cursor:pointer;
+  background:linear-gradient(135deg,#06b6d4,#8b5cf6);
+}
+.ai-smart-btn{
+  width:100%;
+  min-height:58px;
+  margin-top:12px;
+  border-radius:18px;
+  color:#06111a;
+  font-weight:900;
+  font-size:17px;
+  cursor:pointer;
+  background:linear-gradient(135deg,#00f5a0,#22d3ee);
+}
+.start-btn:disabled,.settle-btn:disabled{opacity:.48;cursor:not-allowed}
+.ai-smart-btn:disabled{opacity:.48;cursor:not-allowed}
+.orders-title{font-size:22px;font-weight:900;margin:24px 0 12px}
+.order-card{border-radius:22px;padding:16px;margin-bottom:12px;background:rgba(15,23,42,.86);border:1px solid rgba(139,92,246,.18)}
+.order-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
+.status{padding:7px 10px;border-radius:999px;background:rgba(245,158,11,.18);color:#fbbf24;font-weight:900;font-size:12px}
+.status.done{background:rgba(16,185,129,.16);color:#34d399}
+.profit{color:#00f5a0}.loss{color:#ff4d6d}
+.sub-trades{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
+.sub-trade{display:grid;grid-template-columns:42px 1fr 72px 64px;gap:8px;align-items:center;color:#cbd5e1;font-size:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sub-trade:last-child{border-bottom:none}
+.bottom-nav{
+  position:fixed;left:50%;bottom:0;transform:translateX(-50%);
+  width:100%;max-width:430px;height:78px;background:rgba(3,7,18,.96);
+  border-top:1px solid rgba(255,255,255,.08);
+  display:grid;grid-template-columns:repeat(5,1fr);z-index:50;
+}
+.nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#64748b;text-decoration:none;font-size:12px;gap:5px}
+.nav-item i{font-size:20px}.nav-item.active{color:#c084fc}
+.toast{
+  position:fixed;left:50%;top:20px;transform:translateX(-50%);
+  z-index:100;width:min(380px,calc(100vw - 28px));
+  padding:14px 16px;border-radius:16px;background:#111827;border:1px solid rgba(139,92,246,.4);
+  color:#fff;box-shadow:0 16px 40px rgba(0,0,0,.36);font-weight:800;
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="back" href="trade.html"><i class="fa-solid fa-arrow-left"></i></a>
+  <div class="title">
+    <h1>Perpetual Contracts</h1>
+    <p>Long / Short leveraged contracts</p>
+  </div>
+</div>
+
+<section class="card">
+  <div class="market-head">
+    <div class="symbol">
+      <div class="coin" id="coinIcon">BTC</div>
+      <div>
+        <h2 id="symbolName">BTC/USDT</h2>
+        <p id="marketName">Crypto · Max 40x</p>
+      </div>
+    </div>
+    <div class="muted" id="durationText">60s</div>
+  </div>
+  <div class="price" id="livePrice">$0.00</div>
+  <div class="move" id="priceMove">+0.00%</div>
+  <div class="chart">
+    <svg viewBox="0 0 360 120" preserveAspectRatio="none">
+      <path id="chartPath" d="M8 88 C50 70, 74 55, 112 64 C160 76, 195 45, 235 56 C284 68, 310 42, 352 35" fill="none" stroke="#22d3ee" stroke-width="5" stroke-linecap="round"/>
+    </svg>
+  </div>
+</section>
+
+<section class="card">
+  <div class="label"><span>Market</span><strong id="availableBalance">$0.00 available</strong></div>
+  <div class="tabs" id="marketTabs"></div>
+
+  <div class="row">
+    <div class="label"><span>Product</span><span id="productCount"></span></div>
+    <select id="productSelect"></select>
+  </div>
+
+  <div class="row">
+    <div class="label"><span>Direction</span><span>Long rises, Short falls</span></div>
+    <div class="seg">
+      <button class="seg-btn long active" id="longBtn" onclick="setDirection('Long')">Long</button>
+      <button class="seg-btn short" id="shortBtn" onclick="setDirection('Short')">Short</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="label"><span>Duration</span><span>Settlement after time ends</span></div>
+    <div class="seg">
+      <button class="seg-btn active" id="duration60" onclick="setDuration(60)">60S</button>
+      <button class="seg-btn" id="duration120" onclick="setDuration(120)">120S</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="label"><span>Leverage</span><span id="leverageText">10x</span></div>
+    <div class="lev-grid" id="leverageGrid"></div>
+  </div>
+
+  <div class="row">
+    <div class="label"><span>Margin</span><span>USDT</span></div>
+    <input type="number" id="marginInput" min="1" step="1" placeholder="Enter margin">
+    <div class="quick-grid">
+      <button class="quick-btn" onclick="fillMargin(.25)">25%</button>
+      <button class="quick-btn" onclick="fillMargin(.5)">50%</button>
+      <button class="quick-btn" onclick="fillMargin(1)">Max</button>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="mini"><span>Position Size</span><strong id="positionSize">$0.00</strong></div>
+    <div class="mini"><span>Risk Limit</span><strong id="riskLimit">Margin only</strong></div>
+  </div>
+
+  <button class="start-btn" id="startBtn" onclick="startContract()">Start Contract</button>
+  <button class="ai-smart-btn" id="aiSmartBtn" onclick="startAISmartTrade()">AI Smart Trade</button>
+</section>
+
+<div class="orders-title">My Contracts</div>
+<div id="ordersBox"></div>
+
+<div class="bottom-nav">
+  <a class="nav-item" href="index.html"><i class="fa-solid fa-house"></i>Home</a>
+  <a class="nav-item" href="market.html"><i class="fa-solid fa-chart-column"></i>Markets</a>
+  <a class="nav-item active" href="trade.html"><i class="fa-solid fa-arrow-right-arrow-left"></i>Trade</a>
+  <a class="nav-item" href="portfolio.html"><i class="fa-regular fa-folder"></i>Portfolio</a>
+  <a class="nav-item" href="profile.html"><i class="fa-regular fa-user"></i>Profile</a>
+</div>
+
+<script>
+const API_BASE = location.origin.includes("localhost") ? "http://localhost:3000" : location.origin;
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if(!user || !user.id){
+  location.href = "login.html";
+}
+
+let products = {};
+let selectedMarket = "Crypto";
+let selectedSymbol = "BTC/USDT";
+let selectedDirection = "Long";
+let selectedDuration = 60;
+let selectedLeverage = 10;
+let available = 0;
+
+function authHeaders(){
+  return {
+    "Content-Type":"application/json",
+    "Authorization":"Bearer " + (user.token || ""),
+    "user-id": user.id
+  };
+}
+
+function money(value){
+  return "$" + Number(value || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function toast(message){
+  const old = document.querySelector(".toast");
+  if(old) old.remove();
+  const div = document.createElement("div");
+  div.className = "toast";
+  div.textContent = message;
+  document.body.appendChild(div);
+  setTimeout(()=>div.remove(),2600);
+}
+
+function currentProduct(){
+  return (products[selectedMarket] || []).find(item => item.symbol === selectedSymbol) || {};
+}
+
+function renderMarkets(){
+  const box = document.getElementById("marketTabs");
+  box.innerHTML = Object.keys(products).map(market => `
+    <button class="pill ${market === selectedMarket ? "active" : ""}" onclick="setMarket('${market}')">${market}</button>
+  `).join("");
+}
+
+function renderProducts(){
+  const list = products[selectedMarket] || [];
+  const select = document.getElementById("productSelect");
+  select.innerHTML = list.map(item => `<option value="${item.symbol}">${item.symbol} · ${item.product}</option>`).join("");
+  select.value = selectedSymbol;
+  document.getElementById("productCount").textContent = list.length + " products";
+  updateMarketView();
+}
+
+function updateMarketView(){
+  const item = currentProduct();
+  const price = Number(item.price || 0);
+  const move = (Math.sin(Date.now() / 35000 + price) * 2.8).toFixed(2);
+  document.getElementById("symbolName").textContent = item.symbol || selectedSymbol;
+  document.getElementById("marketName").textContent = selectedMarket + " · Max 40x";
+  document.getElementById("coinIcon").textContent = (item.symbol || "PC").split("/")[0].slice(0,3);
+  document.getElementById("livePrice").textContent = money(price * (1 + Number(move) / 100));
+  document.getElementById("priceMove").textContent = (move >= 0 ? "+" : "") + move + "%";
+  document.getElementById("priceMove").classList.toggle("down", Number(move) < 0);
+  document.getElementById("durationText").textContent = selectedDuration + "s";
+  updateSummary();
+}
+
+function setMarket(market){
+  selectedMarket = market;
+  selectedSymbol = (products[market] || [])[0]?.symbol || "";
+  renderMarkets();
+  renderProducts();
+}
+
+function setDirection(direction){
+  selectedDirection = direction;
+  document.getElementById("longBtn").classList.toggle("active", direction === "Long");
+  document.getElementById("shortBtn").classList.toggle("active", direction === "Short");
+}
+
+function setDuration(seconds){
+  selectedDuration = seconds;
+  document.getElementById("duration60").classList.toggle("active", seconds === 60);
+  document.getElementById("duration120").classList.toggle("active", seconds === 120);
+  updateMarketView();
+}
+
+function renderLeverage(){
+  const box = document.getElementById("leverageGrid");
+  box.innerHTML = [1,2,5,10,20,40].map(value => `
+    <button class="lev-btn ${value === selectedLeverage ? "active" : ""}" onclick="setLeverage(${value})">${value}x</button>
+  `).join("");
+}
+
+function setLeverage(value){
+  selectedLeverage = value;
+  document.getElementById("leverageText").textContent = value + "x";
+  renderLeverage();
+  updateSummary();
+}
+
+function fillMargin(rate){
+  document.getElementById("marginInput").value = Math.floor(available * rate);
+  updateSummary();
+}
+
+function updateSummary(){
+  const margin = Number(document.getElementById("marginInput").value || 0);
+  document.getElementById("positionSize").textContent = money(margin * selectedLeverage);
+  document.getElementById("availableBalance").textContent = money(available) + " available";
+}
+
+async function loadProducts(){
+  const res = await fetch(API_BASE + "/api/perpetual/products", { headers: authHeaders() });
+  const result = await res.json();
+  if(result.success){
+    products = result.data || {};
+    renderMarkets();
+    renderProducts();
+  }
+}
+
+async function loadBalance(){
+  const res = await fetch(API_BASE + "/api/users/" + user.id, { headers: authHeaders() });
+  const result = await res.json();
+  if(result.success && result.user){
+    available = Number(result.user.availableBalance || result.user.balance || result.user.asset || 0);
+    updateSummary();
+  }
+}
+
+async function startContract(){
+  const margin = Number(document.getElementById("marginInput").value || 0);
+  if(!margin || margin <= 0){
+    toast("Please enter margin");
+    return;
+  }
+
+  document.getElementById("startBtn").disabled = true;
+  try{
+    const res = await fetch(API_BASE + "/api/perpetual/start", {
+      method:"POST",
+      headers:authHeaders(),
+      body:JSON.stringify({
+        market:selectedMarket,
+        symbol:selectedSymbol,
+        direction:selectedDirection,
+        leverage:selectedLeverage,
+        margin,
+        durationSeconds:selectedDuration
+      })
+    });
+    const result = await res.json();
+    if(result.success){
+      toast("Contract started");
+      document.getElementById("marginInput").value = "";
+      await loadBalance();
+      await loadOrders();
+    }else{
+      toast(result.message || "Start failed");
+    }
+  }catch(err){
+    toast("Network error");
+  }
+  document.getElementById("startBtn").disabled = false;
+}
+
+async function startAISmartTrade(){
+  const margin = Number(document.getElementById("marginInput").value || 0);
+  if(!margin || margin <= 0){
+    toast("Please enter margin");
+    return;
+  }
+
+  document.getElementById("aiSmartBtn").disabled = true;
+  try{
+    const res = await fetch(API_BASE + "/api/perpetual/ai-smart/start", {
+      method:"POST",
+      headers:authHeaders(),
+      body:JSON.stringify({
+        market:selectedMarket,
+        symbol:selectedSymbol,
+        leverage:selectedLeverage,
+        margin
+      })
+    });
+    const result = await res.json();
+    if(result.success){
+      toast("AI Smart Trade started");
+      document.getElementById("marginInput").value = "";
+      await loadBalance();
+      await loadOrders();
+    }else{
+      toast(result.message || "AI Smart Trade failed");
+    }
+  }catch(err){
+    toast("Network error");
+  }
+  document.getElementById("aiSmartBtn").disabled = false;
+}
+
+function countdown(order){
+  if(order.status === "Completed") return "Completed";
+  const left = Math.max(0, new Date(order.endTime).getTime() - Date.now());
+  return Math.ceil(left / 1000) + "s left";
+}
+
+async function settleOrder(id){
+  try{
+    const res = await fetch(API_BASE + "/api/perpetual/settle/" + id, {
+      method:"POST",
+      headers:authHeaders()
+    });
+    const result = await res.json();
+    toast(result.message || (result.success ? "Completed" : "Not ready"));
+    await loadBalance();
+    await loadOrders();
+  }catch(err){
+    toast("Settlement failed");
+  }
+}
+
+async function loadOrders(){
+  const box = document.getElementById("ordersBox");
+  const res = await fetch(API_BASE + "/api/perpetual/orders", { headers: authHeaders() });
+  const result = await res.json();
+  const orders = result.success ? result.data : [];
+  if(!orders.length){
+    box.innerHTML = `<div class="order-card muted">No contracts yet.</div>`;
+    return;
+  }
+
+  box.innerHTML = orders.map(order => {
+    const done = order.status === "Completed";
+    const profit = Number(order.profit || 0);
+    const isAISmart = order.mode === "AI Smart";
+    const subTrades = Array.isArray(order.subTrades) ? order.subTrades : [];
+    const subTradeHtml = done && subTrades.length ? `
+      <div class="sub-trades">
+        ${subTrades.map(item => `
+          <div class="sub-trade">
+            <span>#${item.no}</span>
+            <span>${item.direction}</span>
+            <strong class="${Number(item.profitRate || 0) >= 0 ? "profit" : "loss"}">${Number(item.profitRate || 0).toFixed(2)}%</strong>
+            <span>${item.result || ""}</span>
+          </div>
+        `).join("")}
+      </div>
+    ` : "";
+    return `
+      <div class="order-card">
+        <div class="order-top">
+          <div>
+            <strong>${isAISmart ? "AI Smart · " : ""}${order.symbol} · ${order.direction} ${order.leverage}x</strong>
+            <div class="muted">${order.market} · Margin ${money(order.margin)} · Position ${money(order.positionSize)}${isAISmart ? " · 5 trades / 30 min" : ""}</div>
+          </div>
+          <div class="status ${done ? "done" : ""}">${done ? "Completed" : countdown(order)}</div>
+        </div>
+        <div class="summary">
+          <div class="mini"><span>Entry Price</span><strong>${money(order.entryPrice)}</strong></div>
+          <div class="mini"><span>Exit Price</span><strong>${done ? money(order.exitPrice) : "Pending"}</strong></div>
+          <div class="mini"><span>P/L Rate</span><strong class="${Number(order.profitRate || 0) >= 0 ? "profit" : "loss"}">${done ? Number(order.profitRate || 0).toFixed(2) + "%" : "Pending"}</strong></div>
+          <div class="mini"><span>P/L</span><strong class="${profit >= 0 ? "profit" : "loss"}">${done ? money(profit) : "Pending"}</strong></div>
+        </div>
+        ${subTradeHtml}
+        ${done ? "" : `<button class="settle-btn" onclick="settleOrder('${order._id || order.id}')">Settle When Time Ends</button>`}
+      </div>
+    `;
+  }).join("");
+}
+
+document.getElementById("productSelect").addEventListener("change", function(){
+  selectedSymbol = this.value;
+  updateMarketView();
+});
+document.getElementById("marginInput").addEventListener("input", updateSummary);
+
+loadProducts();
+loadBalance();
+loadOrders();
+setInterval(updateMarketView, 3000);
+setInterval(loadOrders, 5000);
+</script>
+<script src="user_notify.js"></script>
+</body>
+</html>

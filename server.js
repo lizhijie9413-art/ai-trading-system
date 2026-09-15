@@ -65,6 +65,7 @@ const publicRootFiles = new Set([
   "market.html",
   "notifications.html",
   "order_management.html",
+  "perpetual_contracts.html",
   "portfolio.html",
   "profile.html",
   "records.html",
@@ -115,6 +116,7 @@ const allowedHtmlPages = new Set([
   "market.html",
   "notifications.html",
   "order_management.html",
+  "perpetual_contracts.html",
   "portfolio.html",
   "profile.html",
   "records.html",
@@ -1410,6 +1412,177 @@ const TokenYieldOrder = mongoose.model("TokenYieldOrder", new mongoose.Schema({
 
 }));
 
+const PerpetualContractOrder = mongoose.model("PerpetualContractOrder", new mongoose.Schema({
+  userId: String,
+  username: String,
+  uid: String,
+  market: String,
+  product: String,
+  symbol: String,
+  direction: String,
+  mode: String,
+  leverage: Number,
+  margin: Number,
+  positionSize: Number,
+  durationSeconds: Number,
+  tradeCount: Number,
+  entryPrice: Number,
+  exitPrice: Number,
+  priceChangeRate: Number,
+  profitRate: Number,
+  profit: Number,
+  subTrades: {
+    type: Array,
+    default: []
+  },
+  status: String,
+  startTime: Date,
+  endTime: Date,
+  completedAt: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}));
+
+const perpetualProducts = {
+  Crypto: [
+    { product: "Bitcoin", symbol: "BTC/USDT", price: 76320 },
+    { product: "Ethereum", symbol: "ETH/USDT", price: 3815 },
+    { product: "Solana", symbol: "SOL/USDT", price: 168 },
+    { product: "XRP", symbol: "XRP/USDT", price: 2.45 },
+    { product: "BNB", symbol: "BNB/USDT", price: 691 },
+    { product: "Uniswap", symbol: "UNI/USDT", price: 9.8 },
+    { product: "Dogecoin", symbol: "DOGE/USDT", price: 0.18 }
+  ],
+  Stocks: [
+    { product: "BVDA", symbol: "BVDA", price: 128 },
+    { product: "Tesla", symbol: "TSLA", price: 248 },
+    { product: "Apple", symbol: "AAPL", price: 230 },
+    { product: "NVIS", symbol: "NVIS", price: 42 },
+    { product: "SHX", symbol: "SHX", price: 68 },
+    { product: "Alphabet", symbol: "GOOGL", price: 165 }
+  ],
+  Funds: [
+    { product: "SPDR S&P 500 ETF", symbol: "SPY", price: 545 },
+    { product: "Invesco QQQ Trust", symbol: "QQQ", price: 475 },
+    { product: "Vanguard Total Stock Market", symbol: "VTI", price: 270 },
+    { product: "iShares MSCI Emerging Markets", symbol: "EEM", price: 42 },
+    { product: "iShares 20+ Year Treasury Bond", symbol: "TLT", price: 95 }
+  ],
+  Futures: [
+    { product: "Gold Futures", symbol: "GOLD", price: 2350 },
+    { product: "Silver Futures", symbol: "SILVER", price: 29 },
+    { product: "Crude Oil Futures", symbol: "CL", price: 78 },
+    { product: "Brent Oil Futures", symbol: "BREBTOIL", price: 82 }
+  ]
+};
+
+function getPerpetualProduct(market, symbol) {
+  const list = perpetualProducts[market] || [];
+  return list.find(item => item.symbol === symbol) || null;
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function publicPerpetualOrder(order) {
+  const obj = typeof order.toObject === "function" ? order.toObject() : { ...order };
+  if (obj.status !== "Completed") {
+    obj.exitPrice = null;
+    obj.priceChangeRate = 0;
+    obj.profitRate = 0;
+    obj.profit = 0;
+    obj.completedAt = null;
+  }
+  return obj;
+}
+
+function getPerpetualProfitRate(durationSeconds) {
+  const seconds = Number(durationSeconds || 60);
+  const isWin = Math.random() >= 0.5;
+  const range = seconds === 120
+    ? { min: 13, max: 17 }
+    : { min: 8, max: 12 };
+  const rate = randomBetween(range.min, range.max);
+  return Number((isWin ? rate : -rate).toFixed(2));
+}
+
+function generateAISmartPerpetualTrades(totalProfitRate, startedAt = new Date()) {
+  const directions = ["Long", "Short"];
+  const weights = Array.from({ length: 5 }, () => randomBetween(0.7, 1.3));
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+  let allocated = 0;
+
+  return weights.map((weight, index) => {
+    const isLast = index === weights.length - 1;
+    const rate = isLast
+      ? Number((totalProfitRate - allocated).toFixed(2))
+      : Number((totalProfitRate * weight / totalWeight).toFixed(2));
+    allocated += rate;
+
+    return {
+      no: index + 1,
+      direction: directions[Math.floor(Math.random() * directions.length)],
+      profitRate: rate,
+      result: rate >= 0 ? "Profit" : "Loss",
+      time: new Date(startedAt.getTime() + (index + 1) * 6 * 60 * 1000)
+    };
+  });
+}
+
+async function settlePerpetualContractOrder(order, user) {
+  if (!order || order.status === "Completed") return order;
+
+  const product = getPerpetualProduct(order.market, order.symbol);
+  const basePrice = Number(order.entryPrice || product?.price || 100);
+  const directionFactor = order.direction === "Short" ? -1 : 1;
+  const leverage = Math.max(1, Number(order.leverage || 1));
+  const isAISmart = order.mode === "AI Smart";
+  const profitRate = isAISmart
+    ? Number(randomBetween(9, 10).toFixed(2))
+    : getPerpetualProfitRate(order.durationSeconds);
+  const priceChangeRate = Number(((profitRate / leverage) * directionFactor).toFixed(4));
+  const exitPrice = Number((basePrice * (1 + priceChangeRate / 100)).toFixed(4));
+  let profit = Number((Number(order.margin || 0) * profitRate / 100).toFixed(2));
+  profit = Math.max(-Number(order.margin || 0), profit);
+
+  order.exitPrice = exitPrice;
+  order.priceChangeRate = priceChangeRate;
+  order.profitRate = profitRate;
+  order.profit = profit;
+  if (isAISmart && (!Array.isArray(order.subTrades) || order.subTrades.length === 0)) {
+    order.subTrades = generateAISmartPerpetualTrades(profitRate, order.startTime || new Date());
+    order.tradeCount = 5;
+  }
+  order.status = "Completed";
+  order.completedAt = new Date();
+
+  if (user) {
+    const margin = Number(order.margin || 0);
+    user.lockedAsset = Math.max(0, Number(user.lockedAsset || 0) - margin);
+    user.asset = Number(user.asset || 0) + margin + profit;
+    user.balance = user.asset;
+    user.totalProfit = Number(user.totalProfit || 0) + profit;
+    user.todayProfit = Number(user.todayProfit || 0) + profit;
+
+    if (!Array.isArray(user.records)) user.records = [];
+    user.records.push({
+      type: "perpetual_contract",
+      amount: margin,
+      profit,
+      message: `${isAISmart ? "AI Smart Perpetual" : "Perpetual"} ${order.direction} ${order.symbol} ${order.durationSeconds}s ${order.leverage}x completed ${profit >= 0 ? "+" : ""}${profit.toFixed(2)} USDT (${profitRate >= 0 ? "+" : ""}${profitRate.toFixed(2)}%)`,
+      timestamp: new Date()
+    });
+
+    await user.save();
+  }
+
+  await order.save();
+  return order;
+}
+
 /* 后台订单接口 */
 
 app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
@@ -1422,6 +1595,10 @@ app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
 
     const tokenOrders =
     await TokenYieldOrder.find()
+    .sort({ createdAt: -1 });
+
+    const perpetualOrders =
+    await PerpetualContractOrder.find()
     .sort({ createdAt: -1 });
 
     const users = await User.find();
@@ -1525,9 +1702,40 @@ app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
       };
     });
 
+    const perpetualList =
+    perpetualOrders.map(order => {
+      const user =
+      userMap[order.userId] || {};
+
+      return {
+        id: order._id,
+        userId: order.userId,
+        uid: user.uid || order.uid || "",
+        user:
+        user.name ||
+        order.username ||
+        user.email ||
+        "Unknown",
+        email: user.email || "",
+        type: order.mode === "AI Smart" ? "AI Smart Perpetual" : "Perpetual Contract",
+        coin: `${order.symbol || ""} ${order.direction || ""} ${order.leverage || 1}x`,
+        amount: order.margin || 0,
+        profit: order.status === "Completed" ? (order.profit || 0) : 0,
+        rate: order.status === "Completed" ? (order.profitRate || 0) : 0,
+        status: order.status || "",
+        time:
+        new Date(order.createdAt)
+        .toLocaleString(),
+        remark:
+        order.mode === "AI Smart"
+        ? `${order.market || ""} / 5 trades / 30 min / position ${order.positionSize || 0} USDT`
+        : `${order.market || ""} / ${order.durationSeconds || 0}s / position ${order.positionSize || 0} USDT`
+      };
+    });
+
     res.json({
       success: true,
-      data: [...aiList, ...tokenList]
+      data: [...aiList, ...tokenList, ...perpetualList]
     });
 
   } catch (err) {
@@ -2907,6 +3115,240 @@ app.post("/api/token-yield/start", authenticateUser, async (req, res) => {
 
 });
 
+app.get("/api/perpetual/products", authenticateUser, async (req, res) => {
+  res.json({
+    success: true,
+    data: perpetualProducts
+  });
+});
+
+app.get("/api/perpetual/orders", authenticateUser, async (req, res) => {
+  try {
+    const orders = await PerpetualContractOrder.find({ userId: req.user._id.toString() })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: orders.map(publicPerpetualOrder)
+    });
+  } catch (err) {
+    console.log("Load perpetual orders error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to load perpetual orders"
+    });
+  }
+});
+
+app.post("/api/perpetual/start", authenticateUser, async (req, res) => {
+  try {
+    const { market, symbol, direction, leverage, margin, durationSeconds } = req.body;
+    const selectedMarket = String(market || "");
+    const selectedSymbol = String(symbol || "");
+    const selectedDirection = String(direction || "");
+    const selectedLeverage = Number(leverage || 0);
+    const selectedMargin = Number(margin || 0);
+    const selectedDuration = Number(durationSeconds || 0);
+    const product = getPerpetualProduct(selectedMarket, selectedSymbol);
+
+    if (!product) {
+      return res.status(400).json({ success: false, message: "Invalid product" });
+    }
+
+    if (!["Long", "Short"].includes(selectedDirection)) {
+      return res.status(400).json({ success: false, message: "Please choose Long or Short" });
+    }
+
+    if (![1, 2, 5, 10, 20, 40].includes(selectedLeverage)) {
+      return res.status(400).json({ success: false, message: "Invalid leverage" });
+    }
+
+    if (![60, 120].includes(selectedDuration)) {
+      return res.status(400).json({ success: false, message: "Invalid duration" });
+    }
+
+    if (!Number.isFinite(selectedMargin) || selectedMargin <= 0) {
+      return res.status(400).json({ success: false, message: "Please enter margin" });
+    }
+
+    const user = await User.findById(req.user._id);
+    const asset = Number(user.asset || 0);
+    if (selectedMargin > asset) {
+      return res.status(400).json({ success: false, message: "Insufficient balance" });
+    }
+
+    const now = new Date();
+    const entryPrice = Number((product.price * (1 + randomBetween(-0.0015, 0.0015))).toFixed(4));
+    const order = await PerpetualContractOrder.create({
+      userId: user._id.toString(),
+      username: user.name || user.username || user.email || "",
+      uid: String(user.uid || ""),
+      market: selectedMarket,
+      product: product.product,
+      symbol: product.symbol,
+      direction: selectedDirection,
+      leverage: selectedLeverage,
+      margin: selectedMargin,
+      positionSize: selectedMargin * selectedLeverage,
+      durationSeconds: selectedDuration,
+      entryPrice,
+      profit: 0,
+      priceChangeRate: 0,
+      profitRate: 0,
+      status: "Running",
+      startTime: now,
+      endTime: new Date(now.getTime() + selectedDuration * 1000)
+    });
+
+    user.asset = asset - selectedMargin;
+    user.balance = user.asset;
+    user.lockedAsset = Number(user.lockedAsset || 0) + selectedMargin;
+    if (!Array.isArray(user.records)) user.records = [];
+    user.records.push({
+      type: "perpetual_contract_start",
+      amount: selectedMargin,
+      message: `Perpetual ${selectedDirection} ${product.symbol} started, locked ${selectedMargin} USDT`,
+      timestamp: now
+    });
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Perpetual contract started",
+      order: publicPerpetualOrder(order),
+      balance: user.asset
+    });
+  } catch (err) {
+    console.log("Start perpetual contract error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Perpetual contract failed"
+    });
+  }
+});
+
+app.post("/api/perpetual/ai-smart/start", authenticateUser, async (req, res) => {
+  try {
+    const { market, symbol, leverage, margin } = req.body;
+    const selectedMarket = String(market || "");
+    const selectedSymbol = String(symbol || "");
+    const selectedLeverage = Number(leverage || 0);
+    const selectedMargin = Number(margin || 0);
+    const product = getPerpetualProduct(selectedMarket, selectedSymbol);
+
+    if (!product) {
+      return res.status(400).json({ success: false, message: "Invalid product" });
+    }
+
+    if (![1, 2, 5, 10, 20, 40].includes(selectedLeverage)) {
+      return res.status(400).json({ success: false, message: "Invalid leverage" });
+    }
+
+    if (!Number.isFinite(selectedMargin) || selectedMargin <= 0) {
+      return res.status(400).json({ success: false, message: "Please enter margin" });
+    }
+
+    const user = await User.findById(req.user._id);
+    const asset = Number(user.asset || 0);
+    if (selectedMargin > asset) {
+      return res.status(400).json({ success: false, message: "Insufficient balance" });
+    }
+
+    const now = new Date();
+    const direction = Math.random() >= 0.5 ? "Long" : "Short";
+    const entryPrice = Number((product.price * (1 + randomBetween(-0.0015, 0.0015))).toFixed(4));
+    const order = await PerpetualContractOrder.create({
+      userId: user._id.toString(),
+      username: user.name || user.username || user.email || "",
+      uid: String(user.uid || ""),
+      market: selectedMarket,
+      product: product.product,
+      symbol: product.symbol,
+      direction,
+      mode: "AI Smart",
+      leverage: selectedLeverage,
+      margin: selectedMargin,
+      positionSize: selectedMargin * selectedLeverage,
+      durationSeconds: 1800,
+      tradeCount: 5,
+      entryPrice,
+      profit: 0,
+      priceChangeRate: 0,
+      profitRate: 0,
+      subTrades: [],
+      status: "Running",
+      startTime: now,
+      endTime: new Date(now.getTime() + 30 * 60 * 1000)
+    });
+
+    user.asset = asset - selectedMargin;
+    user.balance = user.asset;
+    user.lockedAsset = Number(user.lockedAsset || 0) + selectedMargin;
+    if (!Array.isArray(user.records)) user.records = [];
+    user.records.push({
+      type: "ai_smart_perpetual_start",
+      amount: selectedMargin,
+      message: `AI Smart Perpetual ${product.symbol} started, locked ${selectedMargin} USDT, 5 trades in 30 minutes`,
+      timestamp: now
+    });
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "AI Smart Trade started",
+      order: publicPerpetualOrder(order),
+      balance: user.asset
+    });
+  } catch (err) {
+    console.log("Start AI smart perpetual error:", err);
+    res.status(500).json({
+      success: false,
+      message: "AI Smart Trade failed"
+    });
+  }
+});
+
+app.post("/api/perpetual/settle/:id", authenticateUser, async (req, res) => {
+  try {
+    const order = await PerpetualContractOrder.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.userId !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Not your order" });
+    }
+
+    if (order.status === "Completed") {
+      return res.json({ success: true, message: "Already completed", order: publicPerpetualOrder(order) });
+    }
+
+    if (new Date() < new Date(order.endTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "Contract is still running",
+        order: publicPerpetualOrder(order)
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    await settlePerpetualContractOrder(order, user);
+
+    res.json({
+      success: true,
+      message: "Perpetual contract completed",
+      order: publicPerpetualOrder(order),
+      balance: user.asset
+    });
+  } catch (err) {
+    console.log("Settle perpetual contract error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Perpetual settlement failed"
+    });
+  }
+});
+
 /* 提现申请：提交后立即扣除余额 */
 // 修复：添加用户认证
 app.post("/api/withdraw", authenticateUser, async (req, res) => {
@@ -3611,11 +4053,36 @@ async function settleExpiredAIQuantOrders(){
   }
 }
 
+async function settleExpiredPerpetualContractOrders(){
+  try{
+    const now = new Date();
+    const orders = await PerpetualContractOrder.find({
+      status: "Running",
+      endTime: { $lte: now }
+    });
+
+    for(const order of orders){
+      const user = await User.findById(order.userId);
+      if(!user) continue;
+      await settlePerpetualContractOrder(order, user);
+    }
+  }catch(err){
+    console.log("Settle perpetual contract error:", err);
+  }
+}
+
 settleExpiredAIQuantOrders();
 
 setInterval(
   settleExpiredAIQuantOrders,
   60000
+);
+
+settleExpiredPerpetualContractOrders();
+
+setInterval(
+  settleExpiredPerpetualContractOrders,
+  15000
 );
 
 settleExpiredTokenYieldOrders();

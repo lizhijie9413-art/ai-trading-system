@@ -254,6 +254,12 @@ body::before{
   color:transparent;
 }
 
+.perpetual h2{
+  background:linear-gradient(90deg,#22d3ee,#00f5a0);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
 .bottom-nav{
   position:fixed;
   left:50%;
@@ -329,6 +335,25 @@ body::before{
     <div class="tag"><i class="fa-solid fa-bolt"></i>Auto Execute</div>
     <div class="tag"><i class="fa-solid fa-shield-halved"></i>Risk Control</div>
     <div class="tag"><i class="fa-solid fa-clock"></i>24/7 Monitor</div>
+  </div>
+</div>
+
+<div class="card trade-card perpetual" onclick="location.href='perpetual_contracts.html'">
+  <div class="trade-main">
+    <div class="trade-icon">
+      <i class="fa-solid fa-arrow-trend-up"></i>
+    </div>
+    <div class="trade-info">
+      <h2>Perpetual Contracts</h2>
+      <p>Long or short crypto, stocks, funds and futures with leveraged 60s or 120s contracts.</p>
+    </div>
+  </div>
+
+  <div class="trade-tags">
+    <div class="tag"><i class="fa-solid fa-up-long"></i>Long</div>
+    <div class="tag"><i class="fa-solid fa-down-long"></i>Short</div>
+    <div class="tag"><i class="fa-solid fa-gauge-high"></i>Leverage</div>
+    <div class="tag"><i class="fa-solid fa-stopwatch"></i>60s / 120s</div>
   </div>
 </div>
 
@@ -492,5 +517,6 @@ loadTradeBalance();
 
 </script>
 
+<script src="user_notify.js"></script>
 </body>
 </html>
