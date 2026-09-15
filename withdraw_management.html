@@ -332,13 +332,16 @@ if (!adminAuth || adminAuth.role !== "admin") {
     <div class="stat"><span>总金额</span><strong id="totalAmount">$0.00</strong></div>
   </div>
 
-  <input class="search" id="searchInput" placeholder="搜索提现ID / 钱包地址 / 网络 / 状态" oninput="searchWithdrawals()">
+  <input class="search" id="searchInput" placeholder="搜索 UID / 用户 / 邮箱 / 提现ID / 钱包地址 / 网络 / 状态" oninput="searchWithdrawals()">
 
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>提现ID</th>
+          <th>UID</th>
+          <th>用户</th>
+          <th>邮箱</th>
           <th>钱包地址</th>
           <th>金额</th>
           <th>网络</th>
@@ -348,7 +351,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
         </tr>
       </thead>
       <tbody id="withdrawTable">
-        <tr><td colspan="7" class="empty">加载中...</td></tr>
+        <tr><td colspan="10" class="empty">加载中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -379,7 +382,7 @@ async function loadWithdrawals(){
     renderWithdrawals();
   }catch(err){
     console.log(err);
-    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="7" class="empty">加载提现申请失败</td></tr>`;
+    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="10" class="empty">加载提现申请失败</td></tr>`;
   }
 }
 
@@ -390,6 +393,9 @@ function renderWithdrawals(){
   const filtered = withdrawals.filter(item => {
     return (
       String(item.id || item._id || "").toLowerCase().includes(keyword) ||
+      String(item.uid || "").toLowerCase().includes(keyword) ||
+      String(item.username || item.name || "").toLowerCase().includes(keyword) ||
+      String(item.email || "").toLowerCase().includes(keyword) ||
       String(item.address || "").toLowerCase().includes(keyword) ||
       String(item.network || "").toLowerCase().includes(keyword) ||
       String(item.status || "").toLowerCase().includes(keyword)
@@ -408,7 +414,7 @@ function renderWithdrawals(){
   });
 
   if(filtered.length === 0){
-    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="7" class="empty">暂无提现申请</td></tr>`;
+    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="10" class="empty">暂无提现申请</td></tr>`;
     return;
   }
 
@@ -417,6 +423,9 @@ function renderWithdrawals(){
     return `
       <tr>
         <td>${item.id || item._id || "-"}</td>
+        <td>${escapeHtml(String(item.uid || "-"))}</td>
+        <td>${escapeHtml(item.username || item.name || "-")}</td>
+        <td>${escapeHtml(item.email || "-")}</td>
         <td class="address">${escapeHtml(item.address || "-")}</td>
         <td class="amount">$${Number(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         <td>${item.network || "-"}</td>
@@ -430,7 +439,7 @@ function renderWithdrawals(){
             ` : '<span style="color:#666;">已处理</span>'}
           </div>
         </td>
-      </table>
+      </tr>
     `;
   }).join("");
 }

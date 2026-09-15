@@ -1642,6 +1642,8 @@ app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
         ? "AI Assistant"
        : "AI Quant",
 
+        source: "ai",
+
         coin:
          order.strategy ||
          order.product ||
@@ -1691,6 +1693,8 @@ app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
 
         type: "Token Yield",
 
+        source: "token",
+
         coin: order.planName || "",
 
         amount: order.amount || 0,
@@ -1727,6 +1731,7 @@ app.get("/api/admin/trade-orders", verifyAdmin, async (req, res) => {
         "Unknown",
         email: user.email || "",
         type: order.mode === "AI Smart" ? "AI Smart Perpetual" : "Perpetual Contract",
+        source: "perpetual",
         coin: `${order.symbol || ""} ${order.direction || ""} ${order.leverage || 1}x`,
         amount: order.margin || 0,
         profit: order.status === "Completed" ? (order.profit || 0) : 0,
@@ -3565,7 +3570,24 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
 app.get("/api/withdrawals", verifyAdmin, async (req, res) => {
   try {
     const list = await Withdrawal.find().sort({ createdAt: -1 });
-    res.json(list);
+    const users = await User.find();
+    const userMap = {};
+
+    users.forEach(user => {
+      userMap[user._id.toString()] = user;
+    });
+
+    res.json(list.map(item => {
+      const obj = typeof item.toObject === "function" ? item.toObject() : { ...item };
+      const user = userMap[String(obj.userId || "")] || {};
+
+      return {
+        ...obj,
+        uid: obj.uid || user.uid || "",
+        username: user.name || user.username || "",
+        email: obj.email || user.email || ""
+      };
+    }));
   } catch (err) {
     console.log(err);
     res.json([]);
