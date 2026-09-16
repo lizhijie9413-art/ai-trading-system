@@ -6,8 +6,13 @@
 <title>Perpetual Contracts</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
+html{
+  width:100%;
+  overflow-x:hidden;
+}
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 body{
+  width:100%;
   max-width:430px;
   min-height:100vh;
   margin:0 auto;
@@ -18,6 +23,9 @@ body{
     radial-gradient(circle at 85% 55%,rgba(34,211,238,.14),transparent 32%),
     linear-gradient(180deg,#030712,#07111f 52%,#020617);
   overflow-x:hidden;
+}
+body *{
+  max-width:100%;
 }
 body::before{
   content:"";
@@ -46,25 +54,25 @@ body::before{
   margin-bottom:16px;
   overflow:hidden;
 }
-.market-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
-.symbol{display:flex;align-items:center;gap:12px}
+.market-head{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0}
+.symbol{display:flex;align-items:center;gap:12px;min-width:0}
 .coin{
   width:48px;height:48px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   background:linear-gradient(135deg,#8b5cf6,#22d3ee);
   font-weight:900;font-size:20px;
 }
-.symbol h2{font-size:22px}
-.symbol p,.muted{color:#94a3b8;font-size:13px}
-.price{font-size:38px;font-weight:900;margin:20px 0 6px}
+.symbol h2{font-size:22px;word-break:break-word}
+.symbol p,.muted{color:#94a3b8;font-size:13px;word-break:break-word}
+.price{font-size:clamp(30px,9vw,38px);font-weight:900;margin:20px 0 6px;word-break:break-word}
 .move{font-weight:800;color:#00f5a0}
 .move.down{color:#ff4d6d}
 .chart{height:120px;margin-top:12px}
 .chart svg{width:100%;height:100%}
 .tabs,.seg,.quick-grid{display:grid;gap:8px;margin-top:12px}
-.tabs{grid-template-columns:repeat(4,1fr)}
-.seg{grid-template-columns:repeat(2,1fr)}
-.quick-grid{grid-template-columns:repeat(3,1fr)}
+.tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+.seg{grid-template-columns:repeat(2,minmax(0,1fr))}
+.quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 button,select,input{
   border:none;
   outline:none;
@@ -151,6 +159,7 @@ button,select,input{
 }
 .row{margin-top:16px}
 .label{display:flex;justify-content:space-between;color:#cbd5e1;font-size:14px;margin-bottom:8px}
+.label span,.label strong{min-width:0;word-break:break-word}
 select,input{
   width:100%;
   height:52px;
@@ -162,18 +171,19 @@ select,input{
 select option{background:#111827;color:white}
 .summary{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:10px;
   margin-top:16px;
 }
 .mini{
+  min-width:0;
   padding:13px;
   border-radius:16px;
   background:rgba(255,255,255,.06);
   border:1px solid rgba(255,255,255,.08);
 }
 .mini span{display:block;color:#94a3b8;font-size:12px;margin-bottom:7px}
-.mini strong{font-size:18px}
+.mini strong{font-size:18px;word-break:break-word}
 .start-btn,.settle-btn{
   width:100%;
   height:58px;
@@ -198,24 +208,27 @@ select option{background:#111827;color:white}
 }
 .start-btn:disabled,.settle-btn:disabled{opacity:.48;cursor:not-allowed}
 .ai-smart-btn:disabled{opacity:.48;cursor:not-allowed}
-.orders-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 12px}
+.orders-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 12px;min-width:0}
 .orders-title{font-size:22px;font-weight:900}
 .billing-link{
   min-height:38px;padding:0 14px;border-radius:14px;text-decoration:none;
-  display:flex;align-items:center;gap:8px;color:#fff;font-weight:900;font-size:13px;
+  display:flex;align-items:center;gap:8px;color:#fff;font-weight:900;font-size:13px;white-space:nowrap;flex:0 0 auto;
   background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.36);
 }
-.order-card{border-radius:22px;padding:16px;margin-bottom:12px;background:rgba(15,23,42,.86);border:1px solid rgba(139,92,246,.18)}
-.order-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
+.order-card{border-radius:22px;padding:16px;margin-bottom:12px;background:rgba(15,23,42,.86);border:1px solid rgba(139,92,246,.18);overflow:hidden}
+.order-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px;min-width:0}
+.order-top > div:first-child{min-width:0}
+.order-top strong{display:block;word-break:break-word}
 .status{padding:7px 10px;border-radius:999px;background:rgba(245,158,11,.18);color:#fbbf24;font-weight:900;font-size:12px}
 .status.done{background:rgba(16,185,129,.16);color:#34d399}
 .profit{color:#00f5a0}.loss{color:#ff4d6d}
 .sub-trades{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
-.sub-trade{display:grid;grid-template-columns:42px 1fr 72px 64px;gap:8px;align-items:center;color:#cbd5e1;font-size:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sub-trade{display:grid;grid-template-columns:34px minmax(0,1fr) 62px 54px;gap:7px;align-items:center;color:#cbd5e1;font-size:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sub-trade > *{min-width:0;word-break:break-word}
 .sub-trade:last-child{border-bottom:none}
 .bottom-nav{
   position:fixed;left:50%;bottom:0;transform:translateX(-50%);
-  width:100%;max-width:430px;height:78px;background:rgba(3,7,18,.96);
+  width:min(100vw,430px);max-width:430px;height:78px;background:rgba(3,7,18,.96);
   border-top:1px solid rgba(255,255,255,.08);
   display:grid;grid-template-columns:repeat(5,1fr);z-index:50;
 }
@@ -226,6 +239,12 @@ select option{background:#111827;color:white}
   z-index:100;width:min(380px,calc(100vw - 28px));
   padding:14px 16px;border-radius:16px;background:#111827;border:1px solid rgba(139,92,246,.4);
   color:#fff;box-shadow:0 16px 40px rgba(0,0,0,.36);font-weight:800;
+}
+@media (max-width:360px){
+  body{padding-left:12px;padding-right:12px}
+  .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{padding:16px;border-radius:22px}
+  .summary{grid-template-columns:1fr}
 }
 </style>
 </head>
