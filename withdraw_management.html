@@ -138,8 +138,9 @@ h1{
 
 table{
   width:100%;
-  min-width:1260px;
+  min-width:1720px;
   border-collapse:collapse;
+  table-layout:fixed;
 }
 
 th{
@@ -155,16 +156,36 @@ td{
   border-top:1px solid rgba(255,255,255,.06);
   color:#e5e7eb;
   font-size:14px;
+  vertical-align:middle;
+}
+
+th:nth-child(1),td:nth-child(1){width:230px;}
+th:nth-child(2),td:nth-child(2){width:80px;}
+th:nth-child(3),td:nth-child(3){width:140px;}
+th:nth-child(4),td:nth-child(4){width:250px;}
+th:nth-child(5),td:nth-child(5){width:360px;}
+th:nth-child(6),td:nth-child(6){width:260px;}
+th:nth-child(7),td:nth-child(7){width:120px;}
+th:nth-child(8),td:nth-child(8){width:90px;}
+th:nth-child(9),td:nth-child(9){width:170px;}
+th:nth-child(10),td:nth-child(10){width:110px;}
+th:nth-child(11),td:nth-child(11){width:150px;}
+
+td:not(.address):not(.address-check){
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .address{
-  max-width:260px;
-  word-break:break-all;
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:anywhere;
+  line-height:1.45;
   color:#93c5fd;
 }
 
 .address-check{
-  min-width:180px;
+  white-space:normal;
 }
 
 .check-badge{
@@ -194,8 +215,9 @@ td{
 .bound-address{
   color:#94a3b8;
   font-size:12px;
-  word-break:break-all;
-  max-width:220px;
+  line-height:1.45;
+  word-break:normal;
+  overflow-wrap:anywhere;
 }
 
 .amount{
@@ -418,7 +440,7 @@ async function loadWithdrawals(){
     renderWithdrawals();
   }catch(err){
     console.log(err);
-    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="10" class="empty">加载提现申请失败</td></tr>`;
+    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="11" class="empty">加载提现申请失败</td></tr>`;
   }
 }
 
@@ -452,7 +474,7 @@ function renderWithdrawals(){
   });
 
   if(filtered.length === 0){
-    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="10" class="empty">暂无提现申请</td></tr>`;
+    document.getElementById("withdrawTable").innerHTML = `<tr><td colspan="11" class="empty">暂无提现申请</td></tr>`;
     return;
   }
 
