@@ -334,7 +334,11 @@ async function login() {
             }, 1000);
             
         } else {
-            showMessage(data.message || "Login failed. Please check your credentials.", "error");
+            if (data.code === "LOGIN_APPROVAL_REQUIRED") {
+                showMessage("New login location/device detected. Please wait for admin approval.", "error");
+            } else {
+                showMessage(data.message || "Login failed. Please check your credentials.", "error");
+            }
             loginBtn.disabled = false;
             loginBtn.innerHTML = originalText;
         }

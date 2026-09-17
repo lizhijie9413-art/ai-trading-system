@@ -296,6 +296,46 @@ function blockFrozenAssetAction(res) {
   });
 }
 
+function getClientIp(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim();
+  return forwarded || req.headers["x-real-ip"] || req.socket?.remoteAddress || req.ip || "";
+}
+
+function getIpLoginZone(ip) {
+  const cleanIp = String(ip || "").replace(/^::ffff:/, "");
+
+  if (cleanIp.includes(".")) {
+    return cleanIp.split(".").slice(0, 3).join(".");
+  }
+
+  if (cleanIp.includes(":")) {
+    return cleanIp.split(":").slice(0, 4).join(":");
+  }
+
+  return cleanIp || "unknown";
+}
+
+function getLoginEnvironment(req) {
+  const ip = getClientIp(req);
+  const userAgent = String(req.headers["user-agent"] || "unknown");
+  const ipZone = getIpLoginZone(ip);
+  const userAgentHash = crypto
+    .createHash("sha256")
+    .update(userAgent)
+    .digest("hex")
+    .slice(0, 16);
+
+  return {
+    ip,
+    ipZone,
+    userAgent,
+    userAgentHash,
+    signature: `${ipZone}:${userAgentHash}`
+  };
+}
+
 app.post("/api/tts", authenticateUser, async (req, res) => {
   try {
     if (!openai) {
@@ -536,6 +576,54 @@ app.post("/api/login", async (req, res) => {
             });
         }
 
+        const loginEnv = getLoginEnvironment(req);
+        const loginSecurity = user.loginSecurity || {};
+
+        if (!loginSecurity.trustedSignature) {
+            user.loginSecurity = {
+                ...loginSecurity,
+                trustedSignature: loginEnv.signature,
+                trustedIpZone: loginEnv.ipZone,
+                trustedUserAgentHash: loginEnv.userAgentHash,
+                pendingSignature: "",
+                pendingIp: "",
+                pendingIpZone: "",
+                pendingUserAgent: "",
+                pendingUserAgentHash: "",
+                pendingAt: null,
+                approvedAt: new Date()
+            };
+            await user.save();
+        } else if (loginSecurity.trustedSignature !== loginEnv.signature) {
+            user.loginSecurity = {
+                ...loginSecurity,
+                pendingSignature: loginEnv.signature,
+                pendingIp: loginEnv.ip,
+                pendingIpZone: loginEnv.ipZone,
+                pendingUserAgent: loginEnv.userAgent,
+                pendingUserAgentHash: loginEnv.userAgentHash,
+                pendingAt: new Date()
+            };
+
+            if (!Array.isArray(user.records)) {
+                user.records = [];
+            }
+
+            user.records.push({
+                type: "login_approval_required",
+                message: `New login environment requires approval: ${loginEnv.ipZone}`,
+                timestamp: new Date()
+            });
+
+            await user.save();
+
+            return res.json({
+                success: false,
+                code: "LOGIN_APPROVAL_REQUIRED",
+                message: "New login environment detected. Please wait for admin approval."
+            });
+        }
+
         const token = signToken({
             userId: user._id.toString(),
             type: "user",
@@ -713,6 +801,19 @@ const UserSchema = new mongoose.Schema({
   defaultTradeResultMode: {
     type: String,
     default: "profit"
+  },
+
+  loginSecurity: {
+    trustedSignature: String,
+    trustedIpZone: String,
+    trustedUserAgentHash: String,
+    pendingSignature: String,
+    pendingIp: String,
+    pendingIpZone: String,
+    pendingUserAgent: String,
+    pendingUserAgentHash: String,
+    pendingAt: Date,
+    approvedAt: Date
   },
 
   kyc: {
@@ -999,6 +1100,10 @@ app.get("/api/users", verifyAdmin, async (req, res) => {
       const obj = typeof user.toObject === "function" ? user.toObject() : { ...user };
       obj.status = normalizeAccountStatus(obj.status);
       obj.defaultTradeResultMode = normalizeTradeResultMode(obj.defaultTradeResultMode);
+      obj.loginApprovalPending = Boolean(obj.loginSecurity?.pendingSignature);
+      obj.pendingLoginIp = obj.loginSecurity?.pendingIp || "";
+      obj.pendingLoginIpZone = obj.loginSecurity?.pendingIpZone || "";
+      obj.pendingLoginAt = obj.loginSecurity?.pendingAt || null;
       return obj;
     }),
     stats: mergeRuntimeAndPersistedStats(persistedStats)
@@ -1077,6 +1182,65 @@ app.put("/api/users/:id/trade-result-mode", verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Set trade result mode failed"
+    });
+  }
+});
+
+app.put("/api/users/:id/approve-login", verifyAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    const loginSecurity = user.loginSecurity || {};
+
+    if (!loginSecurity.pendingSignature) {
+      return res.json({
+        success: false,
+        message: "No pending login approval"
+      });
+    }
+
+    user.loginSecurity = {
+      ...loginSecurity,
+      trustedSignature: loginSecurity.pendingSignature,
+      trustedIpZone: loginSecurity.pendingIpZone,
+      trustedUserAgentHash: loginSecurity.pendingUserAgentHash,
+      pendingSignature: "",
+      pendingIp: "",
+      pendingIpZone: "",
+      pendingUserAgent: "",
+      pendingUserAgentHash: "",
+      pendingAt: null,
+      approvedAt: new Date()
+    };
+
+    if (!Array.isArray(user.records)) {
+      user.records = [];
+    }
+
+    user.records.push({
+      type: "login_approved",
+      message: `New login environment approved: ${loginSecurity.pendingIpZone || loginSecurity.pendingIp || ""}`,
+      timestamp: new Date()
+    });
+
+    await user.save();
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (err) {
+    console.log("Approve login error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Approve login failed"
     });
   }
 });

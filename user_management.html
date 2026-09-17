@@ -425,11 +425,11 @@ if (!adminAuth || adminAuth.role !== "admin") {
     <table>
       <thead>
         <tr>
-          <th>UID</th><th>用户名</th><th>邮箱</th><th>余额</th><th>总收益</th><th>交易结果</th><th>状态</th><th>KYC</th><th>充值</th><th>提现</th><th>操作</th>
+          <th>UID</th><th>用户名</th><th>邮箱</th><th>余额</th><th>总收益</th><th>交易结果</th><th>登录授权</th><th>状态</th><th>KYC</th><th>充值</th><th>提现</th><th>操作</th>
         </tr>
       </thead>
       <tbody id="userTable">
-        <tr><td colspan="11" class="loading">加载用户数据中...</td></tr>
+        <tr><td colspan="12" class="loading">加载用户数据中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -469,7 +469,7 @@ function formatMoney(value){
 // ==================== 加载用户 ====================
 async function loadUsers() {
   const tbody = document.getElementById("userTable");
-  tbody.innerHTML = '<tr><td colspan="11" class="loading">加载用户数据中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="12" class="loading">加载用户数据中...</td></tr>';
   
   try {
     const response = await fetch(`${API_BASE}/api/users`, {
@@ -483,11 +483,11 @@ async function loadUsers() {
       renderTable();
       updateStats();
     } else {
-      tbody.innerHTML = '<tr><td colspan="11" class="empty">加载失败</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="12" class="empty">加载失败</td></tr>';
     }
   } catch (error) {
     console.error(error);
-    tbody.innerHTML = '<tr><td colspan="11" class="empty">网络错误</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="empty">网络错误</td></tr>';
   }
 }
 
@@ -496,7 +496,7 @@ function renderTable() {
   const tbody = document.getElementById("userTable");
   
   if (!users || users.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="empty">暂无用户数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="empty">暂无用户数据</td></tr>';
     return;
   }
 
@@ -507,6 +507,11 @@ function renderTable() {
     const statusClass = user.status === 'active' ? 'status-active' : (user.status === 'frozen' ? 'status-frozen' : 'status-blacklisted');
     const kycText = user.kyc || '未审核';
     const resultMode = user.defaultTradeResultMode || 'profit';
+    const loginApprovalHtml = user.loginApprovalPending
+      ? `<div style="color:#ffaa00;font-weight:bold;margin-bottom:6px;">待授权</div>
+         <div style="font-size:12px;color:#aaa;margin-bottom:8px;">${escapeHtml(user.pendingLoginIpZone || user.pendingLoginIp || '-')}</div>
+         <button class="recharge-btn" onclick="approveUserLogin('${user._id}')">授权</button>`
+      : '<span style="color:#00c853;font-weight:bold;">正常</span>';
     
     // 操作按钮
     let actionButtons = '';
@@ -535,6 +540,7 @@ function renderTable() {
           <br>
           <button class="recharge-btn" onclick="setUserTradeMode('${user._id}')">保存</button>
         </td>
+        <td>${loginApprovalHtml}</td>
         <td class="${statusClass}">${statusText}</td>
         <td>${kycText}</td>
         <td><input type="number" class="recharge-input" id="recharge_${user._id}" placeholder="金额"><button class="recharge-btn" onclick="rechargeUser('${user._id}')">充值</button></td>
@@ -626,6 +632,27 @@ async function setUserTradeMode(userId) {
     loadUsers();
   } else {
     alert(result.message || "设置失败");
+  }
+}
+
+// ==================== 登录环境授权 ====================
+async function approveUserLogin(userId) {
+  const user = users.find(u => u._id === userId);
+  const label = user ? ((user.uid || "") + " " + (user.name || user.email || "")) : userId;
+
+  if (!confirm("确定授权这个用户的新登录环境吗？\n" + label)) return;
+
+  const response = await fetch(`${API_BASE}/api/users/${userId}/approve-login`, {
+    method: "PUT",
+    headers: { "admin-token": ADMIN_TOKEN }
+  });
+
+  const result = await response.json();
+  if (result.success) {
+    alert("登录授权成功");
+    loadUsers();
+  } else {
+    alert(result.message || "授权失败");
   }
 }
 
