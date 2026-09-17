@@ -138,7 +138,7 @@ h1{
 
 table{
   width:100%;
-  min-width:1050px;
+  min-width:1260px;
   border-collapse:collapse;
 }
 
@@ -161,6 +161,41 @@ td{
   max-width:260px;
   word-break:break-all;
   color:#93c5fd;
+}
+
+.address-check{
+  min-width:180px;
+}
+
+.check-badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  margin-bottom:6px;
+}
+
+.check-badge.matched{
+  background:rgba(34,197,94,.14);
+  color:#22c55e;
+}
+
+.check-badge.mismatch{
+  background:rgba(239,68,68,.16);
+  color:#ff4d6d;
+}
+
+.check-badge.unbound{
+  background:rgba(250,204,21,.16);
+  color:#facc15;
+}
+
+.bound-address{
+  color:#94a3b8;
+  font-size:12px;
+  word-break:break-all;
+  max-width:220px;
 }
 
 .amount{
@@ -343,6 +378,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
           <th>用户</th>
           <th>邮箱</th>
           <th>钱包地址</th>
+          <th>地址核对</th>
           <th>金额</th>
           <th>网络</th>
           <th>申请时间</th>
@@ -351,7 +387,7 @@ if (!adminAuth || adminAuth.role !== "admin") {
         </tr>
       </thead>
       <tbody id="withdrawTable">
-        <tr><td colspan="10" class="empty">加载中...</td></tr>
+        <tr><td colspan="11" class="empty">加载中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -397,6 +433,8 @@ function renderWithdrawals(){
       String(item.username || item.name || "").toLowerCase().includes(keyword) ||
       String(item.email || "").toLowerCase().includes(keyword) ||
       String(item.address || "").toLowerCase().includes(keyword) ||
+      String(item.boundEthAddress || "").toLowerCase().includes(keyword) ||
+      String(item.addressMatchStatus || "").toLowerCase().includes(keyword) ||
       String(item.network || "").toLowerCase().includes(keyword) ||
       String(item.status || "").toLowerCase().includes(keyword)
     );
@@ -420,6 +458,11 @@ function renderWithdrawals(){
 
   document.getElementById("withdrawTable").innerHTML = filtered.map(item => {
     const status = item.status || "Pending";
+    const checkStatus = item.addressMatchStatus || "unbound";
+    const checkText = checkStatus === "matched" ? "匹配" : (checkStatus === "mismatch" ? "地址不一致" : "未绑定钱包");
+    const boundAddress = item.boundEthAddress
+      ? `绑定ETH: ${escapeHtml(item.boundEthAddress)}`
+      : "没有绑定ETH钱包";
     return `
       <tr>
         <td>${item.id || item._id || "-"}</td>
@@ -427,6 +470,10 @@ function renderWithdrawals(){
         <td>${escapeHtml(item.username || item.name || "-")}</td>
         <td>${escapeHtml(item.email || "-")}</td>
         <td class="address">${escapeHtml(item.address || "-")}</td>
+        <td class="address-check">
+          <span class="check-badge ${checkStatus}">${checkText}</span>
+          <div class="bound-address">${boundAddress}</div>
+        </td>
         <td class="amount">$${Number(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         <td>${item.network || "-"}</td>
         <td>${item.time || "-"}</td>
@@ -452,6 +499,16 @@ function searchWithdrawals(){
 // ==================== 更新状态 ====================
 async function updateStatus(id, status){
   try{
+    if(status === "Approved"){
+      const item = withdrawals.find(row => String(row._id) === String(id));
+      if(item && item.addressMatchStatus !== "matched"){
+        const warning = item.addressMatchStatus === "mismatch"
+          ? "提现地址和用户绑定ETH钱包不一致，确定还要通过吗？"
+          : "用户没有绑定ETH钱包，无法核对提现地址，确定还要通过吗？";
+        if(!confirm(warning)) return;
+      }
+    }
+
     const res = await fetch(`${API_BASE}/api/withdraw/status`, {
       method: "POST",
       headers: {

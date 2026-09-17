@@ -1410,6 +1410,29 @@ async function connectWallet(){
         });
         const wallet = accounts[0];
         localStorage.setItem("walletAddress", wallet);
+        const user = JSON.parse(localStorage.getItem("user") || "null");
+        if (user && user.id) {
+            const headers = {
+                "Content-Type": "application/json",
+                "user-id": user.id
+            };
+            if (user.token) {
+                headers.Authorization = "Bearer " + user.token;
+            }
+            const response = await fetch(`${API_BASE}/api/users/wallet`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ walletAddress: wallet })
+            });
+            const result = await response.json();
+            if (result.success) {
+                localStorage.setItem("user", JSON.stringify({
+                    ...user,
+                    walletAddress: wallet,
+                    ethWalletAddress: wallet
+                }));
+            }
+        }
         alert("Wallet Connected:\n" + wallet.substring(0,10) + "...");
         console.log("Wallet:", wallet);
     }catch(err){

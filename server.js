@@ -345,6 +345,30 @@ function getLoginEnvironment(req) {
   };
 }
 
+function normalizeWalletAddress(address) {
+  return String(address || "").trim().toLowerCase();
+}
+
+function getWithdrawalAddressStatus(user, address) {
+  const withdrawalAddress = normalizeWalletAddress(address);
+  const boundEthAddress = normalizeWalletAddress(user?.ethWalletAddress || user?.walletAddress);
+
+  if (!boundEthAddress) {
+    return {
+      status: "unbound",
+      match: false,
+      message: "No bound ETH wallet address"
+    };
+  }
+
+  const match = Boolean(withdrawalAddress && withdrawalAddress === boundEthAddress);
+  return {
+    status: match ? "matched" : "mismatch",
+    match,
+    message: match ? "Withdrawal address matches bound ETH wallet" : "Withdrawal address does not match bound ETH wallet"
+  };
+}
+
 function getActiveLoginSessions(user) {
   const cutoff = new Date(Date.now() - ADMIN_TOKEN_TTL_MS);
   return (Array.isArray(user?.loginSessions) ? user.loginSessions : [])
@@ -461,6 +485,8 @@ app.get("/api/users/:id", authenticateUser, async (req, res) => {
         tokenProfit: user.tokenProfit || 0,
 
         tokenTodayProfit: user.tokenTodayProfit || 0,
+        walletAddress: user.walletAddress || "",
+        ethWalletAddress: user.ethWalletAddress || user.walletAddress || "",
        status: user.status
       }
     });
@@ -469,6 +495,47 @@ app.get("/api/users/:id", authenticateUser, async (req, res) => {
     res.json({
       success: false,
       message: "Failed to load user"
+    });
+  }
+});
+
+app.post("/api/users/wallet", authenticateUser, async (req, res) => {
+  try {
+    const walletAddress = String(req.body?.walletAddress || "").trim();
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+      return res.json({
+        success: false,
+        message: "Invalid ETH wallet address"
+      });
+    }
+
+    req.user.walletAddress = walletAddress;
+    req.user.ethWalletAddress = walletAddress;
+    req.user.walletUpdatedAt = new Date();
+
+    if (!Array.isArray(req.user.records)) {
+      req.user.records = [];
+    }
+
+    req.user.records.push({
+      type: "wallet_bind",
+      message: `ETH wallet bound: ${walletAddress}`,
+      timestamp: new Date()
+    });
+
+    await req.user.save();
+
+    res.json({
+      success: true,
+      walletAddress,
+      ethWalletAddress: walletAddress
+    });
+  } catch (error) {
+    console.log("Wallet bind error:", error);
+    res.json({
+      success: false,
+      message: "Failed to bind wallet"
     });
   }
 });
@@ -875,6 +942,10 @@ const UserSchema = new mongoose.Schema({
     default: []
   },
 
+  walletAddress: String,
+  ethWalletAddress: String,
+  walletUpdatedAt: Date,
+
   kyc: {
     type: String,
     default: "未审核"
@@ -967,6 +1038,10 @@ const Withdrawal = mongoose.model("Withdrawal", new mongoose.Schema({
   uid: String,
   email: String,
   address: String,
+  boundEthAddress: String,
+  addressMatchStatus: String,
+  addressMatch: Boolean,
+  addressWarning: String,
   amount: Number,
   network: String,
   time: String,
@@ -3800,7 +3875,7 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
   try {
 
     console.log("Withdraw body:", req.body);
-    const { address, amount, network } = req.body;
+    const { address, amount, network, walletAddress } = req.body;
     const user = req.user;
 
     const withdrawAmount = Number(amount || 0);
@@ -3866,6 +3941,15 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
       });
     }
 
+    const submittedWalletAddress = String(walletAddress || "").trim();
+    if (submittedWalletAddress && /^0x[a-fA-F0-9]{40}$/.test(submittedWalletAddress)) {
+      user.walletAddress = submittedWalletAddress;
+      user.ethWalletAddress = submittedWalletAddress;
+      user.walletUpdatedAt = new Date();
+    }
+
+    const addressCheck = getWithdrawalAddressStatus(user, address);
+
     user.asset = Number(user.asset || 0) - withdrawAmount;
     user.balance = user.asset;
 
@@ -3878,6 +3962,10 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
       message: `Withdrawal submitted -${withdrawAmount} USDT to ${address.substring(0, 10)}...`,
       amount: withdrawAmount,
       address: address,
+      boundEthAddress: user.ethWalletAddress || user.walletAddress || "",
+      addressMatchStatus: addressCheck.status,
+      addressMatch: addressCheck.match,
+      addressWarning: addressCheck.message,
       network: network,
       kycRequired: withdrawAmount >= 1000,
       timestamp: new Date()
@@ -3891,6 +3979,10 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
       uid: user.uid,
       email: user.email,
       address: address,
+      boundEthAddress: user.ethWalletAddress || user.walletAddress || "",
+      addressMatchStatus: addressCheck.status,
+      addressMatch: addressCheck.match,
+      addressWarning: addressCheck.message,
       amount: withdrawAmount,
       network: network,
       time: new Date().toLocaleString("en-US", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }),
@@ -3931,12 +4023,23 @@ app.get("/api/withdrawals", verifyAdmin, async (req, res) => {
     res.json(list.map(item => {
       const obj = typeof item.toObject === "function" ? item.toObject() : { ...item };
       const user = userMap[String(obj.userId || "")] || {};
+      const addressCheck = obj.addressMatchStatus
+        ? {
+            status: obj.addressMatchStatus,
+            match: Boolean(obj.addressMatch),
+            message: obj.addressWarning || ""
+          }
+        : getWithdrawalAddressStatus(user, obj.address);
 
       return {
         ...obj,
         uid: obj.uid || user.uid || "",
         username: user.name || user.username || "",
-        email: obj.email || user.email || ""
+        email: obj.email || user.email || "",
+        boundEthAddress: obj.boundEthAddress || user.ethWalletAddress || user.walletAddress || "",
+        addressMatchStatus: addressCheck.status,
+        addressMatch: addressCheck.match,
+        addressWarning: addressCheck.message
       };
     }));
   } catch (err) {

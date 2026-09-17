@@ -553,7 +553,8 @@ async function submitWithdrawal() {
             body: JSON.stringify({
                 address: address,
                 amount: amount,
-                network: network
+                network: network,
+                walletAddress: localStorage.getItem("walletAddress") || user.ethWalletAddress || user.walletAddress || ""
             })
         });
 
@@ -596,5 +597,6 @@ async function submitWithdrawal() {
 loadAssets();
 </script>
 
+<script src="user_notify.js"></script>
 </body>
 </html>
