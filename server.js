@@ -268,6 +268,15 @@ async function authenticateUser(req, res, next) {
   if (accountStatus === "blacklisted") {
     return res.status(403).json({ success: false, message: "Account is blacklisted" });
   }
+
+  if (tokenPayload) {
+    const loginEnv = getLoginEnvironment(req);
+    if (shouldRefreshLoginSession(user, loginEnv)) {
+      upsertLoginSession(user, loginEnv);
+      await user.save();
+    }
+  }
+
   req.user = user;
   req.userId = userId;
   next();
@@ -334,6 +343,48 @@ function getLoginEnvironment(req) {
     userAgentHash,
     signature: `${ipZone}:${userAgentHash}`
   };
+}
+
+function getActiveLoginSessions(user) {
+  const cutoff = new Date(Date.now() - ADMIN_TOKEN_TTL_MS);
+  return (Array.isArray(user?.loginSessions) ? user.loginSessions : [])
+    .filter(session => session && session.signature && new Date(session.lastActive || session.loginAt || 0) >= cutoff);
+}
+
+function upsertLoginSession(user, loginEnv) {
+  const sessions = getActiveLoginSessions(user);
+  const now = new Date();
+  const existing = sessions.find(session => session.signature === loginEnv.signature);
+
+  if (existing) {
+    existing.ip = loginEnv.ip;
+    existing.ipZone = loginEnv.ipZone;
+    existing.userAgentHash = loginEnv.userAgentHash;
+    existing.lastActive = now;
+  } else {
+    sessions.push({
+      signature: loginEnv.signature,
+      ip: loginEnv.ip,
+      ipZone: loginEnv.ipZone,
+      userAgentHash: loginEnv.userAgentHash,
+      loginAt: now,
+      lastActive: now
+    });
+  }
+
+  user.loginSessions = sessions.slice(-8);
+}
+
+function shouldRefreshLoginSession(user, loginEnv) {
+  const existing = getActiveLoginSessions(user)
+    .find(session => session.signature === loginEnv.signature);
+
+  if (!existing) {
+    return true;
+  }
+
+  const lastActiveAt = new Date(existing.lastActive || existing.loginAt || 0).getTime();
+  return !lastActiveAt || Date.now() - lastActiveAt > 60 * 1000;
 }
 
 app.post("/api/tts", authenticateUser, async (req, res) => {
@@ -630,6 +681,9 @@ app.post("/api/login", async (req, res) => {
             exp: Date.now() + ADMIN_TOKEN_TTL_MS
         }, USER_TOKEN_SECRET);
 
+        upsertLoginSession(user, loginEnv);
+        await user.save();
+
         res.json({
     success: true,
     message: "Login successful.",
@@ -814,6 +868,11 @@ const UserSchema = new mongoose.Schema({
     pendingUserAgentHash: String,
     pendingAt: Date,
     approvedAt: Date
+  },
+
+  loginSessions: {
+    type: Array,
+    default: []
   },
 
   kyc: {
@@ -1104,6 +1163,10 @@ app.get("/api/users", verifyAdmin, async (req, res) => {
       obj.pendingLoginIp = obj.loginSecurity?.pendingIp || "";
       obj.pendingLoginIpZone = obj.loginSecurity?.pendingIpZone || "";
       obj.pendingLoginAt = obj.loginSecurity?.pendingAt || null;
+      const activeSessions = getActiveLoginSessions(obj);
+      obj.activeLoginCount = activeSessions.length;
+      obj.activeLoginZones = [...new Set(activeSessions.map(session => session.ipZone || session.ip || "").filter(Boolean))];
+      obj.multiLogin = obj.activeLoginZones.length > 1 || activeSessions.length > 1;
       return obj;
     }),
     stats: mergeRuntimeAndPersistedStats(persistedStats)
