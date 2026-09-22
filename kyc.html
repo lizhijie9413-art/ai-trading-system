@@ -258,12 +258,13 @@ if (!isAdminKycEntry) {
           <th>提交时间</th>
           <th>状态</th>
           <th>身份证正面</th>
+          <th>人脸照片</th>
           <th>地址证明</th>
           <th>操作</th>
         </tr>
       </thead>
       <tbody id="kycTable">
-        <tr><td colspan="8" class="loading">正在加载 KYC 数据...</td></tr>
+        <tr><td colspan="9" class="loading">正在加载 KYC 数据...</td></tr>
       </tbody>
     </table>
   </div>
@@ -293,7 +294,7 @@ function getStatusText(status) {
 // ==================== 加载KYC数据 ====================
 async function loadKYC() {
     const tbody = document.getElementById("kycTable");
-    tbody.innerHTML = '<tr><td colspan="8" class="loading">加载中...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="loading">加载中...</td></tr>';
     
     try {
         const response = await fetch(`${API_BASE}/api/kyc`, {
@@ -306,11 +307,11 @@ async function loadKYC() {
             renderTable(kycData);
             updateStats();
         } else {
-            tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无KYC申请</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="empty">暂无KYC申请</td></tr>';
         }
     } catch (error) {
         console.error("Load KYC error:", error);
-        tbody.innerHTML = '<tr><td colspan="8" class="empty">加载失败，请检查网络</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">加载失败，请检查网络</td></tr>';
     }
 }
 
@@ -319,7 +320,7 @@ function renderTable(data) {
     const table = document.getElementById("kycTable");
     
     if (!data || data.length === 0) {
-        table.innerHTML = '<tr><td colspan="8" class="empty">暂无KYC申请</td></tr>';
+        table.innerHTML = '<tr><td colspan="9" class="empty">暂无KYC申请</td></tr>';
         return;
     }
     
@@ -332,6 +333,7 @@ function renderTable(data) {
         
         // 构建图片查看链接（修复：正确拼接图片URL）
         let frontImageHtml = "-";
+        let faceImageHtml = "-";
         let backImageHtml = "-";
         
         if (item.frontImage) {
@@ -341,6 +343,10 @@ function renderTable(data) {
         if (item.backImage) {
             const imgUrl = item.backImage.startsWith("http") ? item.backImage : API_BASE + item.backImage;
             backImageHtml = `<a href="${imgUrl}" target="_blank" class="view-btn" style="background:#2563eb;text-decoration:none;display:inline-block;">查看</a>`;
+        }
+        if (item.faceImage) {
+            const imgUrl = item.faceImage.startsWith("http") ? item.faceImage : API_BASE + item.faceImage;
+            faceImageHtml = `<a href="${imgUrl}" target="_blank" class="view-btn" style="background:#2563eb;text-decoration:none;display:inline-block;">查看</a>`;
         }
         
         // 操作按钮（只有待审核状态才显示）
@@ -362,6 +368,7 @@ function renderTable(data) {
             <td>${createdAt}</td>
             <td class="${statusClass}">${statusText}</td>
             <td>${frontImageHtml}</td>
+            <td>${faceImageHtml}</td>
             <td>${backImageHtml}</td>
             <td>${actionButtons}</td>
         `;

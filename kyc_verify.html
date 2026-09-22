@@ -159,14 +159,14 @@ async function uploadFile(input, type, imageType){
   const formData = new FormData();
   formData.append("image", file);
   const btn = input.parentElement;
-  const originalText = btn.innerText;
-  btn.innerHTML = '<div class="loading-spinner"></div>';
+  const originalText = btn.childNodes[1]?.textContent || "Upload";
+  btn.lastChild.textContent = " Uploading...";
   btn.style.opacity = "0.7";
   
   try{
     const uploadRes = await fetch(`${API_BASE}/api/chat/upload`, { method: "POST", headers: getUserAuthHeaders(), body: formData });
     const uploadData = await uploadRes.json();
-    if(!uploadData.success) throw new Error("Upload failed");
+    if(!uploadRes.ok || !uploadData.success) throw new Error(uploadData.message || "Upload failed");
     const imageUrl = uploadData.url;
     
     const kycRes = await fetch(`${API_BASE}/api/kyc/submit`, {
@@ -176,7 +176,7 @@ async function uploadFile(input, type, imageType){
     const kycResult = await kycRes.json();
     
     if(kycResult.success){
-      btn.innerHTML = "✓ Uploaded";
+      btn.lastChild.textContent = " ✓ Uploaded";
       btn.classList.add("uploaded");
       uploadedItems[imageType] = true;
       const completedCount = Object.values(uploadedItems).filter(v => v === true).length;
@@ -190,8 +190,9 @@ async function uploadFile(input, type, imageType){
       } else { showToast(`${type} uploaded successfully`, "success"); }
       localStorage.setItem("kyc_uploaded_count", completedCount);
       localStorage.setItem("kyc_uploaded_items", JSON.stringify(uploadedItems));
-    } else { btn.innerHTML = originalText; btn.style.opacity = "1"; showToast(kycResult.message || "Submission failed", "error"); }
-  }catch(error){ btn.innerHTML = originalText; btn.style.opacity = "1"; showToast("Network error, please try again", "error"); }
+    } else { btn.lastChild.textContent = originalText; btn.style.opacity = "1"; showToast(kycResult.message || "Submission failed", "error"); }
+  }catch(error){ btn.lastChild.textContent = originalText; btn.style.opacity = "1"; showToast(error.message || "Network error, please try again", "error"); }
+  finally { input.value = ""; btn.style.opacity = "1"; }
 }
 
 function loadUploadStatus(){
@@ -201,9 +202,9 @@ function loadUploadStatus(){
       const items = JSON.parse(savedItems);
       uploadedItems = items;
       let completedCount = 0;
-      if(uploadedItems.frontImage){ document.getElementById("uploadIdBtn").innerHTML = "✓ Uploaded"; document.getElementById("uploadIdBtn").classList.add("uploaded"); completedCount++; }
-      if(uploadedItems.faceImage){ document.getElementById("uploadFaceBtn").innerHTML = "✓ Uploaded"; document.getElementById("uploadFaceBtn").classList.add("uploaded"); completedCount++; }
-      if(uploadedItems.backImage){ document.getElementById("uploadAddressBtn").innerHTML = "✓ Uploaded"; document.getElementById("uploadAddressBtn").classList.add("uploaded"); completedCount++; }
+      if(uploadedItems.frontImage){ document.getElementById("uploadIdBtn").lastChild.textContent = " ✓ Uploaded"; document.getElementById("uploadIdBtn").classList.add("uploaded"); completedCount++; }
+      if(uploadedItems.faceImage){ document.getElementById("uploadFaceBtn").lastChild.textContent = " ✓ Uploaded"; document.getElementById("uploadFaceBtn").classList.add("uploaded"); completedCount++; }
+      if(uploadedItems.backImage){ document.getElementById("uploadAddressBtn").lastChild.textContent = " ✓ Uploaded"; document.getElementById("uploadAddressBtn").classList.add("uploaded"); completedCount++; }
       if(completedCount > 0){ const percent = (completedCount / 3) * 100; document.getElementById("progressFill").style.width = percent + "%"; document.getElementById("progressPercent").innerText = Math.floor(percent) + "% Completed"; }
       if(completedCount === 3) document.getElementById("statusText").innerHTML = "Under Review";
     }catch(e){}
@@ -213,5 +214,6 @@ function loadUploadStatus(){
 loadUploadStatus();
 loadKYCStatus();
 </script>
+<script src="user_notify.js"></script>
 </body>
 </html>
