@@ -986,6 +986,7 @@ const KYC = mongoose.model("KYC", new mongoose.Schema({
   email: String,
   frontImage: String,
   backImage: String,
+  faceImage: String,
   status: {
     type: String,
     default: "未审核"
@@ -1620,12 +1621,13 @@ app.put(
 app.post("/api/kyc/submit", authenticateUser, async (req, res) => {
   try {
     const user = req.user;
-    const { frontImage, backImage, imageUrl, documentType } = req.body;
+    const { frontImage, backImage, faceImage, imageUrl } = req.body;
 
     const docFront = frontImage || imageUrl || "";
     const docBack = backImage || "";
+    const docFace = faceImage || "";
 
-    if (!docFront && !docBack) {
+    if (!docFront && !docBack && !docFace) {
       return res.json({
         success: false,
         message: "Please upload at least one document image"
@@ -1642,9 +1644,9 @@ app.post("/api/kyc/submit", authenticateUser, async (req, res) => {
       uid: user.uid || "",
       name: user.name || user.username || "",
       email: user.email || "",
-      frontImage: docFront,
-      backImage: docBack,
-      documentType: documentType || "KYC Document",
+      frontImage: docFront || existing?.frontImage || "",
+      backImage: docBack || existing?.backImage || "",
+      faceImage: docFace || existing?.faceImage || "",
       status: "未审核",
       createdAt: new Date()
     };
