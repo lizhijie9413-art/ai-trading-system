@@ -22,6 +22,7 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_TOKEN_TTL_MS = Number(process.env.ADMIN_TOKEN_TTL_MS || 24 * 60 * 60 * 1000);
 const USER_TOKEN_SECRET = process.env.USER_TOKEN_SECRET || ADMIN_TOKEN;
+const KYC_RETRY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map(origin => origin.trim())
@@ -469,6 +470,7 @@ app.get("/api/users/:id", authenticateUser, async (req, res) => {
     }
 
     const kycStatus = await resolveUserKycStatus(user);
+    const kycCooldown = await getKycRetryCooldown(user);
 
     res.json({
       success: true,
@@ -490,6 +492,8 @@ app.get("/api/users/:id", authenticateUser, async (req, res) => {
         walletAddress: user.walletAddress || "",
         ethWalletAddress: user.ethWalletAddress || user.walletAddress || "",
         kyc: kycStatus,
+        kycRetryAt: kycCooldown.retryAt,
+        kycRetryRemainingMs: kycCooldown.remainingMs,
        status: user.status
       }
     });
@@ -997,7 +1001,9 @@ const KYC = mongoose.model("KYC", new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  reviewedAt: Date,
+  rejectedAt: Date
 }));
 
 async function resolveUserKycStatus(user) {
@@ -1026,6 +1032,30 @@ async function resolveUserKycStatus(user) {
   });
 
   return pendingKyc ? "未审核" : (user.kyc || "未审核");
+}
+
+async function getKycRetryCooldown(user) {
+  if (!user?._id) {
+    return { remainingMs: 0, retryAt: null };
+  }
+
+  const rejectedKyc = await KYC.findOne({
+    userId: user._id.toString(),
+    status: { $in: ["已驳回", "Rejected"] }
+  }).sort({ rejectedAt: -1, reviewedAt: -1, createdAt: -1 });
+
+  if (!rejectedKyc) {
+    return { remainingMs: 0, retryAt: null };
+  }
+
+  const rejectedAt = new Date(rejectedKyc.rejectedAt || rejectedKyc.reviewedAt || rejectedKyc.createdAt || 0).getTime();
+  const retryAt = rejectedAt + KYC_RETRY_COOLDOWN_MS;
+  const remainingMs = Math.max(0, retryAt - Date.now());
+
+  return {
+    remainingMs,
+    retryAt: new Date(retryAt)
+  };
 }
   
 
@@ -1665,10 +1695,33 @@ app.post("/api/kyc/submit", authenticateUser, async (req, res) => {
       });
     }
 
+    const approvedKyc = await KYC.findOne({
+      userId: user._id.toString(),
+      status: { $in: ["已通过", "Approved"] }
+    });
+
+    if (user.kyc === "已通过" || approvedKyc) {
+      return res.json({
+        success: false,
+        message: "KYC is already approved"
+      });
+    }
+
+    const kycCooldown = await getKycRetryCooldown(user);
+    if (kycCooldown.remainingMs > 0) {
+      return res.json({
+        success: false,
+        code: "KYC_RETRY_COOLDOWN",
+        message: "KYC was rejected. Please wait 24 hours before uploading again.",
+        retryAt: kycCooldown.retryAt,
+        remainingMs: kycCooldown.remainingMs
+      });
+    }
+
     const existing = await KYC.findOne({
       userId: user._id.toString(),
-      status: { $in: ["未审核", "Pending"] }
-    });
+      status: { $in: ["未审核", "Pending", "已驳回", "Rejected"] }
+    }).sort({ createdAt: -1 });
 
     const payload = {
       userId: user._id.toString(),
@@ -1679,7 +1732,9 @@ app.post("/api/kyc/submit", authenticateUser, async (req, res) => {
       backImage: docBack || existing?.backImage || "",
       faceImage: docFace || existing?.faceImage || "",
       status: "未审核",
-      createdAt: new Date()
+      createdAt: new Date(),
+      reviewedAt: null,
+      rejectedAt: null
     };
 
     const item = existing
@@ -1717,7 +1772,7 @@ app.put("/api/kyc/:id/approve", verifyAdmin, async (req, res) => {
   try {
     const item = await KYC.findByIdAndUpdate(
       req.params.id,
-      { status: "已通过" },
+      { status: "已通过", reviewedAt: new Date(), rejectedAt: null },
       { new: true }
     );
 
@@ -1738,7 +1793,7 @@ app.put("/api/kyc/:id/reject", verifyAdmin, async (req, res) => {
   try {
     const item = await KYC.findByIdAndUpdate(
       req.params.id,
-      { status: "已驳回" },
+      { status: "已驳回", reviewedAt: new Date(), rejectedAt: new Date() },
       { new: true }
     );
 

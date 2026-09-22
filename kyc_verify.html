@@ -139,22 +139,102 @@ async function loadKYCStatus(){
     if(result.success && result.user){
       const kycStatus = result.user.kyc || "未审核";
       const statusEl = document.getElementById("statusText");
-      if(kycStatus === "已通过"){ statusEl.innerHTML = "Approved ✓"; statusEl.className = "kyc-status status-approved"; }
-      else if(kycStatus === "已驳回"){ statusEl.innerHTML = "Rejected ✗"; statusEl.className = "kyc-status status-rejected"; }
-      else{ statusEl.innerHTML = "Pending Review"; statusEl.className = "kyc-status status-pending"; }
+      if(kycStatus === "已通过"){
+        statusEl.innerHTML = "Approved ✓";
+        statusEl.className = "kyc-status status-approved";
+        setUploadLocked(true);
+      }
+      else if(kycStatus === "已驳回"){
+        statusEl.innerHTML = "Rejected ✗";
+        statusEl.className = "kyc-status status-rejected";
+        resetUploadStatus(true);
+        if(Number(result.user.kycRetryRemainingMs || 0) > 0){
+          startKycRetryCountdown(result.user.kycRetryRemainingMs);
+        } else {
+          document.getElementById("estimatedTime").innerText = "You can upload again now";
+          setUploadLocked(false);
+        }
+      }
+      else{
+        statusEl.innerHTML = "Pending Review";
+        statusEl.className = "kyc-status status-pending";
+        setUploadLocked(false);
+      }
     }
   }catch(err){ console.log(err); }
 }
 
 let uploadedItems = { frontImage: false, faceImage: false, backImage: false };
+let kycRetryTimer = null;
 
 function getKycStorageKey(){
   const user = getCurrentUser();
   return user && user.id ? `kyc_uploaded_items_${user.id}` : "kyc_uploaded_items";
 }
 
+function setUploadButton(buttonId, text, uploaded){
+  const btn = document.getElementById(buttonId);
+  if(!btn) return;
+  btn.lastChild.textContent = text;
+  btn.classList.toggle("uploaded", Boolean(uploaded));
+}
+
+function resetUploadStatus(clearStorage = false){
+  uploadedItems = { frontImage: false, faceImage: false, backImage: false };
+  setUploadButton("uploadIdBtn", "Upload", false);
+  setUploadButton("uploadFaceBtn", "Upload", false);
+  setUploadButton("uploadAddressBtn", "Upload", false);
+  document.getElementById("progressFill").style.width = "0%";
+  document.getElementById("progressPercent").innerText = "0% Completed";
+  document.getElementById("estimatedTime").innerText = "Estimated: 24 Hours";
+  if(clearStorage) localStorage.removeItem(getKycStorageKey());
+}
+
+function formatCooldown(ms){
+  const totalSeconds = Math.max(0, Math.ceil(Number(ms || 0) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+}
+
+function startKycRetryCountdown(remainingMs){
+  if(kycRetryTimer) clearInterval(kycRetryTimer);
+  const retryReadyAt = Date.now() + Number(remainingMs || 0);
+  const statusEl = document.getElementById("statusText");
+  const estimatedEl = document.getElementById("estimatedTime");
+
+  function tick(){
+    const left = Math.max(0, retryReadyAt - Date.now());
+    if(left <= 0){
+      clearInterval(kycRetryTimer);
+      kycRetryTimer = null;
+      statusEl.innerHTML = "Rejected - Upload Again";
+      estimatedEl.innerText = "You can upload again now";
+      setUploadLocked(false);
+      return;
+    }
+    statusEl.innerHTML = "Rejected ✗";
+    estimatedEl.innerText = `Upload again after ${formatCooldown(left)}`;
+    setUploadLocked(true);
+  }
+
+  tick();
+  kycRetryTimer = setInterval(tick, 30000);
+}
+
+function setUploadLocked(locked){
+  document.querySelectorAll(".upload-btn input").forEach(input => {
+    input.disabled = Boolean(locked);
+  });
+  document.querySelectorAll(".upload-btn").forEach(btn => {
+    btn.style.opacity = locked ? "0.55" : "1";
+    btn.style.cursor = locked ? "not-allowed" : "pointer";
+  });
+}
+
 async function uploadFile(input, type, imageType){
   if(!input.files || input.files.length === 0) return;
+  if(input.disabled) return;
   const user = getCurrentUser();
   if(!user || !user.id){ showToast("Please login first", "error"); return; }
   const file = input.files[0];
@@ -194,7 +274,15 @@ async function uploadFile(input, type, imageType){
         showToast("All documents uploaded! Your KYC is under review.", "success");
       } else { showToast(`${type} uploaded successfully`, "success"); }
       localStorage.setItem(getKycStorageKey(), JSON.stringify(uploadedItems));
-    } else { btn.lastChild.textContent = originalText; btn.style.opacity = "1"; showToast(kycResult.message || "Submission failed", "error"); }
+    } else {
+      btn.lastChild.textContent = originalText;
+      btn.style.opacity = "1";
+      if(kycResult.code === "KYC_RETRY_COOLDOWN" && Number(kycResult.remainingMs || 0) > 0){
+        resetUploadStatus(true);
+        startKycRetryCountdown(kycResult.remainingMs);
+      }
+      showToast(kycResult.message || "Submission failed", "error");
+    }
   }catch(error){ btn.lastChild.textContent = originalText; btn.style.opacity = "1"; showToast(error.message || "Network error, please try again", "error"); }
   finally { input.value = ""; btn.style.opacity = "1"; }
 }
