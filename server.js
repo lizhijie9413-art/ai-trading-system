@@ -468,6 +468,8 @@ app.get("/api/users/:id", authenticateUser, async (req, res) => {
       });
     }
 
+    const kycStatus = await resolveUserKycStatus(user);
+
     res.json({
       success: true,
       user: {
@@ -487,6 +489,7 @@ app.get("/api/users/:id", authenticateUser, async (req, res) => {
         tokenTodayProfit: user.tokenTodayProfit || 0,
         walletAddress: user.walletAddress || "",
         ethWalletAddress: user.ethWalletAddress || user.walletAddress || "",
+        kyc: kycStatus,
        status: user.status
       }
     });
@@ -985,8 +988,8 @@ const KYC = mongoose.model("KYC", new mongoose.Schema({
   name: String,
   email: String,
   frontImage: String,
-  backImage: String,
   faceImage: String,
+  backImage: String,
   status: {
     type: String,
     default: "未审核"
@@ -996,6 +999,34 @@ const KYC = mongoose.model("KYC", new mongoose.Schema({
     default: Date.now
   }
 }));
+
+async function resolveUserKycStatus(user) {
+  if (!user?._id) {
+    return "未审核";
+  }
+
+  if (user.kyc === "已通过" || user.kyc === "已驳回") {
+    return user.kyc;
+  }
+
+  const approvedKyc = await KYC.findOne({
+    userId: user._id.toString(),
+    status: { $in: ["已通过", "Approved"] }
+  });
+
+  if (approvedKyc) {
+    user.kyc = "已通过";
+    await user.save();
+    return "已通过";
+  }
+
+  const pendingKyc = await KYC.findOne({
+    userId: user._id.toString(),
+    status: { $in: ["未审核", "Pending"] }
+  });
+
+  return pendingKyc ? "未审核" : (user.kyc || "未审核");
+}
   
 
 
@@ -1683,23 +1714,45 @@ app.get("/api/kyc", verifyAdmin, async (req, res) => {
 });
 
 app.put("/api/kyc/:id/approve", verifyAdmin, async (req, res) => {
-  const item = await KYC.findByIdAndUpdate(
-    req.params.id,
-    { status: "已通过" },
-    { new: true }
-  );
+  try {
+    const item = await KYC.findByIdAndUpdate(
+      req.params.id,
+      { status: "已通过" },
+      { new: true }
+    );
 
-  res.json({ success: true, data: item });
+    if (!item) {
+      return res.json({ success: false, message: "KYC record not found" });
+    }
+
+    await User.findByIdAndUpdate(item.userId, { kyc: "已通过" });
+
+    res.json({ success: true, data: item });
+  } catch (err) {
+    console.log("KYC approve error:", err);
+    res.json({ success: false, message: "KYC approval failed" });
+  }
 });
 
 app.put("/api/kyc/:id/reject", verifyAdmin, async (req, res) => {
-  const item = await KYC.findByIdAndUpdate(
-    req.params.id,
-    { status: "已驳回" },
-    { new: true }
-  );
+  try {
+    const item = await KYC.findByIdAndUpdate(
+      req.params.id,
+      { status: "已驳回" },
+      { new: true }
+    );
 
-  res.json({ success: true, data: item });
+    if (!item) {
+      return res.json({ success: false, message: "KYC record not found" });
+    }
+
+    await User.findByIdAndUpdate(item.userId, { kyc: "已驳回" });
+
+    res.json({ success: true, data: item });
+  } catch (err) {
+    console.log("KYC reject error:", err);
+    res.json({ success: false, message: "KYC rejection failed" });
+  }
 });
 
 /* 订单 */
@@ -3910,7 +3963,8 @@ app.post("/api/withdraw", authenticateUser, async (req, res) => {
 
     // 大额提现需要KYC验证
     if (withdrawAmount >= 1000) {
-      if (!user.kyc || user.kyc !== "已通过") {
+      const kycStatus = await resolveUserKycStatus(user);
+      if (kycStatus !== "已通过") {
         return res.json({
           success: false,
           message: "Withdrawals over 1000 USDT require KYC verification. Please complete KYC first.",
