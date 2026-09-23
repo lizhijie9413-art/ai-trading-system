@@ -795,22 +795,23 @@ async function authenticateUserOrAdmin(req, res, next) {
   return authenticateUser(req, res, next);
 }
 
-const kycStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-
-  filename: function (req, file, cb) {
-
-    const uniqueName =
-      Date.now() + "-" + file.originalname;
-
-    cb(null, uniqueName);
+function getUploadBucket() {
+  if (!mongoose.connection.db) {
+    return null;
   }
-});
+
+  return new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+    bucketName: "uploads"
+  });
+}
+
+function makeUploadFilename(originalName = "image") {
+  const safeName = path.basename(originalName).replace(/[^a-zA-Z0-9._-]/g, "_");
+  return `${Date.now()}-${crypto.randomBytes(6).toString("hex")}-${safeName}`;
+}
 
 const upload = multer({
-  storage: kycStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: function (req, file, cb) {
     if (!file.mimetype || !file.mimetype.startsWith("image/")) {
@@ -821,7 +822,7 @@ const upload = multer({
 });
 
 app.post("/api/chat/upload", (req, res) => {
-  upload.single("image")(req, res, (err) => {
+  upload.single("image")(req, res, async (err) => {
     if (err) {
       return res.status(400).json({
         success: false,
@@ -836,11 +837,44 @@ app.post("/api/chat/upload", (req, res) => {
       });
     }
 
-    console.log("Chat image uploaded:", req.file.filename);
+    const filename = makeUploadFilename(req.file.originalname);
+    const bucket = getUploadBucket();
+
+    if (!bucket) {
+      return res.status(503).json({
+        success: false,
+        message: "Upload storage is not ready"
+      });
+    }
+
+    try {
+      await new Promise((resolve, reject) => {
+        const stream = bucket.openUploadStream(filename, {
+          contentType: req.file.mimetype,
+          metadata: {
+            originalName: req.file.originalname,
+            size: req.file.size,
+            uploadedAt: new Date()
+          }
+        });
+
+        stream.on("finish", resolve);
+        stream.on("error", reject);
+        stream.end(req.file.buffer);
+      });
+    } catch (uploadErr) {
+      console.log("GridFS upload error:", uploadErr);
+      return res.status(500).json({
+        success: false,
+        message: "Image upload failed"
+      });
+    }
+
+    console.log("Chat image uploaded:", filename);
 
     res.json({
       success: true,
-      url: "/uploads/" + req.file.filename
+      url: "/uploads/" + filename
     });
   });
 });
@@ -859,6 +893,43 @@ const io = new Server(server, {
 
 app.get("/api/kyc/list", verifyAdmin, (req, res) => {
   res.json(kycSubmissions);
+});
+
+app.get("/uploads/:filename", async (req, res) => {
+  const filename = path.basename(req.params.filename || "");
+  const bucket = getUploadBucket();
+  const diskPath = path.join(uploadDir, filename);
+
+  if (!filename) {
+    return res.status(404).send("Image not found");
+  }
+
+  if (bucket) {
+    try {
+      const files = await mongoose.connection.db
+        .collection("uploads.files")
+        .find({ filename })
+        .sort({ uploadDate: -1 })
+        .limit(1)
+        .toArray();
+
+      if (files.length > 0) {
+        if (files[0].contentType) {
+          res.type(files[0].contentType);
+        }
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return bucket.openDownloadStreamByName(filename).pipe(res);
+      }
+    } catch (err) {
+      console.log("GridFS read error:", err);
+    }
+  }
+
+  if (fs.existsSync(diskPath)) {
+    return res.sendFile(diskPath);
+  }
+
+  return res.status(404).send("Image file is missing. Please upload it again.");
 });
 
 app.use("/uploads", express.static(uploadDir));
