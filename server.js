@@ -1430,7 +1430,8 @@ app.put("/api/users/:id/trade-result-mode", verifyAdmin, async (req, res) => {
       });
     }
 
-    user.defaultTradeResultMode = normalizeTradeResultMode(req.body.mode);
+    const resultMode = normalizeTradeResultMode(req.body.mode);
+    user.defaultTradeResultMode = resultMode;
 
     if (!Array.isArray(user.records)) {
       user.records = [];
@@ -1438,15 +1439,51 @@ app.put("/api/users/:id/trade-result-mode", verifyAdmin, async (req, res) => {
 
     user.records.push({
       type: "trade_result_mode",
-      message: `Default trade result mode set to ${user.defaultTradeResultMode}`,
+      message: `Default trade result mode set to ${resultMode}`,
       timestamp: new Date()
     });
 
     await user.save();
 
+    const runningOrderUpdate = await AIQuantOrder.updateMany(
+      {
+        userId: user._id.toString(),
+        status: "Running"
+      },
+      {
+        $set: {
+          resultMode,
+          profitRate: 0,
+          finalRate: 0,
+          profit: 0,
+          subTrades: []
+        },
+        $unset: {
+          manualRate: ""
+        }
+      }
+    );
+
+    const runningPerpetualUpdate = await PerpetualContractOrder.updateMany(
+      {
+        userId: user._id.toString(),
+        status: "Running"
+      },
+      {
+        $set: {
+          resultMode,
+          profitRate: 0,
+          priceChangeRate: 0,
+          profit: 0,
+          subTrades: []
+        }
+      }
+    );
+
     res.json({
       success: true,
-      data: user
+      data: user,
+      updatedRunningOrders: (runningOrderUpdate.modifiedCount || 0) + (runningPerpetualUpdate.modifiedCount || 0)
     });
   } catch (err) {
     console.log("Set user trade result mode error:", err);
@@ -2016,6 +2053,10 @@ const PerpetualContractOrder = mongoose.model("PerpetualContractOrder", new mong
   priceChangeRate: Number,
   profitRate: Number,
   profit: Number,
+  resultMode: {
+    type: String,
+    default: "profit"
+  },
   subTrades: {
     type: Array,
     default: []
@@ -2084,14 +2125,13 @@ function publicPerpetualOrder(order) {
   return obj;
 }
 
-function getPerpetualProfitRate(durationSeconds) {
+function getPerpetualProfitRate(durationSeconds, mode) {
   const seconds = Number(durationSeconds || 60);
-  const isWin = Math.random() >= 0.5;
   const range = seconds === 120
     ? { min: 13, max: 17 }
     : { min: 8, max: 12 };
   const rate = randomBetween(range.min, range.max);
-  return Number((isWin ? rate : -rate).toFixed(2));
+  return Number(applyTradeResultMode(rate, mode).toFixed(2));
 }
 
 function generateAISmartPerpetualTrades(totalProfitRate, startedAt = new Date()) {
@@ -2126,8 +2166,8 @@ async function settlePerpetualContractOrder(order, user) {
   const leverage = Math.max(1, Number(order.leverage || 1));
   const isAISmart = order.mode === "AI Smart";
   const profitRate = isAISmart
-    ? Number(randomBetween(9, 10).toFixed(2))
-    : getPerpetualProfitRate(order.durationSeconds);
+    ? Number(applyTradeResultMode(randomBetween(9, 10), order.resultMode).toFixed(2))
+    : getPerpetualProfitRate(order.durationSeconds, order.resultMode);
   const priceChangeRate = Number(((profitRate / leverage) * directionFactor).toFixed(4));
   const exitPrice = Number((basePrice * (1 + priceChangeRate / 100)).toFixed(4));
   let profit = Number((Number(order.margin || 0) * profitRate / 100).toFixed(2));
@@ -3890,6 +3930,7 @@ app.post("/api/perpetual/start", authenticateUser, async (req, res) => {
       durationSeconds: selectedDuration,
       entryPrice,
       profit: 0,
+      resultMode: normalizeTradeResultMode(user.defaultTradeResultMode),
       priceChangeRate: 0,
       profitRate: 0,
       status: "Running",
@@ -3974,6 +4015,7 @@ app.post("/api/perpetual/ai-smart/start", authenticateUser, async (req, res) => 
       tradeCount: 5,
       entryPrice,
       profit: 0,
+      resultMode: normalizeTradeResultMode(user.defaultTradeResultMode),
       priceChangeRate: 0,
       profitRate: 0,
       subTrades: [],
