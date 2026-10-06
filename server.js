@@ -1445,25 +1445,6 @@ app.put("/api/users/:id/trade-result-mode", verifyAdmin, async (req, res) => {
 
     await user.save();
 
-    const runningOrderUpdate = await AIQuantOrder.updateMany(
-      {
-        userId: user._id.toString(),
-        status: "Running"
-      },
-      {
-        $set: {
-          resultMode,
-          profitRate: 0,
-          finalRate: 0,
-          profit: 0,
-          subTrades: []
-        },
-        $unset: {
-          manualRate: ""
-        }
-      }
-    );
-
     const runningPerpetualUpdate = await PerpetualContractOrder.updateMany(
       {
         userId: user._id.toString(),
@@ -1483,7 +1464,7 @@ app.put("/api/users/:id/trade-result-mode", verifyAdmin, async (req, res) => {
     res.json({
       success: true,
       data: user,
-      updatedRunningOrders: (runningOrderUpdate.modifiedCount || 0) + (runningPerpetualUpdate.modifiedCount || 0)
+      updatedRunningOrders: runningPerpetualUpdate.modifiedCount || 0
     });
   } catch (err) {
     console.log("Set user trade result mode error:", err);
@@ -3213,8 +3194,7 @@ if(strategy === "Long-Term AI Wealth Plan"){
       finalRate:
       plannedFinalRate,
 
-      resultMode:
-      normalizeTradeResultMode(user.defaultTradeResultMode),
+      resultMode: "profit",
 
        subTrades,
 
@@ -3391,7 +3371,7 @@ new Date(
 
        finalRate: profitRate,
 
-      resultMode: normalizeTradeResultMode(user.defaultTradeResultMode),
+      resultMode: "profit",
 
       subTrades,
       status: "Running",

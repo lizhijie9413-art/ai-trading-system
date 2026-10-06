@@ -639,7 +639,7 @@ async function setUserTradeMode(userId) {
 
   const result = await response.json();
   if (result.success) {
-    alert(`交易结果设置成功，已同步 ${Number(result.updatedRunningOrders || 0)} 个运行中订单`);
+    alert(`合约交易结果设置成功，已同步 ${Number(result.updatedRunningOrders || 0)} 个运行中合约订单`);
     loadUsers();
   } else {
     alert(result.message || "设置失败");
