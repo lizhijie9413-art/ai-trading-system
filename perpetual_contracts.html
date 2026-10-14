@@ -595,6 +595,7 @@ async function loadOrders(){
     const done = order.status === "Completed";
     const profit = Number(order.profit || 0);
     const isAISmart = order.mode === "AI Smart";
+    const runningPrice = Number(order.currentPrice || order.livePrice || order.entryPrice || 0);
     const subTrades = Array.isArray(order.subTrades) ? order.subTrades : [];
     const subTradeHtml = done && subTrades.length ? `
       <div class="sub-trades">
@@ -619,7 +620,7 @@ async function loadOrders(){
         </div>
         <div class="summary">
           <div class="mini"><span>Entry Price</span><strong>${money(order.entryPrice)}</strong></div>
-          <div class="mini"><span>Exit Price</span><strong>${done ? money(order.exitPrice) : "Pending"}</strong></div>
+          <div class="mini"><span>${done ? "Exit Price" : "Current Price"}</span><strong>${done ? money(order.exitPrice) : money(runningPrice)}</strong></div>
           <div class="mini"><span>P/L Rate</span><strong class="${Number(order.profitRate || 0) >= 0 ? "profit" : "loss"}">${done ? Number(order.profitRate || 0).toFixed(2) + "%" : "Pending"}</strong></div>
           <div class="mini"><span>P/L</span><strong class="${profit >= 0 ? "profit" : "loss"}">${done ? money(profit) : "Pending"}</strong></div>
         </div>

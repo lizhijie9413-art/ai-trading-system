@@ -2094,9 +2094,28 @@ function randomBetween(min, max) {
   return min + Math.random() * (max - min);
 }
 
+function getPerpetualLivePrice(order, now = new Date()) {
+  if (!order) return 0;
+  const product = getPerpetualProduct(order.market, order.symbol);
+  const basePrice = Number(order.entryPrice || product?.price || 0);
+  if (!basePrice) return 0;
+
+  const startTime = new Date(order.startTime || order.createdAt || now).getTime();
+  const elapsedSeconds = Math.max(0, (new Date(now).getTime() - startTime) / 1000);
+  const seed = String(order._id || order.symbol || order.product || "")
+    .split("")
+    .reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const wave = Math.sin(elapsedSeconds / 8 + seed) * 0.18
+    + Math.sin(elapsedSeconds / 3.7 + seed / 7) * 0.08;
+
+  return Number((basePrice * (1 + wave / 100)).toFixed(4));
+}
+
 function publicPerpetualOrder(order) {
   const obj = typeof order.toObject === "function" ? order.toObject() : { ...order };
   if (obj.status !== "Completed") {
+    obj.currentPrice = getPerpetualLivePrice(obj);
+    obj.livePrice = obj.currentPrice;
     obj.exitPrice = null;
     obj.priceChangeRate = 0;
     obj.profitRate = 0;
