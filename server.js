@@ -2109,13 +2109,54 @@ async function getPerpetualCryptoTickers() {
       const tickers = await response.json();
       const data = new Map(tickers.map(ticker => [ticker.symbol, {
         price: Number(ticker.lastPrice),
-        change: Number(ticker.priceChangePercent)
+        change: Number(ticker.priceChangePercent),
+        source: "Binance Futures"
       }]));
       perpetualCryptoTickerCache = { fetchedAt: Date.now(), data };
       return data;
     } catch (error) {
       console.warn("Load Binance perpetual prices failed:", error.message);
-      return perpetualCryptoTickerCache.data || new Map();
+      try {
+        const response = await fetch(
+          "https://api.kraken.com/0/public/Ticker?pair=XBTUSD,ETHUSD,SOLUSD,XRPUSD,BNBUSD,UNIUSD,DOGEUSD",
+          { signal: AbortSignal.timeout(4000) }
+        );
+        if (!response.ok) throw new Error(`Kraken ticker returned ${response.status}`);
+        const result = await response.json();
+        if (Array.isArray(result.error) && result.error.length) {
+          throw new Error(result.error.join(", "));
+        }
+
+        const pairs = {
+          BTCUSDT: "XXBTZUSD",
+          ETHUSDT: "XETHZUSD",
+          SOLUSDT: "SOLUSD",
+          XRPUSDT: "XXRPZUSD",
+          BNBUSDT: "BNBUSD",
+          UNIUSDT: "UNIUSD",
+          DOGEUSDT: "XDGUSD"
+        };
+        const data = new Map();
+        for (const [symbol, pair] of Object.entries(pairs)) {
+          const quote = result.result?.[pair];
+          const price = Number(quote?.c?.[0]);
+          const open = Number(quote?.o);
+          if (price > 0) {
+            data.set(symbol, {
+              price,
+              change: open > 0 ? ((price / open) - 1) * 100 : 0,
+              source: "Kraken"
+            });
+          }
+        }
+        if (!data.size) throw new Error("Kraken returned no supported crypto prices");
+        perpetualCryptoTickerCache = { fetchedAt: Date.now(), data };
+        console.warn("Using Kraken crypto prices because Binance is unavailable");
+        return data;
+      } catch (fallbackError) {
+        console.warn("Load Kraken fallback prices failed:", fallbackError.message);
+        return perpetualCryptoTickerCache.data || new Map();
+      }
     } finally {
       perpetualCryptoTickerRequest = null;
     }
@@ -2131,7 +2172,7 @@ async function getPerpetualProductsWithLivePrices() {
       if (market !== "Crypto") return item;
       const ticker = tickers.get(item.symbol.replace("/", ""));
       return ticker?.price > 0
-        ? { ...item, price: ticker.price, changePercent: ticker.change, priceSource: "Binance Futures" }
+        ? { ...item, price: ticker.price, changePercent: ticker.change, priceSource: ticker.source || "Binance Futures" }
         : item;
     })
   ]));
