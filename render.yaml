@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ai-trading-system
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /test-server
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: USER_TOKEN_SECRET
+        generateValue: true
