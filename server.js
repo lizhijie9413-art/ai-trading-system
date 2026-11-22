@@ -2090,12 +2090,71 @@ function getPerpetualProduct(market, symbol) {
   return list.find(item => item.symbol === symbol) || null;
 }
 
+// Binance Futures 24h ticker is refreshed on demand and shared between clients.
+// Binance's ticker stream updates continuously; a short cache prevents each
+// browser poll from creating a separate upstream request.
+let perpetualCryptoTickerCache = { fetchedAt: 0, data: null };
+let perpetualCryptoTickerRequest = null;
+async function getPerpetualCryptoTickers() {
+  if (perpetualCryptoTickerCache.data && Date.now() - perpetualCryptoTickerCache.fetchedAt < 1000) {
+    return perpetualCryptoTickerCache.data;
+  }
+  if (perpetualCryptoTickerRequest) return perpetualCryptoTickerRequest;
+  perpetualCryptoTickerRequest = (async () => {
+    try {
+      const response = await fetch("https://fapi.binance.com/fapi/v1/ticker/24hr", {
+        signal: AbortSignal.timeout(4000)
+      });
+      if (!response.ok) throw new Error(`Binance ticker returned ${response.status}`);
+      const tickers = await response.json();
+      const data = new Map(tickers.map(ticker => [ticker.symbol, {
+        price: Number(ticker.lastPrice),
+        change: Number(ticker.priceChangePercent)
+      }]));
+      perpetualCryptoTickerCache = { fetchedAt: Date.now(), data };
+      return data;
+    } catch (error) {
+      console.warn("Load Binance perpetual prices failed:", error.message);
+      return perpetualCryptoTickerCache.data || new Map();
+    } finally {
+      perpetualCryptoTickerRequest = null;
+    }
+  })();
+  return perpetualCryptoTickerRequest;
+}
+
+async function getPerpetualProductsWithLivePrices() {
+  const tickers = await getPerpetualCryptoTickers();
+  return Object.fromEntries(Object.entries(perpetualProducts).map(([market, items]) => [
+    market,
+    items.map(item => {
+      if (market !== "Crypto") return item;
+      const ticker = tickers.get(item.symbol.replace("/", ""));
+      return ticker?.price > 0
+        ? { ...item, price: ticker.price, changePercent: ticker.change, priceSource: "Binance Futures" }
+        : item;
+    })
+  ]));
+}
+
+async function getPerpetualProductPrice(market, product) {
+  if (market === "Crypto") {
+    const ticker = (await getPerpetualCryptoTickers()).get(product.symbol.replace("/", ""));
+    if (ticker?.price > 0) return ticker.price;
+  }
+  return Number(product.price || 0);
+}
+
 function randomBetween(min, max) {
   return min + Math.random() * (max - min);
 }
 
 function getPerpetualLivePrice(order, now = new Date()) {
   if (!order) return 0;
+  const liveTicker = order.market === "Crypto"
+    ? perpetualCryptoTickerCache.data?.get(String(order.symbol || "").replace("/", ""))
+    : null;
+  if (liveTicker?.price > 0) return liveTicker.price;
   const product = getPerpetualProduct(order.market, order.symbol);
   const basePrice = Number(order.entryPrice || product?.price || 0);
   if (!basePrice) return 0;
@@ -3848,9 +3907,10 @@ app.post("/api/token-yield/start", authenticateUser, async (req, res) => {
 });
 
 app.get("/api/perpetual/products", authenticateUser, async (req, res) => {
+  const products = await getPerpetualProductsWithLivePrices();
   res.json({
     success: true,
-    data: perpetualProducts
+    data: products
   });
 });
 
@@ -3914,7 +3974,7 @@ app.post("/api/perpetual/start", authenticateUser, async (req, res) => {
     }
 
     const now = new Date();
-    const entryPrice = Number((product.price * (1 + randomBetween(-0.0015, 0.0015))).toFixed(4));
+    const entryPrice = Number((await getPerpetualProductPrice(selectedMarket, product)).toFixed(4));
     const order = await PerpetualContractOrder.create({
       userId: user._id.toString(),
       username: user.name || user.username || user.email || "",
@@ -3997,7 +4057,7 @@ app.post("/api/perpetual/ai-smart/start", authenticateUser, async (req, res) => 
 
     const now = new Date();
     const direction = Math.random() >= 0.5 ? "Long" : "Short";
-    const entryPrice = Number((product.price * (1 + randomBetween(-0.0015, 0.0015))).toFixed(4));
+    const entryPrice = Number((await getPerpetualProductPrice(selectedMarket, product)).toFixed(4));
     const order = await PerpetualContractOrder.create({
       userId: user._id.toString(),
       username: user.name || user.username || user.email || "",

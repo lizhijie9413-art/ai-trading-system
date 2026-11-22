@@ -371,6 +371,7 @@ let selectedDirection = "Long";
 let selectedDuration = 60;
 let selectedLeverage = 10;
 let available = 0;
+let productsInitialized = false;
 
 function authHeaders(){
   return {
@@ -417,13 +418,13 @@ function renderProducts(){
 function updateMarketView(){
   const item = currentProduct();
   const price = Number(item.price || 0);
-  const move = (Math.sin(Date.now() / 35000 + price) * 2.8).toFixed(2);
+  const move = Number(item.changePercent || 0);
   document.getElementById("symbolName").textContent = item.symbol || selectedSymbol;
-  document.getElementById("marketName").textContent = selectedMarket + " · Max 50x";
+  document.getElementById("marketName").textContent = selectedMarket + (item.priceSource ? " · " + item.priceSource : "") + " · Max 50x";
   document.getElementById("coinIcon").textContent = (item.symbol || "PC").split("/")[0].slice(0,3);
-  document.getElementById("livePrice").textContent = money(price * (1 + Number(move) / 100));
-  document.getElementById("priceMove").textContent = (move >= 0 ? "+" : "") + move + "%";
-  document.getElementById("priceMove").classList.toggle("down", Number(move) < 0);
+  document.getElementById("livePrice").textContent = money(price);
+  document.getElementById("priceMove").textContent = (move >= 0 ? "+" : "") + move.toFixed(2) + "% 24h";
+  document.getElementById("priceMove").classList.toggle("down", move < 0);
   document.getElementById("durationText").textContent = selectedDuration + "s";
   updateSummary();
 }
@@ -472,12 +473,21 @@ function updateSummary(){
 }
 
 async function loadProducts(){
-  const res = await fetch(API_BASE + "/api/perpetual/products", { headers: authHeaders() });
-  const result = await res.json();
-  if(result.success){
-    products = result.data || {};
-    renderMarkets();
-    renderProducts();
+  try{
+    const res = await fetch(API_BASE + "/api/perpetual/products", { headers: authHeaders(), cache:"no-store" });
+    const result = await res.json();
+    if(result.success){
+      products = result.data || {};
+      if(!productsInitialized){
+        productsInitialized = true;
+        renderMarkets();
+        renderProducts();
+      }else{
+        updateMarketView();
+      }
+    }
+  }catch(error){
+    console.warn("Refresh perpetual prices failed:", error);
   }
 }
 
@@ -641,7 +651,7 @@ setLeverage(selectedLeverage);
 loadProducts();
 loadBalance();
 loadOrders();
-setInterval(updateMarketView, 3000);
+setInterval(loadProducts, 1000);
 setInterval(loadOrders, 5000);
 </script>
 <script src="user_notify.js"></script>
