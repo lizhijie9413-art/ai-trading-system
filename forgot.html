@@ -83,13 +83,14 @@ async function sendReset(){
         } else {
             msgDiv.innerHTML = data.message || "Failed to send reset link";
             msgDiv.className = "message error";
-            btn.disabled = false;
-            btn.innerText = originalText;
         }
     }catch(err){
         console.log(err);
         msgDiv.innerHTML = "Network error. Please try again later.";
         msgDiv.className = "message error";
+    }
+
+    finally{
         btn.disabled = false;
         btn.innerText = originalText;
     }
