@@ -23,15 +23,28 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_TOKEN_TTL_MS = Number(process.env.ADMIN_TOKEN_TTL_MS || 24 * 60 * 60 * 1000);
 const USER_TOKEN_SECRET = process.env.USER_TOKEN_SECRET || ADMIN_TOKEN;
+const KYC_RETRY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
-const SMTP_SECURE = process.env.SMTP_SECURE ? String(process.env.SMTP_SECURE).toLowerCase() === "true" : SMTP_PORT === 465;
-const passwordResetMailer = SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_FROM ? nodemailer.createTransport({ host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, auth: { user: SMTP_USER, pass: SMTP_PASS }, connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000 }) : null;
-const PASSWORD_RESET_BASE_URL = (process.env.PASSWORD_RESET_BASE_URL || "https://www.quantai.fyi").replace(/\\/+$/, "");
-const KYC_RETRY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const SMTP_SECURE = process.env.SMTP_SECURE
+  ? String(process.env.SMTP_SECURE).toLowerCase() === "true"
+  : SMTP_PORT === 465;
+const passwordResetMailer = SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_FROM
+  ? nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
+    })
+  : null;
+const PASSWORD_RESET_BASE_URL = (process.env.PASSWORD_RESET_BASE_URL || "https://www.quantai.fyi")
+  .replace(/\/+$/, "");
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map(origin => origin.trim())
@@ -67,8 +80,6 @@ const publicRootFiles = new Set([
   "deposit.html",
   "edit_profile.html",
   "forgot.html",
-  "reset_password.html",
-  "reset_password.html",
   "index.html",
   "invite.html",
   "kyc.html",
@@ -84,6 +95,7 @@ const publicRootFiles = new Set([
   "profile.html",
   "records.html",
   "register.html",
+  "reset_password.html",
   "security.html",
   "settings.html",
   "strategy.html",
@@ -136,6 +148,7 @@ const allowedHtmlPages = new Set([
   "profile.html",
   "records.html",
   "register.html",
+  "reset_password.html",
   "security.html",
   "settings.html",
   "strategy.html",
@@ -4441,6 +4454,8 @@ app.post("/api/withdraw/status", verifyAdmin, async (req, res) => {
 });
 
 // ==================== 忘记密码功能 ====================
+// crypto is required at the top of this file
+
 const passwordResetTokenSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     email: { type: String, required: true },
@@ -4448,26 +4463,55 @@ const passwordResetTokenSchema = new mongoose.Schema({
     expiresAt: { type: Date, required: true, expires: 0 },
     createdAt: { type: Date, default: Date.now }
 });
-const PasswordResetToken = mongoose.models.PasswordResetToken || mongoose.model("PasswordResetToken", passwordResetTokenSchema);
-function hashPasswordResetToken(token) { return crypto.createHash("sha256").update(token).digest("hex"); }
-function genericPasswordResetResponse(res) { return res.json({ success: true, message: "If the email exists, a reset link has been sent" }); }
+const PasswordResetToken = mongoose.models.PasswordResetToken
+    || mongoose.model("PasswordResetToken", passwordResetTokenSchema);
 
+function hashPasswordResetToken(token) {
+    return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function genericPasswordResetResponse(res) {
+    return res.json({ success: true, message: "If the email exists, a reset link has been sent" });
+}
+
+// 发送重置链接
 app.post("/api/forgot-password", async (req, res) => {
     try {
         const email = String(req.body.email || "").trim().toLowerCase();
-        if (!email) return res.json({ success: false, message: "Email is required" });
-        if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.json({ success: false, message: "Please enter a valid email address" });
-        if (!passwordResetMailer) return res.status(503).json({ success: false, message: "Password reset email is not configured. Please contact support." });
+        
+        if (!email) {
+            return res.json({ success: false, message: "Email is required" });
+        }
+        
+        // 简单的邮箱格式验证
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.json({ success: false, message: "Please enter a valid email address" });
+        }
+        
+        if (!passwordResetMailer) {
+            return res.status(503).json({ success: false, message: "Password reset email is not configured. Please contact support." });
+        }
+
         const user = await User.findOne({ email });
-        if (!user) return genericPasswordResetResponse(res);
-        const token = crypto.randomBytes(32).toString("hex");
+        
+        // 为了安全，即使用户不存在也返回成功（防止邮箱枚举攻击）
+        if (!user) {
+            return genericPasswordResetResponse(res);
+        }
+        
+        // 生成重置令牌
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 3600000);
         const tokenHash = hashPasswordResetToken(token);
         await PasswordResetToken.deleteMany({ userId: user._id });
-        await PasswordResetToken.create({ userId: user._id, email: user.email, tokenHash, expiresAt: new Date(Date.now() + 3600000) });
+        await PasswordResetToken.create({ userId: user._id, email: user.email, tokenHash, expiresAt });
         const resetUrl = `${PASSWORD_RESET_BASE_URL}/reset_password.html?token=${encodeURIComponent(token)}`;
         try {
             await passwordResetMailer.sendMail({
-                from: SMTP_FROM, to: user.email, subject: "Reset your QuantAI password",
+                from: SMTP_FROM,
+                to: user.email,
+                subject: "Reset your QuantAI password",
                 text: `Use this link to reset your password. It expires in 1 hour: ${resetUrl}`,
                 html: `<p>We received a request to reset your QuantAI password.</p><p><a href="${resetUrl}">Reset password</a></p><p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>`
             });
@@ -4477,44 +4521,112 @@ app.post("/api/forgot-password", async (req, res) => {
             return res.status(502).json({ success: false, message: "Could not send the reset email. Please try again later." });
         }
         return genericPasswordResetResponse(res);
+        
     } catch (error) {
         console.error("Forgot password error:", error);
-        return res.json({ success: false, message: "Server error, please try again later" });
+        res.json({ success: false, message: "Server error, please try again later" });
     }
 });
 
+// 验证重置令牌
 app.get("/api/verify-reset-token", async (req, res) => {
     try {
-        const token = String(req.query.token || "");
-        if (!token) return res.json({ success: false, message: "Token is required" });
-        const tokenData = await PasswordResetToken.findOne({ tokenHash: hashPasswordResetToken(token), expiresAt: { $gt: new Date() } });
-        if (!tokenData) return res.json({ success: false, message: "Token is invalid or expired" });
-        return res.json({ success: true, message: "Token is valid" });
+        const { token } = req.query;
+        
+        if (!token) {
+            return res.json({ success: false, message: "Token is required" });
+        }
+        
+        const tokenData = await PasswordResetToken.findOne({ tokenHash: hashPasswordResetToken(String(token)), expiresAt: { $gt: new Date() } });
+        if (!tokenData) {
+            return res.json({ success: false, message: "Token has expired" });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: "Token is valid",
+            email: tokenData.email
+        });
+        
     } catch (error) {
         console.error("Verify token error:", error);
-        return res.json({ success: false, message: "Server error" });
+        res.json({ success: false, message: "Server error" });
     }
 });
 
+// 管理员登录接口
+app.post("/api/admin/login", async (req, res) => {
+    const { username, password } = req.body;
+    
+    // 验证用户名和密码
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        const token = signToken({
+            type: "admin",
+            username,
+            exp: Date.now() + ADMIN_TOKEN_TTL_MS
+        }, ADMIN_TOKEN);
+
+        res.json({
+            success: true,
+            message: "Login successful",
+            token
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            message: "Invalid username or password"
+        });
+    }
+});
+
+// 重置密码
 app.post("/api/reset-password", async (req, res) => {
     try {
         const { token, newPassword, confirmPassword } = req.body;
-        if (!token || !newPassword) return res.json({ success: false, message: "Token and new password are required" });
-        if (newPassword.length < 6) return res.json({ success: false, message: "Password must be at least 6 characters" });
-        if (newPassword !== confirmPassword) return res.json({ success: false, message: "Passwords do not match" });
-        const tokenData = await PasswordResetToken.findOne({ tokenHash: hashPasswordResetToken(String(token)), expiresAt: { $gt: new Date() } });
-        if (!tokenData) return res.json({ success: false, message: "Token is invalid or expired" });
+        
+        if (!token || !newPassword) {
+            return res.json({ success: false, message: "Token and new password are required" });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.json({ success: false, message: "Password must be at least 6 characters" });
+        }
+        
+        if (newPassword !== confirmPassword) {
+            return res.json({ success: false, message: "Passwords do not match" });
+        }
+        
+        const tokenData = await PasswordResetToken.findOne({ tokenHash: hashPasswordResetToken(String(token || "")), expiresAt: { $gt: new Date() } });
+        if (!tokenData) {
+            return res.json({ success: false, message: "Token has expired" });
+        }
+        
         const user = await User.findById(tokenData.userId);
-        if (!user) return res.json({ success: false, message: "User not found" });
-        user.password = await bcrypt.hash(newPassword, 10);
-        if (!Array.isArray(user.records)) user.records = [];
-        user.records.push({ message: "Password reset successfully", timestamp: new Date() });
+        if (!user) {
+            return res.json({ success: false, message: "User not found" });
+        }
+        
+        // 更新密码
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
         await user.save();
+        
+        // 删除已使用的令牌
         await PasswordResetToken.deleteOne({ _id: tokenData._id });
-        return res.json({ success: true, message: "Password has been reset successfully" });
+
+        // 添加记录
+        if (!Array.isArray(user.records)) user.records = [];
+        user.records.push({
+            message: "Password reset successfully", 
+            timestamp: new Date() 
+        });
+        await user.save();
+        
+        res.json({ success: true, message: "Password has been reset successfully" });
+        
     } catch (error) {
         console.error("Reset password error:", error);
-        return res.json({ success: false, message: "Server error, please try again later" });
+        res.json({ success: false, message: "Server error, please try again later" });
     }
 });
 

@@ -88,9 +88,7 @@ async function sendReset(){
         console.log(err);
         msgDiv.innerHTML = "Network error. Please try again later.";
         msgDiv.className = "message error";
-    }
-
-    finally{
+    }finally{
         btn.disabled = false;
         btn.innerText = originalText;
     }
